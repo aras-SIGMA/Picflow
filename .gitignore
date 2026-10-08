@@ -1,0 +1,4 @@
+# Agent and editor local configs
+.agents/
+.opencode/
+skills-lock.json
