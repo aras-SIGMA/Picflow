@@ -19,6 +19,7 @@ import {
 } from "framer-motion";
 import { ArrowRight, Camera, ImagePlus, RefreshCcw, Search } from "lucide-react";
 import { fileUrl, getToken, listPhotos, listCategories, deletePhoto } from "@/lib/api";
+import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { useAuth } from "@/context/AuthContext";
 import PhotoCard from "@/components/PhotoCard";
 import MasonryGrid from "@/components/MasonryGrid";
@@ -239,6 +240,7 @@ export default function HomePage() {
                       {c.cover ? (
                         <Image
                           src={fileUrl(c.cover)}
+                          loader={isCloudinaryUrl(fileUrl(c.cover)) ? cloudinaryLoader : undefined}
                           alt={`Kategori ${c.name}`}
                           fill
                           sizes="144px"

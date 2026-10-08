@@ -163,6 +163,16 @@ router.put(
       const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
         folder: "picflow/profile",
         resource_type: "image",
+        transformation: [
+          {
+            width: 256,
+            height: 256,
+            crop: "fill",
+            gravity: "face",
+            fetch_format: "auto",
+            quality: "auto",
+          },
+        ],
       });
 
       const { error: updateError } = await supabase

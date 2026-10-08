@@ -10,6 +10,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ImageOff, Pencil, Trash2 } from "lucide-react";
 import { fileUrl } from "@/lib/api";
+import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { EASE } from "@/components/ui/motion";
 
 // Rasio thumbnail bervariasi per foto supaya susunan masonry bervariasi
@@ -49,9 +50,10 @@ export default function PhotoCard({
           {src ? (
             <Image
               src={src}
+              loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
               alt={photo.title || "Foto"}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             />
           ) : (

@@ -9,7 +9,16 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Image as ImageIcon } from "lucide-react";
+import {
+  Aperture,
+  Camera,
+  Check,
+  Disc,
+  Gauge,
+  Image as ImageIcon,
+  Sparkles,
+  Timer,
+} from "lucide-react";
 import {
   getToken,
   listCategories,
@@ -18,6 +27,7 @@ import {
   updatePhoto,
   fileUrl,
 } from "@/lib/api";
+import { parseClientExif } from "@/lib/exif";
 import Dropzone from "@/components/ui/Dropzone";
 import Field from "@/components/ui/Field";
 import Select from "@/components/ui/Select";
@@ -49,6 +59,8 @@ function AddPhotoForm() {
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [clientExif, setClientExif] = useState(null);
+  const [parsingExif, setParsingExif] = useState(false);
 
   // LOAD: categories + kalau edit, isi form dari GET /photos/:id
   useEffect(() => {
@@ -75,6 +87,27 @@ function AddPhotoForm() {
           setIdCategory(String(photoResponse.data.id_category));
           setDescription(photoResponse.data.description || "");
           setOldImage(fileUrl(photoResponse.data.image_url));
+
+          const p = photoResponse.data;
+          if (
+            p.camera_make ||
+            p.camera_model ||
+            p.lens ||
+            p.aperture ||
+            p.shutter_speed ||
+            p.iso
+          ) {
+            setClientExif({
+              camera_make: p.camera_make,
+              camera_model: p.camera_model,
+              lens: p.lens,
+              focal_length: p.focal_length,
+              aperture: p.aperture,
+              shutter_speed: p.shutter_speed,
+              iso: p.iso,
+              taken_at: p.taken_at,
+            });
+          }
         }
       } catch (err) {
         if (err.status === 401) router.replace("/login");
@@ -114,12 +147,19 @@ function AddPhotoForm() {
     clearPreview();
     if (!selectedFile) {
       setFile(null);
+      setClientExif(null);
       return;
     }
     const objectUrl = URL.createObjectURL(selectedFile);
     previewUrlRef.current = objectUrl;
     setPreviewUrl(objectUrl);
     setFile(selectedFile);
+
+    setParsingExif(true);
+    parseClientExif(selectedFile)
+      .then((parsed) => setClientExif(parsed))
+      .catch(() => setClientExif(null))
+      .finally(() => setParsingExif(false));
   }
 
   const titleInvalid = submitted && !title.trim();
@@ -223,8 +263,65 @@ function AddPhotoForm() {
                   ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`
                   : editId
                     ? "Biarkan kosong jika tidak ingin mengganti gambar."
-                    : "JPG, PNG, WEBP, atau GIF · maksimal 5MB."}
+                    : "JPG, PNG, WEBP, atau TIFF · maksimal 25MB."}
             </p>
+
+            {/* Live EXIF Preview */}
+            {parsingExif && (
+              <div className="mt-3 flex items-center gap-2 rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] px-3 py-2 text-xs text-muted">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
+                Mengekstrak metadata EXIF kamera...
+              </div>
+            )}
+
+            {clientExif && !parsingExif && (
+              <div className="mt-3 rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-3">
+                <div className="mb-2 flex items-center justify-between border-b border-line/50 pb-1.5">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                    <Sparkles size={11} />
+                    EXIF Terdeteksi Otomatis
+                  </span>
+                  <span className="text-[10px] text-faint">
+                    Client Pre-parsed
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="truncate text-muted">
+                    <span className="text-faint">Kamera: </span>
+                    <span className="font-medium text-ink">
+                      {[clientExif.camera_make, clientExif.camera_model]
+                        .filter(Boolean)
+                        .join(" ") || "N/A"}
+                    </span>
+                  </div>
+                  <div className="truncate text-muted">
+                    <span className="text-faint">Lensa: </span>
+                    <span className="font-medium text-ink">
+                      {clientExif.lens || "N/A"}
+                    </span>
+                  </div>
+                  <div className="truncate text-muted">
+                    <span className="text-faint">Aperture / Focal: </span>
+                    <span className="font-medium text-ink">
+                      {[clientExif.aperture, clientExif.focal_length]
+                        .filter(Boolean)
+                        .join(" · ") || "N/A"}
+                    </span>
+                  </div>
+                  <div className="truncate text-muted">
+                    <span className="text-faint">Shutter / ISO: </span>
+                    <span className="font-medium text-ink">
+                      {[
+                        clientExif.shutter_speed,
+                        clientExif.iso != null ? `ISO ${clientExif.iso}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Kanan: form */}

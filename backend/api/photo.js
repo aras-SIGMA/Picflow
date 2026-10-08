@@ -26,8 +26,21 @@ const photoSchema = z.object({
 
 // ====== HELPER ======
 
+function getCloudinaryDeliveryUrl(imageUrl, width) {
+  if (!imageUrl || typeof imageUrl !== "string") return null;
+  if (!imageUrl.includes("/upload/")) return imageUrl;
+  return imageUrl.replace(
+    "/upload/",
+    `/upload/f_auto,q_auto,w_${width},c_limit/`
+  );
+}
+
 // Petakan baris Supabase ke bentuk lama frontend.
 function serializePhoto(row, categoryName) {
+  const isCloudinary =
+    typeof row.image_url === "string" &&
+    row.image_url.includes("res.cloudinary.com");
+
   return {
     id_photo: row.id,
     id_user: row.user_id,
@@ -36,6 +49,15 @@ function serializePhoto(row, categoryName) {
     title: row.title,
     description: row.description,
     image_url: row.image_url,
+    thumbnail_url: isCloudinary
+      ? getCloudinaryDeliveryUrl(row.image_url, 400)
+      : row.image_url,
+    medium_url: isCloudinary
+      ? getCloudinaryDeliveryUrl(row.image_url, 1080)
+      : row.image_url,
+    high_res_url: isCloudinary
+      ? getCloudinaryDeliveryUrl(row.image_url, 2048)
+      : row.image_url,
     cloudinary_public_id: row.cloudinary_public_id,
     width: row.width,
     height: row.height,
@@ -52,7 +74,7 @@ function serializePhoto(row, categoryName) {
   };
 }
 
-// Ekstrak metadata EXIF dari file. Gagal parse -> kembalikan null (tidak fatal).
+// Ekstrak metadata EXIF dari file. Gagal parse -> kembalikan objek kosong (tidak fatal).
 async function extractExif(filePath) {
   try {
     const data = await exifr.parse(filePath, {
@@ -71,7 +93,8 @@ async function extractExif(filePath) {
 
     const focal =
       data.FocalLength != null ? `${Math.round(data.FocalLength)}mm` : null;
-    const aperture = data.FNumber != null ? `f/${data.FNumber}` : null;
+    const aperture =
+      data.FNumber != null ? `f/${Number(data.FNumber)}` : null;
 
     let shutter = null;
     if (data.ExposureTime != null) {
@@ -81,17 +104,23 @@ async function extractExif(filePath) {
           : `${data.ExposureTime}s`;
     }
 
+    let takenAt = null;
+    if (data.DateTimeOriginal) {
+      const d = new Date(data.DateTimeOriginal);
+      if (!Number.isNaN(d.getTime())) {
+        takenAt = d.toISOString();
+      }
+    }
+
     return {
-      camera_make: data.Make || null,
-      camera_model: data.Model || null,
-      lens: data.LensModel || null,
+      camera_make: data.Make ? String(data.Make).trim() : null,
+      camera_model: data.Model ? String(data.Model).trim() : null,
+      lens: data.LensModel ? String(data.LensModel).trim() : null,
       focal_length: focal,
       aperture,
       shutter_speed: shutter,
       iso: typeof data.ISO === "number" ? data.ISO : null,
-      taken_at: data.DateTimeOriginal
-        ? new Date(data.DateTimeOriginal).toISOString()
-        : null,
+      taken_at: takenAt,
     };
   } catch {
     return {};
@@ -104,10 +133,17 @@ async function cleanupTemp(file) {
 }
 
 // Upload file lokal (hasil Multer) ke Cloudinary, lalu hapus temp-nya.
+// Sertakan transformasi eager 3 breakpoint (400px, 1080px, 2048px) format WebP/AVIF otomatis.
 async function uploadToCloudinary(file, folder) {
   const result = await cloudinary.uploader.upload(file.path, {
     folder,
     resource_type: "image",
+    eager: [
+      { width: 400, crop: "limit", fetch_format: "auto", quality: "auto" },
+      { width: 1080, crop: "limit", fetch_format: "auto", quality: "auto" },
+      { width: 2048, crop: "limit", fetch_format: "auto", quality: "auto" },
+    ],
+    eager_async: false,
   });
   await cleanupTemp(file);
   return result;

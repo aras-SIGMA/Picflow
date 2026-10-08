@@ -21,6 +21,7 @@ import {
   deletePhoto,
   uploadProfilePicture,
 } from "@/lib/api";
+import { buildCloudinaryUrl } from "@/lib/cloudinary";
 import { useAuth } from "@/context/AuthContext";
 import PhotoCard from "@/components/PhotoCard";
 import MasonryGrid from "@/components/MasonryGrid";
@@ -309,7 +310,13 @@ export default function AccountPage() {
                       // Preview blob & URL Cloudinary memakai img biasa.
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={profilePreview || profile.profile_picture_url}
+                        src={
+                          profilePreview ||
+                          buildCloudinaryUrl(profile.profile_picture_url, {
+                            width: 128,
+                            crop: "fill",
+                          })
+                        }
                         alt="Foto profil"
                         className="h-14 w-14 rounded-full object-cover"
                       />

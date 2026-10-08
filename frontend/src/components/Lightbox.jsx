@@ -10,9 +10,17 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarDays, Pencil, Tag, X } from "lucide-react";
+import {
+  CalendarDays,
+  ExternalLink,
+  Pencil,
+  Tag,
+  X,
+} from "lucide-react";
 import { fileUrl } from "@/lib/api";
+import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { EASE } from "@/components/ui/motion";
+import ExifMetadataPanel from "./ExifMetadataPanel";
 
 export default function Lightbox({ photo, layoutId, onClose }) {
   const panelRef = useRef(null);
@@ -42,7 +50,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
   }, [photo]);
 
   if (!photo) return null;
-  const src = fileUrl(photo.image_url);
+  const src = photo.high_res_url || fileUrl(photo.image_url);
 
   return (
     <motion.div
@@ -65,7 +73,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
         transition={{ duration: 0.4, ease: EASE }}
-        className="relative flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-[var(--bg-elevated)] outline-none"
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-[var(--bg-elevated)] outline-none"
       >
         <button
           onClick={onClose}
@@ -79,16 +87,17 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           <motion.div
             layoutId={layoutId ? `${layoutId}-${photo.id_photo}` : undefined}
             transition={{ duration: 0.5, ease: EASE }}
-            className="relative flex max-h-[52vh] min-h-0 w-full items-center justify-center"
+            className="relative flex max-h-[50vh] min-h-0 w-full items-center justify-center"
           >
             {src ? (
               <Image
                 src={src}
+                loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
                 alt={photo.title || "Foto"}
-                width={1200}
-                height={900}
-                sizes="(max-width: 1024px) 100vw, 896px"
-                className="h-auto max-h-[52vh] w-auto max-w-full object-contain"
+                width={2048}
+                height={1536}
+                sizes="(max-width: 1024px) 100vw, 2048px"
+                className="h-auto max-h-[50vh] w-auto max-w-full object-contain"
                 priority
               />
             ) : (
@@ -97,8 +106,8 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           </motion.div>
         </div>
 
-        {/* Floating info card */}
-        <div className="border-t border-line p-5">
+        {/* Floating info card & EXIF Technical Panel */}
+        <div className="max-h-[42vh] overflow-y-auto border-t border-line p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="display-2 text-xl!">{photo.title}</h2>
@@ -125,14 +134,25 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               )}
             </div>
 
-            <Link
-              href={`/addphoto?id=${photo.id_photo}`}
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80"
-            >
-              <Pencil size={13} />
-              Edit foto
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/photos/${photo.id_photo}`}
+                className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-ink"
+              >
+                <ExternalLink size={13} />
+                Detail penuh
+              </Link>
+              <Link
+                href={`/addphoto?id=${photo.id_photo}`}
+                className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
+              >
+                <Pencil size={13} />
+                Edit foto
+              </Link>
+            </div>
           </div>
+
+          <ExifMetadataPanel photo={photo} className="mt-4" />
         </div>
       </motion.div>
     </motion.div>
