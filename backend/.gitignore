@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment variables (berisi password database)
+.env
+
+# Uploaded images
+uploads/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
