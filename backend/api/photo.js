@@ -1,13 +1,15 @@
 // api/photo.js
-// Semua endpoint CRUD untuk photos + upload file dari local storage.
-// Semua endpoint BUTUH login (verifyToken), dan user hanya bisa
-// mengakses foto miliknya sendiri (filter id_user).
+// CRUD photos: upload gambar ke Cloudinary, ekstrak metadata EXIF, lalu
+// simpan barisnya ke tabel Supabase (public.photos).
+// Semua endpoint wajib login (verifyToken) dan user hanya bisa mengakses
+// foto miliknya sendiri (filter user_id = uuid Supabase).
 
 import express from "express";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
-import pool from "../config/database.js";
+import fs from "fs/promises";
+import exifr from "exifr";
+import supabase from "../config/supabase.js";
+import cloudinary from "../config/cloudinary.js";
 import verifyToken from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
@@ -16,7 +18,6 @@ const router = express.Router();
 // Semua route di file ini wajib login
 router.use(verifyToken);
 
-// Schema validasi Zod
 const photoSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -25,34 +26,105 @@ const photoSchema = z.object({
 
 // ====== HELPER ======
 
-// Hapus file fisik di uploads/ (dipakai saat validasi gagal / update / delete)
-// Dibungkus try-catch agar tidak crash kalau file sudah tidak ada
-function deleteFile(imageUrl) {
-  if (!imageUrl) return;
-  // imageUrl tersimpan sebagai "/uploads/namafile.jpg"
-  const filename = path.basename(imageUrl);
-  const filepath = path.join("uploads", filename);
+// Petakan baris Supabase ke bentuk lama frontend.
+function serializePhoto(row, categoryName) {
+  return {
+    id_photo: row.id,
+    id_user: row.user_id,
+    id_category: row.category_id,
+    category_name: categoryName ?? row.category_name ?? null,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    cloudinary_public_id: row.cloudinary_public_id,
+    width: row.width,
+    height: row.height,
+    camera_make: row.camera_make,
+    camera_model: row.camera_model,
+    lens: row.lens,
+    focal_length: row.focal_length,
+    aperture: row.aperture,
+    shutter_speed: row.shutter_speed,
+    iso: row.iso,
+    taken_at: row.taken_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+// Ekstrak metadata EXIF dari file. Gagal parse -> kembalikan null (tidak fatal).
+async function extractExif(filePath) {
   try {
-    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+    const data = await exifr.parse(filePath, {
+      pick: [
+        "Make",
+        "Model",
+        "LensModel",
+        "FocalLength",
+        "FNumber",
+        "ExposureTime",
+        "ISO",
+        "DateTimeOriginal",
+      ],
+    });
+    if (!data) return {};
+
+    const focal =
+      data.FocalLength != null ? `${Math.round(data.FocalLength)}mm` : null;
+    const aperture = data.FNumber != null ? `f/${data.FNumber}` : null;
+
+    let shutter = null;
+    if (data.ExposureTime != null) {
+      shutter =
+        data.ExposureTime < 1
+          ? `1/${Math.round(1 / data.ExposureTime)}s`
+          : `${data.ExposureTime}s`;
+    }
+
+    return {
+      camera_make: data.Make || null,
+      camera_model: data.Model || null,
+      lens: data.LensModel || null,
+      focal_length: focal,
+      aperture,
+      shutter_speed: shutter,
+      iso: typeof data.ISO === "number" ? data.ISO : null,
+      taken_at: data.DateTimeOriginal
+        ? new Date(data.DateTimeOriginal).toISOString()
+        : null,
+    };
   } catch {
-    // Abaikan: file mungkin sudah dihapus manual
+    return {};
   }
 }
 
-// CREATE: tambah foto baru + upload file image
-// Form-data: title, id_category, description (opsional), image (file wajib)
+// Hapus file temporary sisa upload Multer.
+async function cleanupTemp(file) {
+  if (file?.path) await fs.unlink(file.path).catch(() => {});
+}
+
+// Upload file lokal (hasil Multer) ke Cloudinary, lalu hapus temp-nya.
+async function uploadToCloudinary(file, folder) {
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder,
+    resource_type: "image",
+  });
+  await cleanupTemp(file);
+  return result;
+}
+
+// ====== ROUTES ======
+
+// CREATE: tambah foto baru + upload ke Cloudinary + EXIF.
 router.post("/", upload.single("image"), async (req, res, next) => {
   try {
-    // File wajib ada (multer menyimpannya di req.file)
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
     }
 
-    // Validasi field teks dengan Zod
     const validation = photoSchema.safeParse(req.body);
     if (!validation.success) {
-      // Input salah -> hapus file yang terlanjur ter-upload agar tidak jadi sampah
-      deleteFile(`/uploads/${req.file.filename}`);
+      await cleanupTemp(req.file);
       return res.status(400).json({
         message: "Validation failed",
         errors: validation.error.issues.map((issue) => issue.message),
@@ -61,100 +133,110 @@ router.post("/", upload.single("image"), async (req, res, next) => {
 
     const { title, description, id_category } = validation.data;
 
-    // Cek apakah category-nya ada di database
-    const [categories] = await pool.query(
-      "SELECT id_category FROM categories WHERE id_category = ?",
-      [id_category]
-    );
-    if (categories.length === 0) {
-      deleteFile(`/uploads/${req.file.filename}`);
+    // Pastikan kategori ada.
+    const { data: category } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("id", id_category)
+      .maybeSingle();
+
+    if (!category) {
+      await cleanupTemp(req.file);
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Simpan path relatif agar mudah diakses frontend
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // EXIF dibaca dari file sebelum file dihapus oleh uploadToCloudinary.
+    const exif = await extractExif(req.file.path);
 
-    // id_user diambil dari token (req.user), BUKAN dari body, agar aman
-    const [result] = await pool.query(
-      "INSERT INTO photos (id_user, id_category, title, description, image_url) VALUES (?, ?, ?, ?, ?)",
-      [req.user.id_user, id_category, title, description || null, imageUrl]
-    );
+    const uploadedImage = await uploadToCloudinary(req.file, "picflow/photos");
+
+    const { data, error } = await supabase
+      .from("photos")
+      .insert({
+        user_id: req.user.id,
+        category_id: id_category,
+        title,
+        description: description || null,
+        image_url: uploadedImage.secure_url,
+        cloudinary_public_id: uploadedImage.public_id,
+        width: uploadedImage.width,
+        height: uploadedImage.height,
+        aspect_ratio: uploadedImage.aspect_ratio
+          ? Number(uploadedImage.aspect_ratio.toFixed(2))
+          : null,
+        ...exif,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      // Rollback aset Cloudinary bila insert gagal.
+      await cloudinary.uploader
+        .destroy(uploadedImage.public_id, { resource_type: "image" })
+        .catch(() => {});
+      return next(new Error(error.message));
+    }
 
     res.status(201).json({
       message: "Photo created",
-      data: {
-        id_photo: result.insertId,
-        title,
-        description: description || null,
-        id_category,
-        image_url: imageUrl,
-      },
+      data: serializePhoto(data),
     });
   } catch (error) {
+    await cleanupTemp(req.file);
     next(error);
   }
 });
 
-// READ: ambil semua foto milik user yang sedang login
+// READ: semua foto milik user yang login.
 router.get("/", async (req, res, next) => {
   try {
-    // JOIN categories agar nama category ikut terkirim
-    const [rows] = await pool.query(
-      `SELECT p.*, c.name AS category_name
-       FROM photos p
-       JOIN categories c ON c.id_category = p.id_category
-       WHERE p.id_user = ?
-       ORDER BY p.created_at DESC`,
-      [req.user.id_user]
-    );
+    const { data, error } = await supabase
+      .from("photos")
+      .select("*, categories(name)")
+      .eq("user_id", req.user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) return next(new Error(error.message));
 
     res.json({
       message: "Photos fetched",
-      data: rows,
+      data: (data || []).map((row) =>
+        serializePhoto(row, row.categories?.name),
+      ),
     });
   } catch (error) {
     next(error);
   }
 });
 
-// READ: ambil satu foto milik sendiri berdasarkan id
+// READ: satu foto milik sendiri.
 router.get("/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
+    const { data, error } = await supabase
+      .from("photos")
+      .select("*, categories(name)")
+      .eq("id", req.params.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
 
-    const [rows] = await pool.query(
-      `SELECT p.*, c.name AS category_name
-       FROM photos p
-       JOIN categories c ON c.id_category = p.id_category
-       WHERE p.id_photo = ? AND p.id_user = ?`,
-      [id, req.user.id_user]
-    );
-
-    // Tidak ketemu = tidak ada ATAU bukan milik user ini
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Photo not found" });
-    }
+    if (error) return next(new Error(error.message));
+    if (!data) return res.status(404).json({ message: "Photo not found" });
 
     res.json({
       message: "Photo fetched",
-      data: rows[0],
+      data: serializePhoto(data, data.categories?.name),
     });
   } catch (error) {
     next(error);
   }
 });
 
-// UPDATE: ubah data foto, file image boleh diganti (opsional)
-// Form-data: title, id_category, description (opsional), image (opsional)
+// UPDATE: ubah data foto, gambar boleh diganti (opsional).
 router.put("/:id", upload.single("image"), async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-
-    // Validasi field teks dengan Zod
     const validation = photoSchema.safeParse(req.body);
     if (!validation.success) {
-      // Kalau ada file baru tapi validasi gagal, hapus file baru itu
-      if (req.file) deleteFile(`/uploads/${req.file.filename}`);
+      await cleanupTemp(req.file);
       return res.status(400).json({
         message: "Validation failed",
         errors: validation.error.issues.map((issue) => issue.message),
@@ -163,81 +245,114 @@ router.put("/:id", upload.single("image"), async (req, res, next) => {
 
     const { title, description, id_category } = validation.data;
 
-    // Cek apakah foto-nya ada DAN milik user ini
-    const [rows] = await pool.query(
-      "SELECT * FROM photos WHERE id_photo = ? AND id_user = ?",
-      [id, req.user.id_user]
-    );
-    if (rows.length === 0) {
-      if (req.file) deleteFile(`/uploads/${req.file.filename}`);
+    // Foto harus ada dan milik user ini.
+    const { data: existing } = await supabase
+      .from("photos")
+      .select("*")
+      .eq("id", req.params.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    if (!existing) {
+      await cleanupTemp(req.file);
       return res.status(404).json({ message: "Photo not found" });
     }
 
-    // Cek apakah category baru-nya ada
-    const [categories] = await pool.query(
-      "SELECT id_category FROM categories WHERE id_category = ?",
-      [id_category]
-    );
-    if (categories.length === 0) {
-      if (req.file) deleteFile(`/uploads/${req.file.filename}`);
+    const { data: category } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("id", id_category)
+      .maybeSingle();
+
+    if (!category) {
+      await cleanupTemp(req.file);
       return res.status(404).json({ message: "Category not found" });
     }
 
-    const oldPhoto = rows[0];
+    const updatePayload = {
+      category_id: id_category,
+      title,
+      description: description || null,
+    };
 
-    // Kalau user upload file baru, pakai itu; kalau tidak, pakai yang lama
-    let imageUrl = oldPhoto.image_url;
+    let newPublicId = null;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      // EXIF dibaca dari temp file sebelum dihapus oleh uploadToCloudinary.
+      const exif = await extractExif(req.file.path);
+      const uploadedImage = await uploadToCloudinary(req.file, "picflow/photos");
+      newPublicId = uploadedImage.public_id;
+      Object.assign(updatePayload, {
+        image_url: uploadedImage.secure_url,
+        cloudinary_public_id: uploadedImage.public_id,
+        width: uploadedImage.width,
+        height: uploadedImage.height,
+        aspect_ratio: uploadedImage.aspect_ratio
+          ? Number(uploadedImage.aspect_ratio.toFixed(2))
+          : null,
+        ...exif,
+      });
     }
 
-    await pool.query(
-      "UPDATE photos SET id_category = ?, title = ?, description = ?, image_url = ? WHERE id_photo = ?",
-      [id_category, title, description || null, imageUrl, id]
-    );
+    const { data, error } = await supabase
+      .from("photos")
+      .update(updatePayload)
+      .eq("id", req.params.id)
+      .select("*, categories(name)")
+      .single();
 
-    // File lama baru dihapus setelah update database berhasil.
-    // Jika query gagal, foto yang sedang dipakai user tetap aman.
-    if (req.file) {
-      deleteFile(oldPhoto.image_url);
+    if (error) {
+      // Rollback gambar baru bila update gagal.
+      if (newPublicId) {
+        await cloudinary.uploader
+          .destroy(newPublicId, { resource_type: "image" })
+          .catch(() => {});
+      }
+      return next(new Error(error.message));
+    }
+
+    // Hapus gambar lama setelah update sukses.
+    if (newPublicId && existing.cloudinary_public_id) {
+      await cloudinary.uploader
+        .destroy(existing.cloudinary_public_id, { resource_type: "image" })
+        .catch(() => {});
     }
 
     res.json({
       message: "Photo updated",
-      data: {
-        id_photo: id,
-        title,
-        description: description || null,
-        id_category,
-        image_url: imageUrl,
-      },
+      data: serializePhoto(data, data.categories?.name),
     });
   } catch (error) {
-    // Kalau query database gagal setelah file baru disimpan oleh Multer,
-    // hapus file baru tersebut agar tidak menjadi file yatim.
-    if (req.file) deleteFile(`/uploads/${req.file.filename}`);
+    await cleanupTemp(req.file);
     next(error);
   }
 });
 
-// DELETE: hapus foto milik sendiri + file fisiknya
+// DELETE: hapus foto + aset Cloudinary-nya.
 router.delete("/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
+    const { data: existing } = await supabase
+      .from("photos")
+      .select("id, cloudinary_public_id")
+      .eq("id", req.params.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
 
-    // Cek apakah foto-nya ada DAN milik user ini sebelum dihapus
-    const [rows] = await pool.query(
-      "SELECT * FROM photos WHERE id_photo = ? AND id_user = ?",
-      [id, req.user.id_user]
-    );
-    if (rows.length === 0) {
+    if (!existing) {
       return res.status(404).json({ message: "Photo not found" });
     }
 
-    await pool.query("DELETE FROM photos WHERE id_photo = ?", [id]);
+    const { error } = await supabase
+      .from("photos")
+      .delete()
+      .eq("id", req.params.id);
 
-    // Hapus file fisik setelah row database terhapus
-    deleteFile(rows[0].image_url);
+    if (error) return next(new Error(error.message));
+
+    if (existing.cloudinary_public_id) {
+      await cloudinary.uploader
+        .destroy(existing.cloudinary_public_id, { resource_type: "image" })
+        .catch(() => {});
+    }
 
     res.json({ message: "Photo deleted" });
   } catch (error) {

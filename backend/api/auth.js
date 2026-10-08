@@ -1,58 +1,48 @@
 // api/auth.js
-// Endpoint untuk register, login, dan mengambil profil user yang sedang login.
-// Password di-hash dengan bcrypt, identitas user dikirim lewat JWT.
+// Endpoint register, login, profil user (Supabase Auth), dan upload foto profil.
+// Identitas user = Supabase Auth user (uuid). Data publik disimpan di tabel profiles.
 
 import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import "dotenv/config";
-import fs from "fs/promises";
-import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
-import pool from "../config/database.js";
+import fs from "fs/promises";
+import supabase from "../config/supabase.js";
+import cloudinary from "../config/cloudinary.js";
 import verifyToken from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Secret key JWT dari .env
-const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
-
 // ====== (ZOD) ======
-
-// Schema register: username, email, dan password punya aturan masing-masing
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-// Schema login: cukup cek tipe datanya saja
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
 });
 
-// ====== HELPER ======
-
-// Membuat JWT berisi id_user
-function generateToken(id_user) {
-  return jwt.sign({ id_user }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+// Bentuk respons user yang seragam untuk frontend lama (id_user dipetakan ke uuid).
+function serializeProfile(profile, email) {
+  return {
+    id_user: profile.id,
+    username: profile.username,
+    email: email ?? null,
+    full_name: profile.full_name,
+    bio: profile.bio,
+    // Frontend lama membaca profile_picture_url; sumbernya avatar_url.
+    profile_picture_url: profile.avatar_url,
+    created_at: profile.created_at,
+  };
 }
 
 // ====== ENDPOINT ======
 
-// REGISTER: daftar user baru
+// REGISTER: buat user Supabase Auth. Trigger DB otomatis mengisi tabel profiles.
 router.post("/register", async (req, res, next) => {
   try {
-    // Validasi input dengan Zod
     const validation = registerSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
@@ -63,34 +53,41 @@ router.post("/register", async (req, res, next) => {
 
     const { username, email, password } = validation.data;
 
-    // Cek apakah email sudah terdaftar
-    const [existing] = await pool.query(
-      "SELECT id_user FROM users WHERE email = ?",
-      [email],
-    );
-    if (existing.length > 0) {
-      return res.status(409).json({ message: "Email already registered" });
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username },
+    });
+
+    if (error) {
+      // Pesan Supabase untuk email yang sudah dipakai.
+      const alreadyExists = /already|registered|exists/i.test(error.message);
+      return res.status(alreadyExists ? 409 : 400).json({
+        message: alreadyExists ? "Email already registered" : error.message,
+      });
     }
 
-    // Hash password (JANGAN pernah simpan password asli ke database)
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Login langsung supaya frontend dapat access token.
+    const { data: session, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
 
-    // Simpan user baru ke database
-    const [result] = await pool.query(
-      "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-      [username, email, hashedPassword],
-    );
-
-    // Buat token agar user langsung bisa dipakai login
-    const token = generateToken(result.insertId);
+    if (signInError) {
+      // User dibuat, tapi login otomatis gagal: minta user login manual.
+      return res.status(201).json({
+        message: "Register successful, please login",
+        data: { id_user: data.user.id, username, email, token: null },
+      });
+    }
 
     res.status(201).json({
       message: "Register successful",
       data: {
-        id_user: result.insertId,
+        id_user: data.user.id,
         username,
         email,
-        token,
+        token: session.session.access_token,
+        refresh_token: session.session.refresh_token,
       },
     });
   } catch (error) {
@@ -98,10 +95,9 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-// LOGIN: masuk dengan email dan password
+// LOGIN: autentikasi lewat Supabase Auth.
 router.post("/login", async (req, res, next) => {
   try {
-    // Validasi input dengan Zod
     const validation = loginSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
@@ -112,35 +108,30 @@ router.post("/login", async (req, res, next) => {
 
     const { email, password } = validation.data;
 
-    // Cari user berdasarkan email
-    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
-    ]);
+      password,
+    });
 
-    // Sengaja pesan errornya sama untuk email salah / password salah,
-    // supaya orang lain tidak bisa menebak email mana yang terdaftar
-    if (rows.length === 0) {
+    // Pesan seragam untuk email/password salah.
+    if (error) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const user = rows[0];
-
-    // Bandingkan password input dengan hash di database
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    // Login berhasil: buat token JWT
-    const token = generateToken(user.id_user);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .eq("id", data.user.id)
+      .maybeSingle();
 
     res.json({
       message: "Login successful",
       data: {
-        id_user: user.id_user,
-        username: user.username,
-        email: user.email,
-        token,
+        id_user: data.user.id,
+        username: profile?.username || data.user.email,
+        email: data.user.email,
+        token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
       },
     });
   } catch (error) {
@@ -148,6 +139,7 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
+// PROFILE PICTURE: upload ke Cloudinary lalu simpan ke profiles.
 router.put(
   "/profile-picture",
   verifyToken,
@@ -158,12 +150,13 @@ router.put(
         return res.status(400).json({ message: "Image file is required" });
       }
 
-      const [users] = await pool.query(
-        "SELECT profile_picture_public_id FROM users WHERE id_user = ?",
-        [req.user.id_user],
-      );
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("avatar_url, avatar_public_id")
+        .eq("id", req.user.id)
+        .maybeSingle();
 
-      if (users.length === 0) {
+      if (!profiles) {
         return res.status(404).json({ message: "User not found" });
       }
 
@@ -172,34 +165,31 @@ router.put(
         resource_type: "image",
       });
 
-      try {
-        await pool.query(
-          `UPDATE users
-           SET profile_picture_url = ?, profile_picture_public_id = ?
-           WHERE id_user = ?`,
-          [uploadedImage.secure_url, uploadedImage.public_id, req.user.id_user],
-        );
-      } catch (databaseError) {
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: uploadedImage.secure_url,
+          avatar_public_id: uploadedImage.public_id,
+        })
+        .eq("id", req.user.id);
+
+      if (updateError) {
+        // Rollback aset Cloudinary bila update database gagal.
         await cloudinary.uploader
           .destroy(uploadedImage.public_id, { resource_type: "image" })
           .catch(() => {});
-
-        throw databaseError;
+        throw new Error(updateError.message);
       }
 
-      const oldPublicId = users[0].profile_picture_public_id;
-
-      if (oldPublicId) {
+      if (profiles.avatar_public_id) {
         await cloudinary.uploader
-          .destroy(oldPublicId, { resource_type: "image" })
+          .destroy(profiles.avatar_public_id, { resource_type: "image" })
           .catch(() => {});
       }
 
       res.json({
         message: "Profile picture updated",
-        data: {
-          profile_picture_url: uploadedImage.secure_url,
-        },
+        data: { profile_picture_url: uploadedImage.secure_url },
       });
     } catch (error) {
       next(error);
@@ -211,22 +201,21 @@ router.put(
   },
 );
 
-// ME: profil user yang sedang login (butuh token)
+// ME: profil user yang sedang login.
 router.get("/me", verifyToken, async (req, res, next) => {
   try {
-    // req.user diisi oleh authMiddleware setelah token diverifikasi
-    const [rows] = await pool.query(
-      "SELECT id_user, username, email, created_at, profile_picture_url FROM users WHERE id_user = ?",
-      [req.user.id_user],
-    );
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, bio, avatar_url, created_at")
+      .eq("id", req.user.id)
+      .maybeSingle();
 
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (error) return next(new Error(error.message));
+    if (!data) return res.status(404).json({ message: "User not found" });
 
     res.json({
       message: "Profile fetched",
-      data: rows[0],
+      data: serializeProfile(data, req.user.email),
     });
   } catch (error) {
     next(error);

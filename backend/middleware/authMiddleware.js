@@ -1,13 +1,11 @@
 // middleware/authMiddleware.js
-// Middleware untuk melindungi endpoint yang butuh login.
-// Cara kerjanya: baca header Authorization, verifikasi token JWT,
-// lalu simpan data user di req.user agar bisa dipakai endpoint berikutnya.
+// Melindungi endpoint yang butuh login.
+// Token yang dikirim frontend adalah access token Supabase Auth.
+// Di sini token diverifikasi ke Supabase, lalu data user disimpan di req.user.
 
-import jwt from "jsonwebtoken";
+import supabase from "../config/supabase.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
-
-export default function verifyToken(req, res, next) {
+export default async function verifyToken(req, res, next) {
   // Ambil header "Authorization: Bearer <token>"
   const authHeader = req.headers.authorization;
 
@@ -16,18 +14,25 @@ export default function verifyToken(req, res, next) {
     return res.status(401).json({ message: "Token is required" });
   }
 
-  // Potong bagian "Bearer " agar tersisa token-nya saja
   const token = authHeader.split(" ")[1];
 
   try {
-    // Verifikasi token: kalau tidak valid/kadaluarsa, akan throw error
-    const decoded = jwt.verify(token, JWT_SECRET);
+    // Verifikasi token ke Supabase (juga memastikan user masih ada)
+    const { data, error } = await supabase.auth.getUser(token);
 
-    // Simpan payload (id_user) ke req.user agar dipakai endpoint tujuan
-    req.user = decoded;
+    if (error || !data?.user) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
 
-    next(); // lanjut ke endpoint
-  } catch (error) {
+    // Simpan user supabase (id = uuid) ke req.user agar dipakai endpoint
+    req.user = {
+      id: data.user.id,
+      email: data.user.email,
+      accessToken: token,
+    };
+
+    next();
+  } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 }
