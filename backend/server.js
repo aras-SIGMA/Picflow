@@ -3,12 +3,18 @@
 
 import express from "express";
 import cors from "cors";
-import "dotenv/config"; // load file .env
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+
 import categoryRouter from "./api/category.js";
 import authRouter from "./api/auth.js";
 import photoRouter from "./api/photo.js";
 import errorHandler from "./middleware/errorHandler.js";
-import pool from "./config/database.js";
+import supabase from "./config/supabase.js";
 
 const app = express();
 
@@ -17,9 +23,6 @@ app.use(cors());
 
 // Agar Express bisa membaca body JSON dari request
 app.use(express.json());
-
-// Agar file di folder uploads/ bisa diakses lewat URL (misal /uploads/namafile.jpg)
-app.use("/uploads", express.static("uploads"));
 
 // ====== ENDPOINT UTAMA ======
 
@@ -30,11 +33,14 @@ app.get("/api", (req, res) => {
   });
 });
 
-// Endpoint test koneksi database
+// Endpoint test koneksi database Supabase
 app.get("/api/test/database", async (req, res, next) => {
   try {
-    // Query paling sederhana untuk cek koneksi MySQL
-    await pool.query("SELECT 1");
+    const { error } = await supabase
+      .from("categories")
+      .select("id", { count: "exact", head: true });
+
+    if (error) throw new Error(error.message);
 
     res.json({
       message: "Database connection successful",

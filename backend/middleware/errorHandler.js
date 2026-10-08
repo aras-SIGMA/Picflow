@@ -18,10 +18,17 @@ export default function errorHandler(err, req, res, next) {
     return res.status(400).json({ message: err.message });
   }
 
-  // Duplikat data (kolom unique di MySQL), misal nama category sudah dipakai
-  if (err.code === "ER_DUP_ENTRY") {
+  // Duplikat data (unique constraint PostgreSQL, mis. nama category sudah dipakai)
+  if (err.code === "23505") {
     return res.status(409).json({
       message: "Data already exists",
+    });
+  }
+
+  // Melanggar foreign key (mis. kategori masih dipakai foto)
+  if (err.code === "23503") {
+    return res.status(409).json({
+      message: "Data is still referenced by other records",
     });
   }
 

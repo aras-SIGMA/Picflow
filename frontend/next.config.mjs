@@ -9,6 +9,11 @@ const nextConfig = {
         port: "8000",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
     // Backend Express berjalan di localhost:8000 (IP loopback), jadi next/image
     // harus diizinkan mengambil gambar dari IP privat. Tanpa ini, Next.js 16
