@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* Izinkan next/image load gambar dari Express (folder /uploads) */
+  /* Izinkan next/image load gambar dari Express (folder /uploads) dan Cloudinary */
   images: {
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 400],
     remotePatterns: [
       {
         protocol: "http",

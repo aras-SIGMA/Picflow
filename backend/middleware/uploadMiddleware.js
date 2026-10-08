@@ -31,21 +31,21 @@ const storage = multer.diskStorage({
 
 // Hanya izinkan file gambar (tolak file lain seperti .exe, .pdf)
 function fileFilter(req, file, cb) {
-  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".tif", ".tiff"];
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (allowed.includes(ext)) {
+  if (allowed.includes(ext) || file.mimetype === "image/tiff") {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed (jpg, jpeg, png, webp, gif)"));
+    cb(new Error("Only image files are allowed (jpg, jpeg, png, webp, gif, tiff)"));
   }
 }
 
-// Batas ukuran 5MB agar tidak memberatkan server
+// Batas ukuran 25MB sesuai spesifikasi PRD
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 },
 });
 
 // Export agar bisa dipakai di api/photo.js sebagai upload.single("image")

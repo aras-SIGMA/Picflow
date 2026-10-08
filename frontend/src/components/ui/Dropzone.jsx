@@ -9,8 +9,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, RefreshCcw, Trash2 } from "lucide-react";
 import { EASE } from "./motion";
 
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 5 * 1024 * 1024;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/tiff"];
+const MAX_SIZE = 25 * 1024 * 1024;
 
 function formatSize(bytes) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -29,8 +29,14 @@ export default function Dropzone({
 
   function validate(selected) {
     if (!selected) return null;
-    if (!ALLOWED.includes(selected.type)) return "Gunakan gambar JPG, PNG, WEBP, atau GIF.";
-    if (selected.size > MAX_SIZE) return "Ukuran gambar maksimal 5MB.";
+    const isTiff =
+      selected.type === "image/tiff" ||
+      selected.name.toLowerCase().endsWith(".tif") ||
+      selected.name.toLowerCase().endsWith(".tiff");
+    if (!ALLOWED.includes(selected.type) && !isTiff) {
+      return "Gunakan gambar JPG, PNG, WEBP, GIF, atau TIFF.";
+    }
+    if (selected.size > MAX_SIZE) return "Ukuran gambar maksimal 25MB.";
     return null;
   }
 
@@ -61,7 +67,7 @@ export default function Dropzone({
       <input
         ref={inputRef}
         type="file"
-        accept={ALLOWED.join(",")}
+        accept={[...ALLOWED, ".tif", ".tiff"].join(",")}
         className="hidden"
         onChange={onInputChange}
       />
@@ -130,7 +136,7 @@ export default function Dropzone({
           >
             <ImagePlus size={28} className={dragOver ? "text-accent" : "text-faint"} />
             <span className="text-sm text-ink">{label}</span>
-            <span className="text-xs text-faint">JPG, PNG, WEBP, atau GIF · maks 5MB</span>
+            <span className="text-xs text-faint">JPG, PNG, WEBP, atau TIFF · maks 25MB</span>
           </motion.button>
         )}
       </AnimatePresence>
