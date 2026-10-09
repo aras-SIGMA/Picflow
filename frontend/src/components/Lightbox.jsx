@@ -6,13 +6,15 @@
 // panel dan dikembalikan ke pemicu saat ditutup. Menampilkan floating
 // info card bergaya referensi: kategori, tanggal, deskripsi, dan link
 // beraksen ungu ke halaman edit.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
+  Camera,
   ExternalLink,
+  MessageSquare,
   Pencil,
   Tag,
   X,
@@ -21,15 +23,24 @@ import { fileUrl } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { EASE } from "@/components/ui/motion";
 import ExifMetadataPanel from "./ExifMetadataPanel";
+import LikeButton from "./LikeButton";
+import CommentSection from "./CommentSection";
+import FollowButton from "./FollowButton";
 
 export default function Lightbox({ photo, layoutId, onClose }) {
   const panelRef = useRef(null);
-  // Ref agar efek tidak re-run tiap render (onClose biasanya inline arrow).
   const onCloseRef = useRef(onClose);
+  const [activeTab, setActiveTab] = useState("exif"); // "exif" | "comments"
+  const [commentsCount, setCommentsCount] = useState(photo?.comments_count || 0);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+
+  useEffect(() => {
+    if (!photo) return;
+    setCommentsCount(photo.comments_count || 0);
+  }, [photo]);
 
   useEffect(() => {
     if (!photo) return;
@@ -51,6 +62,10 @@ export default function Lightbox({ photo, layoutId, onClose }) {
 
   if (!photo) return null;
   const src = photo.high_res_url || fileUrl(photo.image_url);
+
+  const creatorName = photo.creator?.username || null;
+  const creatorId = photo.creator?.id_user || photo.id_user;
+  const creatorAvatar = photo.creator?.avatar_url || null;
 
   return (
     <motion.div
@@ -83,11 +98,12 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           <X size={16} />
         </button>
 
+        {/* Stage Gambar Utama */}
         <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black/40">
           <motion.div
             layoutId={layoutId ? `${layoutId}-${photo.id_photo}` : undefined}
             transition={{ duration: 0.5, ease: EASE }}
-            className="relative flex max-h-[50vh] min-h-0 w-full items-center justify-center"
+            className="relative flex max-h-[48vh] min-h-0 w-full items-center justify-center"
           >
             {src ? (
               <Image
@@ -97,7 +113,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 width={2048}
                 height={1536}
                 sizes="(max-width: 1024px) 100vw, 2048px"
-                className="h-auto max-h-[50vh] w-auto max-w-full object-contain"
+                className="h-auto max-h-[48vh] w-auto max-w-full object-contain"
                 priority
               />
             ) : (
@@ -106,10 +122,34 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           </motion.div>
         </div>
 
-        {/* Floating info card & EXIF Technical Panel */}
-        <div className="max-h-[42vh] overflow-y-auto border-t border-line p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
+        {/* Floating info card, Social Actions & Panels */}
+        <div className="max-h-[44vh] overflow-y-auto border-t border-line p-5">
+          {/* Header Bar: Creator, Title, Actions */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              {/* Creator info + Follow Button */}
+              {creatorName && (
+                <div className="mb-2 flex items-center gap-2.5">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-[var(--surface)] text-[10px] font-bold text-ink">
+                    {creatorAvatar ? (
+                      <Image
+                        src={creatorAvatar}
+                        alt={creatorName}
+                        width={24}
+                        height={24}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      creatorName.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold text-ink">
+                    @{creatorName}
+                  </span>
+                  <FollowButton creatorId={creatorId} size="sm" />
+                </div>
+              )}
+
               <h2 className="display-2 text-xl!">{photo.title}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
                 <span className="inline-flex items-center gap-1.5">
@@ -134,25 +174,90 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Social & Nav Actions */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <LikeButton
+                photoId={photo.id_photo}
+                initialLiked={photo.is_liked}
+                initialCount={photo.likes_count}
+              />
               <Link
                 href={`/photos/${photo.id_photo}`}
-                className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-ink"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors hover:text-ink"
               >
                 <ExternalLink size={13} />
-                Detail penuh
+                Detail
               </Link>
-              <Link
-                href={`/addphoto?id=${photo.id_photo}`}
-                className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
-              >
-                <Pencil size={13} />
-                Edit foto
-              </Link>
+              {photo.is_owner && (
+                <Link
+                  href={`/addphoto?id=${photo.id_photo}`}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-accent transition-opacity hover:opacity-80"
+                >
+                  <Pencil size={13} />
+                  Edit
+                </Link>
+              )}
             </div>
           </div>
 
-          <ExifMetadataPanel photo={photo} className="mt-4" />
+          {/* Tab Selector: EXIF Parameter vs Diskusi Komentar */}
+          <div className="mt-5 flex gap-2 border-b border-line/60 pb-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("exif")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+                activeTab === "exif"
+                  ? "bg-accent/20 text-accent font-semibold"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Camera size={13} />
+              EXIF Parameter
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("comments")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+                activeTab === "comments"
+                  ? "bg-accent/20 text-accent font-semibold"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <MessageSquare size={13} />
+              Diskusi & Komentar ({commentsCount})
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="mt-4">
+            <AnimatePresence mode="wait">
+              {activeTab === "exif" ? (
+                <motion.div
+                  key="tab-exif"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ExifMetadataPanel photo={photo} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="tab-comments"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CommentSection
+                    photoId={photo.id_photo}
+                    initialCount={commentsCount}
+                    onCountChange={setCommentsCount}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
     </motion.div>

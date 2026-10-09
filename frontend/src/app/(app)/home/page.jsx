@@ -17,9 +17,10 @@ import {
   useReducedMotion,
   useSpring,
 } from "framer-motion";
-import { ArrowRight, Camera, ImagePlus, RefreshCcw, Search } from "lucide-react";
+import { ArrowRight, Camera, Compass, ImagePlus, RefreshCcw, Search, Users } from "lucide-react";
 import { fileUrl, getToken, listPhotos, listCategories, deletePhoto } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
+import { subscribeRealtime } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
 import PhotoCard from "@/components/PhotoCard";
 import MasonryGrid from "@/components/MasonryGrid";
@@ -39,11 +40,12 @@ import {
 import { EASE, fadeUp } from "@/components/ui/motion";
 
 export default function HomePage() {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const reduced = useReducedMotion();
 
+  const [feedTab, setFeedTab] = useState("explore"); // "explore" | "following"
   const [photos, setPhotos] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -69,7 +71,7 @@ export default function HomePage() {
     glowY.set(((e.clientY - r.top) / r.height - 0.5) * 24);
   }
 
-  // LOAD: ambil photos + categories setelah auth siap (logika lama).
+  // LOAD: ambil feed foto sesuai tab (explore / following) + categories
   useEffect(() => {
     if (loading) return;
     if (!getToken()) {
@@ -77,8 +79,13 @@ export default function HomePage() {
       return;
     }
     async function load() {
+      setFetching(true);
+      setError("");
       try {
-        const [pRes, cRes] = await Promise.all([listPhotos(), listCategories()]);
+        const [pRes, cRes] = await Promise.all([
+          listPhotos({ feed: feedTab }),
+          listCategories(),
+        ]);
         setPhotos(pRes.data || []);
         setCategories(cRes.data || []);
       } catch (err) {
@@ -89,7 +96,50 @@ export default function HomePage() {
       }
     }
     load();
-  }, [loading, router]);
+  }, [loading, router, feedTab]);
+
+  // Real-time synchronization event listener
+  useEffect(() => {
+    const unsubscribe = subscribeRealtime(({ event, payload }) => {
+      if (event === "photo:liked") {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            String(p.id_photo) === String(payload.photo_id)
+              ? {
+                  ...p,
+                  likes_count: payload.likes_count,
+                  ...(payload.user_id === user?.id_user
+                    ? { is_liked: payload.is_liked }
+                    : {}),
+                }
+              : p
+          )
+        );
+      } else if (event === "comment:added") {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            String(p.id_photo) === String(payload.photo_id)
+              ? { ...p, comments_count: payload.comments_count }
+              : p
+          )
+        );
+      } else if (event === "comment:deleted") {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            String(p.id_photo) === String(payload.photo_id)
+              ? { ...p, comments_count: payload.comments_count }
+              : p
+          )
+        );
+      } else if (event === "creator:followed" && feedTab === "following") {
+        listPhotos({ feed: "following" }).then((res) => {
+          setPhotos(res.data || []);
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [feedTab, user?.id_user]);
 
   // DELETE: hapus foto lalu buang dari state (logika lama, modal custom).
   async function handleDeleteConfirmed() {
@@ -136,7 +186,10 @@ export default function HomePage() {
     setError("");
     setFetching(true);
     try {
-      const [pRes, cRes] = await Promise.all([listPhotos(), listCategories()]);
+      const [pRes, cRes] = await Promise.all([
+        listPhotos({ feed: feedTab }),
+        listCategories(),
+      ]);
       setPhotos(pRes.data || []);
       setCategories(cRes.data || []);
     } catch (err) {
@@ -274,6 +327,43 @@ export default function HomePage() {
           </div>
         ) : (
           <>
+            {/* Feed Switcher (Explore vs Following) */}
+            <Reveal>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+                <div className="flex items-center gap-2 rounded-full border border-line bg-[var(--surface)] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setFeedTab("explore")}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                      feedTab === "explore"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <Compass size={14} />
+                    Explore Komunitas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedTab("following")}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                      feedTab === "following"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <Users size={14} />
+                    Following
+                  </button>
+                </div>
+                <span className="text-xs text-faint">
+                  {feedTab === "explore"
+                    ? "Feed publik semua karya fotografer"
+                    : "Feed karya dari kreator yang kamu ikuti"}
+                </span>
+              </div>
+            </Reveal>
+
             {/* Search + filter chips */}
             <Reveal>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -322,30 +412,52 @@ export default function HomePage() {
 
             {/* Empty state ilustratif */}
             {shown.length === 0 ? (
-              <div className="mt-8 flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-20 text-center">
-                <div className="rounded-full border border-line p-4">
-                  <ImagePlus size={24} className="text-faint" />
+              feedTab === "following" ? (
+                <div className="mt-8 flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-20 text-center">
+                  <div className="rounded-full border border-line p-4">
+                    <Users size={24} className="text-faint" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-ink">Belum ada karya di tab Following</p>
+                    <p className="mt-1 max-w-md text-sm text-muted">
+                      Kamu belum mengikuti kreator manapun atau mereka belum mengunggah karya baru. Jelajahi Explore untuk menemukan kreator inspiratif!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFeedTab("explore")}
+                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
+                  >
+                    <Compass size={15} />
+                    Jelajahi Explore
+                  </button>
                 </div>
-                <div>
-                  <p className="font-medium text-ink">
-                    {photos.length === 0
-                      ? "Belum ada foto"
-                      : "Tidak ada foto yang cocok"}
-                  </p>
-                  <p className="mt-1 text-sm text-muted">
-                    {photos.length === 0
-                      ? "Upload karya pertamamu untuk mengisi vault ini."
-                      : "Coba kata kunci atau kategori lain."}
-                  </p>
+              ) : (
+                <div className="mt-8 flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-20 text-center">
+                  <div className="rounded-full border border-line p-4">
+                    <ImagePlus size={24} className="text-faint" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-ink">
+                      {photos.length === 0
+                        ? "Belum ada foto"
+                        : "Tidak ada foto yang cocok"}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {photos.length === 0
+                        ? "Upload karya pertamamu untuk mengisi vault ini."
+                        : "Coba kata kunci atau kategori lain."}
+                    </p>
+                  </div>
+                  <Link
+                    href="/addphoto"
+                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
+                  >
+                    <ImagePlus size={15} />
+                    Tambah Foto
+                  </Link>
                 </div>
-                <Link
-                  href="/addphoto"
-                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
-                >
-                  <ImagePlus size={15} />
-                  Tambah Foto
-                </Link>
-              </div>
+              )
             ) : (
               <MasonryGrid className="mt-6">
                 {shown.map((p) => (
@@ -356,7 +468,7 @@ export default function HomePage() {
                     onOpen={setSelected}
                     onPeek={setPeek}
                     onDelete={setPendingDelete}
-                    showActions
+                    showActions={p.is_owner}
                   />
                 ))}
               </MasonryGrid>

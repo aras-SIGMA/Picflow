@@ -61,11 +61,11 @@ export default function AccountPage() {
   const [deleting, setDeleting] = useState(false);
   const [categoryError, setCategoryError] = useState("");
 
-  // LOAD: profil + categories + photos (semua endpoint lama).
+  // LOAD: profil + categories + my photos.
   // fetchAll tidak menyentuh setState, jadi aman dipanggil dari effect
   // maupun event handler (aturan react-hooks/set-state-in-effect).
   const fetchAll = useCallback(
-    () => Promise.all([getMe(), listCategories(), listPhotos()]),
+    () => Promise.all([getMe(), listCategories(), listPhotos({ feed: "my" })]),
     [],
   );
 

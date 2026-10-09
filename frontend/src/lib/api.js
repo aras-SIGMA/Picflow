@@ -77,7 +77,16 @@ export const uploadProfilePicture = (formData) =>
   apiFetch("/auth/profile-picture", { method: "PUT", formData });
 
 // ====== PHOTOS ======
-export const listPhotos = () => apiFetch("/photos");
+export const listPhotos = (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.feed) query.set("feed", params.feed);
+  if (params.category_id && params.category_id !== "all") {
+    query.set("category_id", params.category_id);
+  }
+  if (params.user_id) query.set("user_id", params.user_id);
+  const qs = query.toString();
+  return apiFetch(qs ? `/photos?${qs}` : "/photos");
+};
 export const getPhoto = (id) => apiFetch(`/photos/${id}`);
 export const createPhoto = (formData) =>
   apiFetch("/photos", { method: "POST", formData });
@@ -85,6 +94,22 @@ export const updatePhoto = (id, formData) =>
   apiFetch(`/photos/${id}`, { method: "PUT", formData });
 export const deletePhoto = (id) =>
   apiFetch(`/photos/${id}`, { method: "DELETE" });
+
+// ====== SOCIAL: LIKES & COMMENTS ======
+export const togglePhotoLike = (id) =>
+  apiFetch(`/photos/${id}/like`, { method: "POST" });
+export const getPhotoComments = (id) =>
+  apiFetch(`/photos/${id}/comments`);
+export const addPhotoComment = (id, content) =>
+  apiFetch(`/photos/${id}/comments`, { method: "POST", body: { content } });
+export const deletePhotoComment = (photoId, commentId) =>
+  apiFetch(`/photos/${photoId}/comments/${commentId}`, { method: "DELETE" });
+
+// ====== SOCIAL: FOLLOWS ======
+export const toggleFollowUser = (userId) =>
+  apiFetch(`/users/${userId}/follow`, { method: "POST" });
+export const getUserFollowStatus = (userId) =>
+  apiFetch(`/users/${userId}/follow-status`);
 
 // ====== CATEGORIES ======
 export const listCategories = () => apiFetch("/categories", { auth: false });

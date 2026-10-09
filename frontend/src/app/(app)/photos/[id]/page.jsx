@@ -19,6 +19,9 @@ import {
 import { fileUrl, getPhoto, getToken } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import ExifMetadataPanel from "@/components/ExifMetadataPanel";
+import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
+import FollowButton from "@/components/FollowButton";
 import ApertureLoader from "@/components/ui/ApertureLoader";
 import Button from "@/components/ui/Button";
 import PillBadge from "@/components/ui/PillBadge";
@@ -135,6 +138,11 @@ export default function PhotoDetailPage() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <LikeButton
+              photoId={photo.id_photo}
+              initialLiked={photo.is_liked}
+              initialCount={photo.likes_count}
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -144,15 +152,17 @@ export default function PhotoDetailPage() {
               {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
               {copied ? "Tersalin" : "Salin link"}
             </Button>
-            <Button
-              href={`/addphoto?id=${photo.id_photo}`}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              <Pencil size={13} />
-              Edit karya
-            </Button>
+            {photo.is_owner && (
+              <Button
+                href={`/addphoto?id=${photo.id_photo}`}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                <Pencil size={13} />
+                Edit karya
+              </Button>
+            )}
           </div>
         </div>
 
@@ -180,6 +190,35 @@ export default function PhotoDetailPage() {
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Info */}
           <div className="lg:col-span-2">
+            {/* Creator Bar */}
+            {photo.creator?.username && (
+              <div className="mb-4 flex items-center justify-between rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-line bg-[var(--bg-elevated)] text-xs font-bold text-ink">
+                    {photo.creator.avatar_url ? (
+                      <Image
+                        src={photo.creator.avatar_url}
+                        alt={photo.creator.username}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      photo.creator.username.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-ink">
+                      @{photo.creator.username}
+                    </p>
+                    <p className="text-[11px] text-faint">Kreator Foto</p>
+                  </div>
+                </div>
+                <FollowButton
+                  creatorId={photo.creator.id_user || photo.id_user}
+                />
+              </div>
+            )}
+
             <PillBadge>
               {photo.category_name || `#${photo.id_category}`}
             </PillBadge>
@@ -217,6 +256,14 @@ export default function PhotoDetailPage() {
             {/* EXIF Panel */}
             <div className="mt-6">
               <ExifMetadataPanel photo={photo} />
+            </div>
+
+            {/* Komentar & Diskusi */}
+            <div className="mt-6">
+              <CommentSection
+                photoId={photo.id_photo}
+                initialCount={photo.comments_count}
+              />
             </div>
           </div>
 

@@ -12,6 +12,7 @@ import supabase from "../config/supabase.js";
 import cloudinary from "../config/cloudinary.js";
 import verifyToken from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
+import { broadcastEvent } from "../lib/realtime.js";
 
 const router = express.Router();
 
@@ -35,17 +36,37 @@ function getCloudinaryDeliveryUrl(imageUrl, width) {
   );
 }
 
-// Petakan baris Supabase ke bentuk lama frontend.
-function serializePhoto(row, categoryName) {
+// Petakan baris Supabase ke bentuk seragam untuk frontend.
+function serializePhoto(row, categoryName, isLiked = false) {
   const isCloudinary =
     typeof row.image_url === "string" &&
     row.image_url.includes("res.cloudinary.com");
+
+  const likesCount = Array.isArray(row.likes)
+    ? (row.likes[0]?.count ?? 0)
+    : typeof row.likes_count === "number"
+      ? row.likes_count
+      : 0;
+
+  const commentsCount = Array.isArray(row.comments)
+    ? (row.comments[0]?.count ?? 0)
+    : typeof row.comments_count === "number"
+      ? row.comments_count
+      : 0;
+
+  const creator = row.profiles
+    ? {
+        id_user: row.profiles.id,
+        username: row.profiles.username,
+        avatar_url: row.profiles.avatar_url,
+      }
+    : null;
 
   return {
     id_photo: row.id,
     id_user: row.user_id,
     id_category: row.category_id,
-    category_name: categoryName ?? row.category_name ?? null,
+    category_name: categoryName ?? row.category_name ?? row.categories?.name ?? null,
     title: row.title,
     description: row.description,
     image_url: row.image_url,
@@ -71,6 +92,10 @@ function serializePhoto(row, categoryName) {
     taken_at: row.taken_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    likes_count: likesCount,
+    comments_count: commentsCount,
+    is_liked: Boolean(isLiked),
+    creator,
   };
 }
 
@@ -149,6 +174,14 @@ async function uploadToCloudinary(file, folder) {
   return result;
 }
 
+const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty")
+    .max(1000, "Comment cannot exceed 1000 characters"),
+});
+
 // ====== ROUTES ======
 
 // CREATE: tambah foto baru + upload ke Cloudinary + EXIF.
@@ -202,7 +235,7 @@ router.post("/", upload.single("image"), async (req, res, next) => {
           : null,
         ...exif,
       })
-      .select("*")
+      .select("*, categories(name), profiles(id, username, avatar_url)")
       .single();
 
     if (error) {
@@ -215,7 +248,7 @@ router.post("/", upload.single("image"), async (req, res, next) => {
 
     res.status(201).json({
       message: "Photo created",
-      data: serializePhoto(data),
+      data: serializePhoto(data, data.categories?.name, false),
     });
   } catch (error) {
     await cleanupTemp(req.file);
@@ -223,21 +256,62 @@ router.post("/", upload.single("image"), async (req, res, next) => {
   }
 });
 
-// READ: semua foto milik user yang login.
+// READ: feed foto (Explore komunitas, Following, atau My photos).
 router.get("/", async (req, res, next) => {
   try {
-    const { data, error } = await supabase
+    const feed = req.query.feed || "explore";
+    const categoryId = req.query.category_id || req.query.id_category;
+    const targetUserId = req.query.user_id;
+
+    let query = supabase
       .from("photos")
-      .select("*, categories(name)")
-      .eq("user_id", req.user.id)
+      .select(
+        "*, categories(name), profiles(id, username, avatar_url), likes(count), comments(count)"
+      )
       .order("created_at", { ascending: false });
 
+    if (feed === "my" || feed === "mine") {
+      query = query.eq("user_id", req.user.id);
+    } else if (feed === "following") {
+      // Ambil daftar user yang di-follow oleh user saat ini
+      const { data: followRows } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", req.user.id);
+
+      const followingIds = (followRows || []).map((r) => r.following_id);
+      if (followingIds.length === 0) {
+        return res.json({ message: "Photos fetched", data: [] });
+      }
+      query = query.in("user_id", followingIds);
+    } else if (targetUserId) {
+      query = query.eq("user_id", targetUserId);
+    }
+
+    if (categoryId && categoryId !== "all") {
+      query = query.eq("category_id", Number(categoryId));
+    }
+
+    const { data, error } = await query;
     if (error) return next(new Error(error.message));
+
+    // Ambil daftar like milik user saat ini untuk menandai is_liked
+    const photoIds = (data || []).map((p) => p.id);
+    let userLikedSet = new Set();
+    if (photoIds.length > 0) {
+      const { data: userLikes } = await supabase
+        .from("likes")
+        .select("photo_id")
+        .eq("user_id", req.user.id)
+        .in("photo_id", photoIds);
+
+      userLikedSet = new Set((userLikes || []).map((l) => l.photo_id));
+    }
 
     res.json({
       message: "Photos fetched",
       data: (data || []).map((row) =>
-        serializePhoto(row, row.categories?.name),
+        serializePhoto(row, row.categories?.name, userLikedSet.has(row.id))
       ),
     });
   } catch (error) {
@@ -245,22 +319,271 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// READ: satu foto milik sendiri.
+// READ: satu foto detail.
 router.get("/:id", async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from("photos")
-      .select("*, categories(name)")
+      .select(
+        "*, categories(name), profiles(id, username, avatar_url), likes(count), comments(count)"
+      )
       .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
       .maybeSingle();
 
     if (error) return next(new Error(error.message));
     if (!data) return res.status(404).json({ message: "Photo not found" });
 
+    // Cek apakah user saat ini menyukai foto ini
+    const { data: userLike } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("photo_id", data.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    const serialized = serializePhoto(
+      data,
+      data.categories?.name,
+      Boolean(userLike)
+    );
+    serialized.is_owner = data.user_id === req.user.id;
+
     res.json({
       message: "Photo fetched",
-      data: serializePhoto(data, data.categories?.name),
+      data: serialized,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// LIKE / UNLIKE: toggle like foto.
+router.post("/:id/like", async (req, res, next) => {
+  try {
+    const photoId = req.params.id;
+
+    // Pastikan foto ada
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id, user_id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    // Cek apakah sudah di-like sebelumnya
+    const { data: existingLike } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("photo_id", photoId)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    let isLiked = false;
+    if (existingLike) {
+      const { error: delErr } = await supabase
+        .from("likes")
+        .delete()
+        .eq("id", existingLike.id);
+      if (delErr) return next(new Error(delErr.message));
+      isLiked = false;
+    } else {
+      const { error: insErr } = await supabase
+        .from("likes")
+        .insert({ photo_id: photoId, user_id: req.user.id });
+      if (insErr) return next(new Error(insErr.message));
+      isLiked = true;
+    }
+
+    // Hitung total like terkini
+    const { count } = await supabase
+      .from("likes")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const likesCount = count ?? 0;
+
+    // Broadcast update real-time
+    broadcastEvent("photo:liked", {
+      photo_id: photoId,
+      user_id: req.user.id,
+      is_liked: isLiked,
+      likes_count: likesCount,
+    });
+
+    res.json({
+      message: isLiked ? "Photo liked" : "Photo unliked",
+      data: {
+        is_liked: isLiked,
+        likes_count: likesCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: daftar komentar suatu foto.
+router.get("/:id/comments", async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(
+        "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .eq("photo_id", req.params.id)
+      .order("created_at", { ascending: true });
+
+    if (error) return next(new Error(error.message));
+
+    const comments = (data || []).map((c) => ({
+      id_comment: c.id,
+      id_photo: c.photo_id,
+      id_user: c.user_id,
+      content: c.content,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+      user: {
+        id_user: c.profiles?.id,
+        username: c.profiles?.username,
+        avatar_url: c.profiles?.avatar_url,
+      },
+      is_owner: c.user_id === req.user.id,
+    }));
+
+    res.json({
+      message: "Comments fetched",
+      data: comments,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: tambah komentar baru.
+router.post("/:id/comments", async (req, res, next) => {
+  try {
+    const validation = commentSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.issues.map((i) => i.message),
+      });
+    }
+
+    const photoId = req.params.id;
+
+    // Pastikan foto ada
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("comments")
+      .insert({
+        photo_id: photoId,
+        user_id: req.user.id,
+        content: validation.data.content,
+      })
+      .select(
+        "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .single();
+
+    if (insErr) return next(new Error(insErr.message));
+
+    const { count } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const commentsCount = count ?? 0;
+    const commentPayload = {
+      id_comment: inserted.id,
+      id_photo: inserted.photo_id,
+      id_user: inserted.user_id,
+      content: inserted.content,
+      created_at: inserted.created_at,
+      updated_at: inserted.updated_at,
+      user: {
+        id_user: inserted.profiles?.id,
+        username: inserted.profiles?.username,
+        avatar_url: inserted.profiles?.avatar_url,
+      },
+      is_owner: true,
+    };
+
+    // Broadcast penambahan komentar real-time
+    broadcastEvent("comment:added", {
+      photo_id: photoId,
+      comment: commentPayload,
+      comments_count: commentsCount,
+    });
+
+    res.status(201).json({
+      message: "Comment added",
+      data: {
+        comment: commentPayload,
+        comments_count: commentsCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: hapus komentar.
+router.delete("/:id/comments/:commentId", async (req, res, next) => {
+  try {
+    const { id: photoId, commentId } = req.params;
+
+    const { data: comment, error: cErr } = await supabase
+      .from("comments")
+      .select("id, user_id, photo_id, photos(user_id)")
+      .eq("id", commentId)
+      .eq("photo_id", photoId)
+      .maybeSingle();
+
+    if (cErr) return next(new Error(cErr.message));
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    // Izin hapus: pembuat komentar atau pemilik foto
+    const isCommentAuthor = comment.user_id === req.user.id;
+    const isPhotoOwner = comment.photos?.user_id === req.user.id;
+    if (!isCommentAuthor && !isPhotoOwner) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+
+    const { error: delErr } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (delErr) return next(new Error(delErr.message));
+
+    const { count } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const commentsCount = count ?? 0;
+
+    // Broadcast penghapusan komentar real-time
+    broadcastEvent("comment:deleted", {
+      photo_id: photoId,
+      comment_id: commentId,
+      comments_count: commentsCount,
+    });
+
+    res.json({
+      message: "Comment deleted",
+      data: { comments_count: commentsCount },
     });
   } catch (error) {
     next(error);
