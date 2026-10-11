@@ -43,6 +43,8 @@ function getSharedEventSource() {
       sharedEventSource.addEventListener("photo:liked", handleEvent("photo:liked"));
       sharedEventSource.addEventListener("comment:added", handleEvent("comment:added"));
       sharedEventSource.addEventListener("comment:deleted", handleEvent("comment:deleted"));
+      sharedEventSource.addEventListener("critique:added", handleEvent("critique:added"));
+      sharedEventSource.addEventListener("critique:deleted", handleEvent("critique:deleted"));
       sharedEventSource.addEventListener("creator:followed", handleEvent("creator:followed"));
 
       sharedEventSource.onerror = () => {
@@ -104,6 +106,10 @@ export function usePhotoRealtime(photoId, callbacks = {}) {
         callbacksRef.current.onCommentAdded(payload);
       } else if (event === "comment:deleted" && callbacksRef.current.onCommentDeleted) {
         callbacksRef.current.onCommentDeleted(payload);
+      } else if (event === "critique:added" && callbacksRef.current.onCritiqueAdded) {
+        callbacksRef.current.onCritiqueAdded(payload);
+      } else if (event === "critique:deleted" && callbacksRef.current.onCritiqueDeleted) {
+        callbacksRef.current.onCritiqueDeleted(payload);
       }
     });
 

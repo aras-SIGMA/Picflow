@@ -26,18 +26,23 @@ export default function CommentSection({
 }) {
   const { user } = useAuth();
   const toast = useToast();
+  const [prevPhotoId, setPrevPhotoId] = useState(photoId);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [content, setContent] = useState("");
   const listRef = useRef(null);
 
+  if (photoId !== prevPhotoId) {
+    setPrevPhotoId(photoId);
+    setLoading(true);
+  }
+
   // Muat daftar komentar saat pertama kali komponen dirender
   useEffect(() => {
     if (!photoId) return;
     let active = true;
 
-    setLoading(true);
     getPhotoComments(photoId)
       .then((res) => {
         if (active) {

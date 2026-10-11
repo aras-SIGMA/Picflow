@@ -17,6 +17,7 @@ export default function FollowButton({
 }) {
   const { user } = useAuth();
   const toast = useToast();
+  const [prevInitialFollowing, setPrevInitialFollowing] = useState(initialFollowing);
   const [following, setFollowing] = useState(
     initialFollowing !== null ? Boolean(initialFollowing) : false
   );
@@ -26,12 +27,15 @@ export default function FollowButton({
   // Jangan render tombol follow jika kreator adalah diri sendiri
   const isSelf = user?.id_user && String(user.id_user) === String(creatorId);
 
-  useEffect(() => {
+  if (initialFollowing !== prevInitialFollowing) {
+    setPrevInitialFollowing(initialFollowing);
     if (initialFollowing !== null) {
       setFollowing(Boolean(initialFollowing));
-      return;
     }
+  }
 
+  useEffect(() => {
+    if (initialFollowing !== null) return;
     if (!creatorId || isSelf) return;
 
     let active = true;

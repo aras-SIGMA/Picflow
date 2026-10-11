@@ -182,6 +182,82 @@ const commentSchema = z.object({
     .max(1000, "Comment cannot exceed 1000 characters"),
 });
 
+const CRITIQUE_PREFIX = "__PICFLOW_CRITIQUE__:";
+
+const critiqueSchema = z.object({
+  rating_composition: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating komposisi minimal 1")
+    .max(5, "Rating komposisi maksimal 5"),
+  rating_lighting: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating pencahayaan minimal 1")
+    .max(5, "Rating pencahayaan maksimal 5"),
+  rating_color: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating warna minimal 1")
+    .max(5, "Rating warna maksimal 5"),
+  rating_concept: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating konsep minimal 1")
+    .max(5, "Rating konsep maksimal 5"),
+  strengths: z
+    .string()
+    .trim()
+    .min(3, "Poin kekuatan minimal 3 karakter")
+    .max(2000, "Poin kekuatan maksimal 2000 karakter"),
+  improvements: z
+    .string()
+    .trim()
+    .min(3, "Saran perbaikan minimal 3 karakter")
+    .max(2000, "Saran perbaikan maksimal 2000 karakter"),
+});
+
+function calculateCritiqueStats(critiques) {
+  if (!critiques || critiques.length === 0) {
+    return {
+      total_critiques: 0,
+      avg_composition: 0,
+      avg_lighting: 0,
+      avg_color: 0,
+      avg_concept: 0,
+      overall_avg: 0,
+    };
+  }
+  const sum = critiques.reduce(
+    (acc, c) => {
+      acc.composition += c.rating_composition;
+      acc.lighting += c.rating_lighting;
+      acc.color += c.rating_color;
+      acc.concept += c.rating_concept;
+      return acc;
+    },
+    { composition: 0, lighting: 0, color: 0, concept: 0 }
+  );
+  const n = critiques.length;
+  const avg_composition = +(sum.composition / n).toFixed(1);
+  const avg_lighting = +(sum.lighting / n).toFixed(1);
+  const avg_color = +(sum.color / n).toFixed(1);
+  const avg_concept = +(sum.concept / n).toFixed(1);
+  const overall_avg = +(
+    (avg_composition + avg_lighting + avg_color + avg_concept) /
+    4
+  ).toFixed(1);
+
+  return {
+    total_critiques: n,
+    avg_composition,
+    avg_lighting,
+    avg_color,
+    avg_concept,
+    overall_avg,
+  };
+}
+
 // ====== ROUTES ======
 
 // CREATE: tambah foto baru + upload ke Cloudinary + EXIF.
@@ -437,20 +513,22 @@ router.get("/:id/comments", async (req, res, next) => {
 
     if (error) return next(new Error(error.message));
 
-    const comments = (data || []).map((c) => ({
-      id_comment: c.id,
-      id_photo: c.photo_id,
-      id_user: c.user_id,
-      content: c.content,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
-      user: {
-        id_user: c.profiles?.id,
-        username: c.profiles?.username,
-        avatar_url: c.profiles?.avatar_url,
-      },
-      is_owner: c.user_id === req.user.id,
-    }));
+    const comments = (data || [])
+      .filter((c) => !c.content?.startsWith(CRITIQUE_PREFIX))
+      .map((c) => ({
+        id_comment: c.id,
+        id_photo: c.photo_id,
+        id_user: c.user_id,
+        content: c.content,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        user: {
+          id_user: c.profiles?.id,
+          username: c.profiles?.username,
+          avatar_url: c.profiles?.avatar_url,
+        },
+        is_owner: c.user_id === req.user.id,
+      }));
 
     res.json({
       message: "Comments fetched",
@@ -584,6 +662,358 @@ router.delete("/:id/comments/:commentId", async (req, res, next) => {
     res.json({
       message: "Comment deleted",
       data: { comments_count: commentsCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: daftar kritik & saran konstruktif suatu foto beserta statistik.
+router.get("/:id/critiques", async (req, res, next) => {
+  try {
+    const photoId = req.params.id;
+
+    // 1. Coba dari tabel critiques
+    const { data, error } = await supabase
+      .from("critiques")
+      .select(
+        "id, user_id, photo_id, rating_composition, rating_lighting, rating_color, rating_concept, strengths, improvements, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .eq("photo_id", photoId)
+      .order("created_at", { ascending: false });
+
+    let critiques = [];
+    if (error) {
+      // Jika tabel critiques belum ada di Supabase (PGRST205), fallback ke comments
+      if (error.code === "PGRST205") {
+        const { data: cData, error: cErr } = await supabase
+          .from("comments")
+          .select(
+            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+          )
+          .eq("photo_id", photoId)
+          .order("created_at", { ascending: false });
+
+        if (cErr) return next(new Error(cErr.message));
+
+        critiques = (cData || [])
+          .filter((c) => c.content?.startsWith(CRITIQUE_PREFIX))
+          .map((c) => {
+            let parsed = {};
+            try {
+              parsed = JSON.parse(c.content.slice(CRITIQUE_PREFIX.length));
+            } catch (_) {}
+            const rating_comp = parsed.rating_composition || 3;
+            const rating_light = parsed.rating_lighting || 3;
+            const rating_col = parsed.rating_color || 3;
+            const rating_conc = parsed.rating_concept || 3;
+            const overall = +(
+              (rating_comp + rating_light + rating_col + rating_conc) /
+              4
+            ).toFixed(1);
+
+            return {
+              id_critique: c.id,
+              id_photo: c.photo_id,
+              id_user: c.user_id,
+              rating_composition: rating_comp,
+              rating_lighting: rating_light,
+              rating_color: rating_col,
+              rating_concept: rating_conc,
+              overall_score: overall,
+              strengths: parsed.strengths || "",
+              improvements: parsed.improvements || "",
+              created_at: c.created_at,
+              updated_at: c.updated_at,
+              user: {
+                id_user: c.profiles?.id,
+                username: c.profiles?.username,
+                avatar_url: c.profiles?.avatar_url,
+              },
+              is_owner: c.user_id === req.user.id,
+            };
+          });
+      } else {
+        return next(new Error(error.message));
+      }
+    } else {
+      critiques = (data || []).map((c) => {
+        const overall = +(
+          (c.rating_composition +
+            c.rating_lighting +
+            c.rating_color +
+            c.rating_concept) /
+          4
+        ).toFixed(1);
+        return {
+          id_critique: c.id,
+          id_photo: c.photo_id,
+          id_user: c.user_id,
+          rating_composition: c.rating_composition,
+          rating_lighting: c.rating_lighting,
+          rating_color: c.rating_color,
+          rating_concept: c.rating_concept,
+          overall_score: overall,
+          strengths: c.strengths,
+          improvements: c.improvements,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+          user: {
+            id_user: c.profiles?.id,
+            username: c.profiles?.username,
+            avatar_url: c.profiles?.avatar_url,
+          },
+          is_owner: c.user_id === req.user.id,
+        };
+      });
+    }
+
+    const stats = calculateCritiqueStats(critiques);
+
+    res.json({
+      message: "Critiques fetched",
+      data: {
+        critiques,
+        stats,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: buat kritik baru untuk suatu foto.
+router.post("/:id/critiques", async (req, res, next) => {
+  try {
+    const validation = critiqueSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.issues.map((i) => i.message),
+      });
+    }
+
+    const photoId = req.params.id;
+
+    // Pastikan foto ada dan ambil pemiliknya
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id, user_id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    // Cegah fotografer memberikan kritik pada foto miliknya sendiri
+    if (photo.user_id === req.user.id) {
+      return res.status(400).json({
+        message: "Anda tidak dapat memberikan kritik pada karya Anda sendiri.",
+      });
+    }
+
+    const {
+      rating_composition,
+      rating_lighting,
+      rating_color,
+      rating_concept,
+      strengths,
+      improvements,
+    } = validation.data;
+
+    let createdCritique = null;
+
+    // 1. Coba insert ke tabel critiques
+    const { data: insData, error: insErr } = await supabase
+      .from("critiques")
+      .insert({
+        photo_id: photoId,
+        user_id: req.user.id,
+        rating_composition,
+        rating_lighting,
+        rating_color,
+        rating_concept,
+        strengths,
+        improvements,
+      })
+      .select(
+        "id, user_id, photo_id, rating_composition, rating_lighting, rating_color, rating_concept, strengths, improvements, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .single();
+
+    if (insErr) {
+      if (insErr.code === "PGRST205") {
+        // Fallback simpan ke comments
+        const fallbackContent =
+          CRITIQUE_PREFIX +
+          JSON.stringify({
+            rating_composition,
+            rating_lighting,
+            rating_color,
+            rating_concept,
+            strengths,
+            improvements,
+          });
+
+        const { data: fData, error: fErr } = await supabase
+          .from("comments")
+          .insert({
+            photo_id: photoId,
+            user_id: req.user.id,
+            content: fallbackContent,
+          })
+          .select(
+            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+          )
+          .single();
+
+        if (fErr) return next(new Error(fErr.message));
+
+        const overall = +(
+          (rating_composition +
+            rating_lighting +
+            rating_color +
+            rating_concept) /
+          4
+        ).toFixed(1);
+
+        createdCritique = {
+          id_critique: fData.id,
+          id_photo: fData.photo_id,
+          id_user: fData.user_id,
+          rating_composition,
+          rating_lighting,
+          rating_color,
+          rating_concept,
+          overall_score: overall,
+          strengths,
+          improvements,
+          created_at: fData.created_at,
+          updated_at: fData.updated_at,
+          user: {
+            id_user: fData.profiles?.id,
+            username: fData.profiles?.username,
+            avatar_url: fData.profiles?.avatar_url,
+          },
+          is_owner: true,
+        };
+      } else {
+        return next(new Error(insErr.message));
+      }
+    } else {
+      const overall = +(
+        (insData.rating_composition +
+          insData.rating_lighting +
+          insData.rating_color +
+          insData.rating_concept) /
+        4
+      ).toFixed(1);
+
+      createdCritique = {
+        id_critique: insData.id,
+        id_photo: insData.photo_id,
+        id_user: insData.user_id,
+        rating_composition: insData.rating_composition,
+        rating_lighting: insData.rating_lighting,
+        rating_color: insData.rating_color,
+        rating_concept: insData.rating_concept,
+        overall_score: overall,
+        strengths: insData.strengths,
+        improvements: insData.improvements,
+        created_at: insData.created_at,
+        updated_at: insData.updated_at,
+        user: {
+          id_user: insData.profiles?.id,
+          username: insData.profiles?.username,
+          avatar_url: insData.profiles?.avatar_url,
+        },
+        is_owner: true,
+      };
+    }
+
+    // Broadcast penambahan kritik real-time
+    broadcastEvent("critique:added", {
+      photo_id: photoId,
+      critique: createdCritique,
+    });
+
+    res.status(201).json({
+      message: "Critique submitted successfully",
+      data: createdCritique,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: hapus kritik (oleh pembuat atau pemilik foto).
+router.delete("/:id/critiques/:critiqueId", async (req, res, next) => {
+  try {
+    const { id: photoId, critiqueId } = req.params;
+
+    // 1. Cek di tabel critiques jika ada
+    const { data: critique, error: cErr } = await supabase
+      .from("critiques")
+      .select("id, user_id, photo_id, photos(user_id)")
+      .eq("id", critiqueId)
+      .eq("photo_id", photoId)
+      .maybeSingle();
+
+    if (cErr && cErr.code !== "PGRST205") return next(new Error(cErr.message));
+
+    if (critique) {
+      const isAuthor = critique.user_id === req.user.id;
+      const isPhotoOwner = critique.photos?.user_id === req.user.id;
+      if (!isAuthor && !isPhotoOwner) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this critique" });
+      }
+
+      const { error: delErr } = await supabase
+        .from("critiques")
+        .delete()
+        .eq("id", critiqueId);
+
+      if (delErr) return next(new Error(delErr.message));
+    } else {
+      // 2. Cek di fallback comments
+      const { data: fbComment, error: fbErr } = await supabase
+        .from("comments")
+        .select("id, user_id, photo_id, content, photos(user_id)")
+        .eq("id", critiqueId)
+        .eq("photo_id", photoId)
+        .maybeSingle();
+
+      if (fbErr) return next(new Error(fbErr.message));
+      if (!fbComment || !fbComment.content?.startsWith(CRITIQUE_PREFIX)) {
+        return res.status(404).json({ message: "Critique not found" });
+      }
+
+      const isAuthor = fbComment.user_id === req.user.id;
+      const isPhotoOwner = fbComment.photos?.user_id === req.user.id;
+      if (!isAuthor && !isPhotoOwner) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this critique" });
+      }
+
+      const { error: delErr } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", critiqueId);
+
+      if (delErr) return next(new Error(delErr.message));
+    }
+
+    broadcastEvent("critique:deleted", {
+      photo_id: photoId,
+      critique_id: critiqueId,
+    });
+
+    res.json({
+      message: "Critique deleted",
+      data: { id_critique: critiqueId, id_photo: photoId },
     });
   } catch (error) {
     next(error);

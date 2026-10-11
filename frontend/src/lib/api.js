@@ -105,6 +105,14 @@ export const addPhotoComment = (id, content) =>
 export const deletePhotoComment = (photoId, commentId) =>
   apiFetch(`/photos/${photoId}/comments/${commentId}`, { method: "DELETE" });
 
+// ====== SOCIAL: CONSTRUCTIVE CRITIQUES ======
+export const getPhotoCritiques = (id) =>
+  apiFetch(`/photos/${id}/critiques`);
+export const addPhotoCritique = (id, critiqueData) =>
+  apiFetch(`/photos/${id}/critiques`, { method: "POST", body: critiqueData });
+export const deletePhotoCritique = (photoId, critiqueId) =>
+  apiFetch(`/photos/${photoId}/critiques/${critiqueId}`, { method: "DELETE" });
+
 // ====== SOCIAL: FOLLOWS ======
 export const toggleFollowUser = (userId) =>
   apiFetch(`/users/${userId}/follow`, { method: "POST" });

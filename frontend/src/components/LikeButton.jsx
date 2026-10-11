@@ -19,18 +19,22 @@ export default function LikeButton({
   className = "",
   onLikeChange,
 }) {
+  const [prevInitialLiked, setPrevInitialLiked] = useState(initialLiked);
+  const [prevInitialCount, setPrevInitialCount] = useState(initialCount);
   const [liked, setLiked] = useState(Boolean(initialLiked));
   const [count, setCount] = useState(Number(initialCount) || 0);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  useEffect(() => {
+  if (initialLiked !== prevInitialLiked) {
+    setPrevInitialLiked(initialLiked);
     setLiked(Boolean(initialLiked));
-  }, [initialLiked]);
+  }
 
-  useEffect(() => {
+  if (initialCount !== prevInitialCount) {
+    setPrevInitialCount(initialCount);
     setCount(Number(initialCount) || 0);
-  }, [initialCount]);
+  }
 
   // Dengarkan siaran real-time like dari pengguna lain
   usePhotoRealtime(photoId, {

@@ -16,6 +16,7 @@ import {
   ExternalLink,
   MessageSquare,
   Pencil,
+  Sparkles,
   Tag,
   X,
 } from "lucide-react";
@@ -25,22 +26,24 @@ import { EASE } from "@/components/ui/motion";
 import ExifMetadataPanel from "./ExifMetadataPanel";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
+import CritiqueSection from "./CritiqueSection";
 import FollowButton from "./FollowButton";
 
 export default function Lightbox({ photo, layoutId, onClose }) {
   const panelRef = useRef(null);
   const onCloseRef = useRef(onClose);
-  const [activeTab, setActiveTab] = useState("exif"); // "exif" | "comments"
+  const [activeTab, setActiveTab] = useState("exif"); // "exif" | "comments" | "critiques"
+  const [prevCommentsCount, setPrevCommentsCount] = useState(photo?.comments_count || 0);
   const [commentsCount, setCommentsCount] = useState(photo?.comments_count || 0);
+
+  if (photo?.comments_count !== prevCommentsCount) {
+    setPrevCommentsCount(photo?.comments_count || 0);
+    setCommentsCount(photo?.comments_count || 0);
+  }
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
-
-  useEffect(() => {
-    if (!photo) return;
-    setCommentsCount(photo.comments_count || 0);
-  }, [photo]);
 
   useEffect(() => {
     if (!photo) return;
@@ -200,8 +203,8 @@ export default function Lightbox({ photo, layoutId, onClose }) {
             </div>
           </div>
 
-          {/* Tab Selector: EXIF Parameter vs Diskusi Komentar */}
-          <div className="mt-5 flex gap-2 border-b border-line/60 pb-2">
+          {/* Tab Selector: EXIF Parameter vs Diskusi vs Kritik & Saran */}
+          <div className="mt-5 flex flex-wrap gap-2 border-b border-line/60 pb-2">
             <button
               type="button"
               onClick={() => setActiveTab("exif")}
@@ -224,7 +227,19 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               }`}
             >
               <MessageSquare size={13} />
-              Diskusi & Komentar ({commentsCount})
+              Diskusi ({commentsCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("critiques")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+                activeTab === "critiques"
+                  ? "bg-accent/20 text-accent font-semibold"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Sparkles size={13} />
+              Kritik &amp; Saran
             </button>
           </div>
 
@@ -241,7 +256,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 >
                   <ExifMetadataPanel photo={photo} />
                 </motion.div>
-              ) : (
+              ) : activeTab === "comments" ? (
                 <motion.div
                   key="tab-comments"
                   initial={{ opacity: 0, y: 6 }}
@@ -253,6 +268,19 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                     photoId={photo.id_photo}
                     initialCount={commentsCount}
                     onCountChange={setCommentsCount}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="tab-critiques"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CritiqueSection
+                    photoId={photo.id_photo}
+                    photoOwnerId={creatorId}
                   />
                 </motion.div>
               )}

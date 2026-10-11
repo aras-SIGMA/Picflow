@@ -12,8 +12,10 @@ import {
   CalendarDays,
   Check,
   Copy,
+  MessageSquare,
   Pencil,
   RefreshCcw,
+  Sparkles,
   Tag,
 } from "lucide-react";
 import { fileUrl, getPhoto, getToken } from "@/lib/api";
@@ -21,6 +23,7 @@ import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import ExifMetadataPanel from "@/components/ExifMetadataPanel";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
+import CritiqueSection from "@/components/CritiqueSection";
 import FollowButton from "@/components/FollowButton";
 import ApertureLoader from "@/components/ui/ApertureLoader";
 import Button from "@/components/ui/Button";
@@ -37,6 +40,7 @@ export default function PhotoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [socialTab, setSocialTab] = useState("critique"); // "critique" | "comments"
 
   useEffect(() => {
     if (!getToken()) {
@@ -258,12 +262,48 @@ export default function PhotoDetailPage() {
               <ExifMetadataPanel photo={photo} />
             </div>
 
-            {/* Komentar & Diskusi */}
-            <div className="mt-6">
-              <CommentSection
-                photoId={photo.id_photo}
-                initialCount={photo.comments_count}
-              />
+            {/* Komentar & Kritik Tabs */}
+            <div className="mt-8">
+              <div className="flex gap-2 border-b border-line pb-2">
+                <button
+                  type="button"
+                  onClick={() => setSocialTab("critique")}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                    socialTab === "critique"
+                      ? "bg-accent/20 text-accent font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Sparkles size={13} />
+                  Kritik &amp; Saran Konstruktif
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSocialTab("comments")}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                    socialTab === "comments"
+                      ? "bg-accent/20 text-accent font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <MessageSquare size={13} />
+                  Diskusi ({photo.comments_count || 0})
+                </button>
+              </div>
+
+              <div className="mt-4">
+                {socialTab === "critique" ? (
+                  <CritiqueSection
+                    photoId={photo.id_photo}
+                    photoOwnerId={photo.creator?.id_user || photo.id_user}
+                  />
+                ) : (
+                  <CommentSection
+                    photoId={photo.id_photo}
+                    initialCount={photo.comments_count}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
