@@ -230,6 +230,32 @@
     transform: translateY(0);
   }
 }
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 45s linear infinite;
+  will-change: transform;
+}
+.marquee-right:hover {
+  animation-play-state: paused;
+}
+.marquee-right-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 60s linear infinite;
+  will-change: transform;
+}
+.marquee-right-slow:hover {
+  animation-play-state: paused;
+}
 @keyframes shimmer {
   from {
     background-position: 200% 0;
@@ -252,7 +278,9 @@
     transition-duration: 0.01ms !important;
   }
   .marquee-up,
-  .marquee-down {
+  .marquee-down,
+  .marquee-right,
+  .marquee-right-slow {
     animation: none !important;
     transform: none !important;
   }

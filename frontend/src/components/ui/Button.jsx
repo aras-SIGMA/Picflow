@@ -11,7 +11,10 @@ import { prefersReducedMotion } from "./motion";
 
 const VARIANTS = {
   primary: "bg-white text-black hover:bg-white/85 border border-transparent",
+  accent: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/25 border border-transparent",
+  dark: "bg-slate-900 text-white hover:bg-slate-800 border border-transparent",
   ghost: "border border-white/15 text-ink hover:bg-white/5 hover:border-white/30",
+  outline: "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300",
   danger: "border border-[var(--danger)]/40 text-danger hover:bg-[var(--danger)]/10",
 };
 
@@ -53,17 +56,18 @@ export default function Button({
   }
 
   const Tag = href ? motion.a : motion.button;
+  const { style: customStyle, ...otherRest } = rest;
 
   return (
     <Tag
       ref={ref}
       {...(href ? { href } : { type, disabled: disabled || loading })}
-      style={{ x: sx, y: sy }}
+      style={{ x: sx, y: sy, ...customStyle }}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       whileTap={{ scale: 0.97 }}
       className={`inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-tight transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
-      {...rest}
+      {...otherRest}
     >
       {loading && <ApertureLoader size={16} light={variant !== "primary"} />}
       {children}
