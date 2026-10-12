@@ -46,7 +46,7 @@ export default function PhotoCard({
           type="button"
           onClick={() => onOpen?.(photo)}
           className="relative block w-full cursor-zoom-in text-left"
-          aria-label={`Lihat detail ${photo.title}`}
+          aria-label={`View details for ${photo.title}`}
         >
           <motion.div
             layoutId={layoutId ? `${layoutId}-${photo.id_photo}` : undefined}
@@ -56,7 +56,7 @@ export default function PhotoCard({
               <Image
                 src={src}
                 loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
-                alt={photo.title || "Foto"}
+                alt={photo.title || "Photo"}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
@@ -138,7 +138,7 @@ export default function PhotoCard({
               <button
                 type="button"
                 onClick={() => onDelete(photo)}
-                aria-label={`Hapus ${photo.title}`}
+                aria-label={`Delete ${photo.title}`}
                 className="rounded-full border border-line p-1.5 text-muted transition-colors hover:border-[var(--danger)]/50 hover:text-[var(--danger)]"
               >
                 <Trash2 size={12} />

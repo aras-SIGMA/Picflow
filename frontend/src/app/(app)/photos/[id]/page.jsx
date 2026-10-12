@@ -55,7 +55,7 @@ export default function PhotoDetailPage() {
         if (active) setPhoto(res.data);
       } catch (err) {
         if (err.status === 401) router.replace("/login");
-        else if (active) setError(err.message || "Gagal memuat detail foto.");
+        else if (active) setError(err.message || "Failed to load photo details.");
       } finally {
         if (active) setLoading(false);
       }
@@ -71,10 +71,10 @@ export default function PhotoDetailPage() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      toast.success("Link foto disalin ke clipboard.");
+      toast.success("Photo link copied to clipboard.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Gagal menyalin link.");
+      toast.error("Failed to copy link.");
     }
   }
 
@@ -84,7 +84,7 @@ export default function PhotoDetailPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-24">
           <div className="flex flex-col items-center gap-4">
             <ApertureLoader size={32} />
-            <p className="text-sm text-muted">Memuat karya...</p>
+            <p className="text-sm text-muted">Loading photo...</p>
           </div>
         </div>
       </PageTransition>
@@ -96,12 +96,12 @@ export default function PhotoDetailPage() {
       <PageTransition>
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-24 text-center">
           <p className="text-sm text-danger" role="alert">
-            {error || "Foto tidak ditemukan."}
+            {error || "Photo not found."}
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="ghost" onClick={() => router.push("/home")}>
               <ArrowLeft size={14} />
-              Kembali ke Galeri
+              Back to Gallery
             </Button>
             <Button
               variant="outline"
@@ -114,7 +114,7 @@ export default function PhotoDetailPage() {
               }}
             >
               <RefreshCcw size={14} />
-              Coba lagi
+              Try again
             </Button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function PhotoDetailPage() {
             className="inline-flex items-center gap-2 text-xs font-medium text-muted transition-colors hover:text-ink"
           >
             <ArrowLeft size={14} />
-            Kembali ke feed
+            Back to feed
           </Link>
 
           <div className="flex items-center gap-2">
@@ -150,7 +150,7 @@ export default function PhotoDetailPage() {
               className="text-xs"
             >
               {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
-              {copied ? "Tersalin" : "Salin link"}
+              {copied ? "Copied" : "Copy link"}
             </Button>
             {photo.is_owner && (
               <Button
@@ -160,7 +160,7 @@ export default function PhotoDetailPage() {
                 className="text-xs"
               >
                 <Pencil size={13} />
-                Edit karya
+                Edit photo
               </Button>
             )}
           </div>
@@ -173,7 +173,7 @@ export default function PhotoDetailPage() {
               <Image
                 src={src}
                 loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
-                alt={photo.title || "Karya fotografi"}
+                alt={photo.title || "Photographic work"}
                 width={2048}
                 height={1536}
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 2048px"
@@ -181,7 +181,7 @@ export default function PhotoDetailPage() {
                 priority
               />
             ) : (
-              <p className="py-24 text-sm text-faint">Gambar tidak tersedia.</p>
+              <p className="py-24 text-sm text-faint">Image unavailable.</p>
             )}
           </div>
         </Reveal>
@@ -210,7 +210,7 @@ export default function PhotoDetailPage() {
                     <p className="text-xs font-semibold text-ink">
                       @{photo.creator.username}
                     </p>
-                    <p className="text-[11px] text-faint">Kreator Foto</p>
+                    <p className="text-[11px] text-faint">Photo Creator</p>
                   </div>
                 </div>
                 <FollowButton
@@ -234,7 +234,7 @@ export default function PhotoDetailPage() {
               {photo.created_at && (
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays size={13} className="text-accent2" />
-                  {new Date(photo.created_at).toLocaleDateString("id-ID", {
+                  {new Date(photo.created_at).toLocaleDateString("en-US", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -249,7 +249,7 @@ export default function PhotoDetailPage() {
               </div>
             ) : (
               <p className="mt-4 text-xs italic text-faint">
-                Tidak ada deskripsi untuk karya ini.
+                No description provided for this work.
               </p>
             )}
 
@@ -271,7 +271,7 @@ export default function PhotoDetailPage() {
                   }`}
                 >
                   <Sparkles size={13} />
-                  Kritik &amp; Saran Konstruktif
+                  Constructive Critique
                 </button>
                 <button
                   type="button"
@@ -283,7 +283,7 @@ export default function PhotoDetailPage() {
                   }`}
                 >
                   <MessageSquare size={13} />
-                  Diskusi ({photo.comments_count || 0})
+                  Discussion ({photo.comments_count || 0})
                 </button>
               </div>
 
@@ -307,11 +307,11 @@ export default function PhotoDetailPage() {
           <div>
             <div className="rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)] p-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-faint">
-                Ringkasan File
+                File Summary
               </h3>
               <dl className="mt-4 space-y-3 text-xs">
                 <div className="flex justify-between border-b border-line/50 pb-2">
-                  <dt className="text-muted">Resolusi Asli</dt>
+                  <dt className="text-muted">Native Resolution</dt>
                   <dd className="font-medium text-ink">
                     {photo.width && photo.height
                       ? `${photo.width} × ${photo.height} px`
@@ -319,7 +319,7 @@ export default function PhotoDetailPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between border-b border-line/50 pb-2">
-                  <dt className="text-muted">Format Pengiriman</dt>
+                  <dt className="text-muted">Delivery Format</dt>
                   <dd className="font-medium text-accent">
                     WebP / AVIF (Auto)
                   </dd>
@@ -331,9 +331,9 @@ export default function PhotoDetailPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <dt className="text-muted">Proteksi GPS</dt>
+                  <dt className="text-muted">GPS Privacy</dt>
                   <dd className="font-medium text-success">
-                    Stripped (Aman)
+                    Stripped (Secure)
                   </dd>
                 </div>
               </dl>

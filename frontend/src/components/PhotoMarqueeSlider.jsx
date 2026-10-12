@@ -99,15 +99,15 @@ export default function PhotoMarqueeSlider() {
         if (liveItems.length > 0) {
           const formattedLive = liveItems.map((p) => ({
             id_photo: p.id_photo || p.id,
-            title: p.title || "Karya PicFlow Vault",
+            title: p.title || "PicFlow Vault Work",
             image_url: p.medium_url || p.photo_url || fileUrl(p.image_url),
-            camera_model: p.camera_model || p.exif_data?.camera || "Kamera Digital",
+            camera_model: p.camera_model || p.exif_data?.camera || "Digital Camera",
             aperture: p.aperture || "f/2.8",
             shutter_speed: p.shutter_speed || "1/500s",
             iso: p.iso || "100",
             category_name: p.categories?.name || p.category || "Editorial",
             creator: {
-              username: p.profiles?.username || p.creator?.username || "fotografer",
+              username: p.profiles?.username || p.creator?.username || "photographer",
               avatar_url: p.profiles?.avatar_url || p.creator?.avatar_url || null,
             },
           }));
@@ -126,7 +126,7 @@ export default function PhotoMarqueeSlider() {
 
   return (
     <aside
-      aria-label="Preview Karya Fotografer Komunitas"
+      aria-label="Community Photographer Work Preview"
       className="relative flex h-full w-full flex-col justify-between overflow-hidden p-6 lg:p-8"
     >
       {/* ============ AREA 1 JALUR CAROUSEL FOTO PORTRAIT (BERGESER KE KANAN OTOMATIS) ============ */}
@@ -147,21 +147,21 @@ export default function PhotoMarqueeSlider() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div className="max-w-md">
             <p className="text-xs font-bold tracking-wider text-blue-600 uppercase">
-              Vault Komunitas PicFlow
+              PicFlow Community Vault
             </p>
             <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
-              Eksplorasi Karya Tanpa Batas.
+              Boundless Visual Exploration.
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-stone-600">
-              Koleksi foto resolusi penuh dari para fotografer terkurasi dengan
-              kalibrasi warna sRGB dan parameter optik EXIF orisinal.
+              Full-resolution collection by curated photographers with true sRGB color calibration
+              and original optical EXIF.
             </p>
           </div>
 
           {/* Micro dots sRGB */}
           <div
             className="flex items-center gap-1.5 self-start sm:self-auto rounded-full border border-[#DFD3BE] bg-[#FEFAF3] px-3 py-1 text-[11px] text-stone-600"
-            title="Dikalibrasi pada standar warna sRGB"
+            title="Calibrated to the sRGB color standard"
           >
             <span className="flex items-center gap-1" aria-hidden="true">
               <i className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
@@ -187,7 +187,7 @@ function PortraitPhotoCard({ photo }) {
       {/* Gambar Foto Portrait Penuh & Jernih Tanpa Shadow Gelap */}
       <Image
         src={photo.image_url}
-        alt={photo.title || "Karya Fotografi Portrait"}
+        alt={photo.title || "Portrait Photography Work"}
         fill
         sizes="(max-width: 1024px) 270px, 290px"
         unoptimized={!isCloudinary}

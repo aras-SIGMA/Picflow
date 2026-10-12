@@ -112,7 +112,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               <Image
                 src={src}
                 loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
-                alt={photo.title || "Foto"}
+                alt={photo.title || "Photo"}
                 width={2048}
                 height={1536}
                 sizes="(max-width: 1024px) 100vw, 2048px"
@@ -120,7 +120,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 priority
               />
             ) : (
-              <p className="text-sm text-faint">Gambar tidak tersedia.</p>
+              <p className="text-sm text-faint">Image unavailable.</p>
             )}
           </motion.div>
         </div>
@@ -162,7 +162,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 {photo.created_at && (
                   <span className="inline-flex items-center gap-1.5">
                     <CalendarDays size={12} className="text-accent2" />
-                    {new Date(photo.created_at).toLocaleDateString("id-ID", {
+                    {new Date(photo.created_at).toLocaleDateString("en-US", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
@@ -189,7 +189,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors hover:text-ink"
               >
                 <ExternalLink size={13} />
-                Detail
+                Details
               </Link>
               {photo.is_owner && (
                 <Link
@@ -227,7 +227,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               }`}
             >
               <MessageSquare size={13} />
-              Diskusi ({commentsCount})
+              Discussion ({commentsCount})
             </button>
             <button
               type="button"
@@ -239,7 +239,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
               }`}
             >
               <Sparkles size={13} />
-              Kritik &amp; Saran
+              Critique &amp; Feedback
             </button>
           </div>
 

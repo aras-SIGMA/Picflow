@@ -116,7 +116,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan kata sandi"
+                placeholder="Enter password"
                 autoComplete="current-password"
                 required
                 className="w-full bg-transparent pr-8 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none"
@@ -124,7 +124,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute right-4 text-stone-400 transition-colors hover:text-stone-700"
               >
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -138,7 +138,7 @@ export default function LoginPage() {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                alert("Fitur pemulihan kata sandi akan segera hadir di pembaruan berikutnya.");
+                alert("Password recovery feature will be available in the upcoming update.");
               }}
               className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
             >
@@ -167,7 +167,7 @@ export default function LoginPage() {
             className="mt-2 w-full rounded-2xl !bg-blue-600 !text-white py-3.5 text-sm font-semibold transition-all hover:!bg-blue-700 active:scale-[0.99]"
             style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
           >
-            {busy ? "Memverifikasi..." : "Sign in"}
+            {busy ? "Signing in..." : "Sign in"}
             {!busy && <ArrowRight size={15} className="ml-1 text-white" />}
           </Button>
         </motion.form>
@@ -177,12 +177,12 @@ export default function LoginPage() {
       <Reveal delay={0.32} y={10}>
         <div className="mt-8 flex flex-col gap-4 border-t border-[#E8DEC9] pt-5">
           <p className="text-center text-xs text-stone-600">
-            Belum memiliki akun fotografer?{" "}
+            Don&apos;t have a photographer account yet?{" "}
             <Link
               href="/register"
               className="font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
             >
-              Daftar Sekarang
+              Register Now
             </Link>
           </p>
 
@@ -193,7 +193,7 @@ export default function LoginPage() {
               <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
               <i className="h-1.5 w-1.5 rounded-full bg-[#3B82F6]" />
             </span>
-            <span>Kalibrasi sRGB terverifikasi</span>
+            <span>sRGB calibration verified</span>
           </div>
         </div>
       </Reveal>

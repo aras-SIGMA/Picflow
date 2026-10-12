@@ -238,6 +238,14 @@
     transform: translateX(0);
   }
 }
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
 .marquee-right {
   display: flex;
   width: max-content;
@@ -245,6 +253,15 @@
   will-change: transform;
 }
 .marquee-right:hover {
+  animation-play-state: paused;
+}
+.marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-left 45s linear infinite;
+  will-change: transform;
+}
+.marquee-left:hover {
   animation-play-state: paused;
 }
 .marquee-right-slow {
@@ -280,6 +297,7 @@
   .marquee-up,
   .marquee-down,
   .marquee-right,
+  .marquee-left,
   .marquee-right-slow {
     animation: none !important;
     transform: none !important;

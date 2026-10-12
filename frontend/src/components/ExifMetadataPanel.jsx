@@ -26,7 +26,7 @@ export default function ExifMetadataPanel({ photo, className = "" }) {
   const shutterSpeed = photo.shutter_speed?.trim() || "N/A";
   const isoValue = photo.iso != null ? `ISO ${photo.iso}` : "N/A";
   const takenAtValue = photo.taken_at
-    ? new Date(photo.taken_at).toLocaleDateString("id-ID", {
+    ? new Date(photo.taken_at).toLocaleDateString("en-US", {
         day: "numeric",
         month: "short",
         year: "numeric",

@@ -148,7 +148,7 @@ export default function HomePage() {
     try {
       await deletePhoto(pendingDelete.id_photo);
       setPhotos((prev) => prev.filter((p) => p.id_photo !== pendingDelete.id_photo));
-      toast.success(`"${pendingDelete.title}" dihapus.`);
+      toast.success(`"${pendingDelete.title}" deleted.`);
       setPendingDelete(null);
     } catch (err) {
       toast.error(err.message);
@@ -232,8 +232,7 @@ export default function HomePage() {
           />
           <Reveal delay={0.35}>
             <p className="mt-5 max-w-md text-sm leading-relaxed text-muted">
-              Simpan, rapikan, dan pamerkan karya fotografimu di satu tempat yang tenang
-              dan privat.
+              Store, organize, and showcase your photographic works in a calm, private sanctuary.
             </p>
           </Reveal>
           <Reveal delay={0.45}>
@@ -262,11 +261,11 @@ export default function HomePage() {
               &ldquo;
             </span>
             <p className="mt-2 text-lg leading-relaxed text-muted sm:text-xl">
-              Fotografi adalah cara memilih apa yang layak diingat. PicFlow menjaga
-              pilihan itu tetap rapi.
+              Photography is the art of choosing what deserves to be remembered. PicFlow keeps
+              that choice pristine.
             </p>
             <footer className="mt-4 text-xs text-faint">
-              Tim PicFlow — Catatan sang kurator
+              PicFlow Team — Curator&apos;s Note
             </footer>
           </blockquote>
         </Reveal>
@@ -294,7 +293,7 @@ export default function HomePage() {
                         <Image
                           src={fileUrl(c.cover)}
                           loader={isCloudinaryUrl(fileUrl(c.cover)) ? cloudinaryLoader : undefined}
-                          alt={`Kategori ${c.name}`}
+                          alt={`Category ${c.name}`}
                           fill
                           sizes="144px"
                           className="object-cover transition-transform duration-700 group-hover/spot:scale-105"
@@ -306,7 +305,7 @@ export default function HomePage() {
                       )}
                     </div>
                     <p className="mt-2 truncate text-xs font-semibold text-stone-900">{c.name}</p>
-                    <p className="text-[11px] text-stone-500">{c.count} foto</p>
+                    <p className="text-[11px] text-stone-500">{c.count} photos</p>
                   </button>
                 </SpotlightCard>
               </motion.div>
@@ -322,7 +321,7 @@ export default function HomePage() {
             <p className="text-sm text-danger">{error}</p>
             <Button variant="ghost" onClick={retry}>
               <RefreshCcw size={14} />
-              Coba lagi
+              Try again
             </Button>
           </div>
         ) : (
@@ -341,7 +340,7 @@ export default function HomePage() {
                     }`}
                   >
                     <Compass size={14} />
-                    Explore Komunitas
+                    Explore Community
                   </button>
                   <button
                     type="button"
@@ -358,8 +357,8 @@ export default function HomePage() {
                 </div>
                 <span className="text-xs text-stone-500">
                   {feedTab === "explore"
-                    ? "Feed publik semua karya fotografer"
-                    : "Feed karya dari kreator yang kamu ikuti"}
+                    ? "Public feed of all photographer works"
+                    : "Works from creators you follow"}
                 </span>
               </div>
             </Reveal>
@@ -375,13 +374,13 @@ export default function HomePage() {
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Cari foto..."
-                    aria-label="Cari foto"
+                    placeholder="Search photos..."
+                    aria-label="Search photos"
                     className="w-full rounded-full border border-[#DCD0BE] bg-[#FEFAF3] py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 focus:outline-none"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {[{ id_category: "all", name: "Semua" }, ...categories].map((c) => {
+                  {[{ id_category: "all", name: "All" }, ...categories].map((c) => {
                     const active = String(c.id_category) === filter;
                     return (
                       <button
@@ -404,9 +403,9 @@ export default function HomePage() {
             </Reveal>
 
             <p className="mt-6 text-xs text-faint">
-              {shown.length} foto ·{" "}
+              {shown.length} photos ·{" "}
               {filter === "all"
-                ? "semua kategori"
+                ? "all categories"
                 : categories.find((c) => String(c.id_category) === filter)?.name}
             </p>
 
@@ -418,9 +417,9 @@ export default function HomePage() {
                     <Users size={24} />
                   </div>
                   <div>
-                    <p className="font-bold text-stone-900">Belum ada karya di tab Following</p>
+                    <p className="font-bold text-stone-900">No works in Following tab yet</p>
                     <p className="mt-1 max-w-md text-sm text-stone-600">
-                      Kamu belum mengikuti kreator manapun atau mereka belum mengunggah karya baru. Jelajahi Explore untuk menemukan kreator inspiratif!
+                      You are not following any creators yet or they haven&apos;t posted new works. Browse Explore to discover inspiring creators!
                     </p>
                   </div>
                   <button
@@ -429,7 +428,7 @@ export default function HomePage() {
                     className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
                   >
                     <Compass size={15} />
-                    Jelajahi Explore
+                    Browse Explore
                   </button>
                 </div>
               ) : (
@@ -440,13 +439,13 @@ export default function HomePage() {
                   <div>
                     <p className="font-bold text-stone-900">
                       {photos.length === 0
-                        ? "Belum ada foto"
-                        : "Tidak ada foto yang cocok"}
+                        ? "No photos yet"
+                        : "No matching photos found"}
                     </p>
                     <p className="mt-1 text-sm text-stone-600">
                       {photos.length === 0
-                        ? "Upload karya pertamamu untuk mengisi vault ini."
-                        : "Coba kata kunci atau kategori lain."}
+                        ? "Upload your first work to fill this vault."
+                        : "Try different keywords or categories."}
                     </p>
                   </div>
                   <Link
@@ -454,7 +453,7 @@ export default function HomePage() {
                     className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
                   >
                     <ImagePlus size={15} />
-                    Tambah Foto
+                    Add Photo
                   </Link>
                 </div>
               )
@@ -489,7 +488,7 @@ export default function HomePage() {
             className="fixed bottom-6 right-6 z-30 hidden w-64 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-4 shadow-lg lg:block"
           >
             <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">
-              Sedang dibuka
+              Now Viewing
             </p>
             <p className="mt-1 truncate text-sm font-bold text-stone-900">
               {peek.title}
@@ -505,7 +504,7 @@ export default function HomePage() {
               }}
               className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 underline underline-offset-2 transition-opacity hover:opacity-80"
             >
-              Buka detail
+              View details
               <ArrowRight size={12} />
             </button>
           </motion.aside>
@@ -529,17 +528,17 @@ export default function HomePage() {
         labelledBy="delete-title"
       >
         <h2 id="delete-title" className="display-2 text-lg!">
-          Hapus foto ini?
+          Delete this photo?
         </h2>
         <p className="mt-2 text-sm text-muted">
-          &ldquo;{pendingDelete?.title}&rdquo; akan dihapus permanen beserta filenya.
+          &ldquo;{pendingDelete?.title}&rdquo; will be permanently deleted along with its file.
         </p>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>
-            Batal
+            Cancel
           </Button>
           <Button variant="danger" size="sm" loading={deleting} onClick={handleDeleteConfirmed}>
-            Hapus
+            Delete
           </Button>
         </div>
       </Modal>

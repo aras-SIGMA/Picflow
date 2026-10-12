@@ -136,7 +136,7 @@ export default function AccountPage() {
       setProfileFile(null);
       clearProfilePreview();
       event.target.value = "";
-      setError("Gunakan gambar JPG, PNG, WEBP, atau GIF.");
+      setError("Please use JPG, PNG, WEBP, or GIF image.");
       return;
     }
 
@@ -144,7 +144,7 @@ export default function AccountPage() {
       setProfileFile(null);
       clearProfilePreview();
       event.target.value = "";
-      setError("Ukuran gambar maksimal 5MB.");
+      setError("Profile image size must be under 5MB.");
       return;
     }
 
@@ -160,7 +160,7 @@ export default function AccountPage() {
     setError("");
 
     if (!profileFile) {
-      setError("Pilih gambar profil terlebih dahulu.");
+      setError("Please choose a profile image first.");
       return;
     }
 
@@ -175,7 +175,7 @@ export default function AccountPage() {
       }));
       setProfileFile(null);
       clearProfilePreview();
-      toast.success("Foto profil berhasil diperbarui.");
+      toast.success("Profile picture updated successfully.");
     } catch (err) {
       if (err.status === 401) {
         logout();
@@ -196,7 +196,7 @@ export default function AccountPage() {
       const res = await createCategory(newName.trim());
       setCategories((prev) => [...prev, res.data]);
       setNewName("");
-      toast.success("Kategori ditambahkan.");
+      toast.success("Category added.");
     } catch (err) {
       setCategoryError(err.message);
     }
@@ -207,7 +207,7 @@ export default function AccountPage() {
     try {
       await deleteCategory(id);
       setCategories((prev) => prev.filter((c) => c.id_category !== id));
-      toast.success("Kategori dihapus.");
+      toast.success("Category deleted.");
     } catch (err) {
       toast.error(err.message);
     }
@@ -220,7 +220,7 @@ export default function AccountPage() {
     try {
       await deletePhoto(pendingDelete.id_photo);
       setPhotos((prev) => prev.filter((p) => p.id_photo !== pendingDelete.id_photo));
-      toast.success(`"${pendingDelete.title}" dihapus.`);
+      toast.success(`"${pendingDelete.title}" deleted.`);
       setPendingDelete(null);
     } catch (err) {
       toast.error(err.message);
@@ -244,9 +244,9 @@ export default function AccountPage() {
 
   const stats = useMemo(
     () => [
-      { label: "Total foto", value: photos.length },
-      { label: "Kategori", value: categories.length },
-      { label: "Upload terakhir", text: latestUpload },
+      { label: "Total Photos", value: photos.length },
+      { label: "Categories", value: categories.length },
+      { label: "Latest Upload", text: latestUpload },
     ],
     [photos.length, categories.length, latestUpload],
   );
@@ -281,12 +281,12 @@ export default function AccountPage() {
   if (!profile) {
     return (
       <PageTransition>
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-4 px-4 py-24 text-center">
+        <div className="mx-auto w-full max-w-6xl flex-1 flex-col items-center gap-4 px-4 py-24 text-center">
           <p className="text-sm text-danger" role="alert">
-            {error || "Profil tidak dapat dimuat."}
+            {error || "Unable to load profile."}
           </p>
           <Button variant="ghost" onClick={retryLoad}>
-            Coba lagi
+            Try again
           </Button>
         </div>
       </PageTransition>
@@ -317,7 +317,7 @@ export default function AccountPage() {
                             crop: "fill",
                           })
                         }
-                        alt="Foto profil"
+                        alt="Profile picture"
                         className="h-14 w-14 rounded-full object-cover"
                       />
                     ) : (
@@ -331,7 +331,7 @@ export default function AccountPage() {
                   htmlFor="profile-picture"
                   className="absolute -bottom-1 -right-1 cursor-pointer rounded-full border border-line bg-[var(--surface)] px-2.5 py-1 text-[10px] font-medium text-muted transition-colors hover:text-ink"
                 >
-                  {profileBusy ? "..." : "Ubah"}
+                  {profileBusy ? "..." : "Change"}
                 </label>
                 <input
                   id="profile-picture"
@@ -346,7 +346,7 @@ export default function AccountPage() {
                     disabled={profileBusy}
                     className="absolute -top-1 -right-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-black disabled:opacity-50"
                   >
-                    {profileBusy ? "..." : "Simpan"}
+                    {profileBusy ? "..." : "Save"}
                   </button>
                 )}
               </form>
@@ -390,7 +390,7 @@ export default function AccountPage() {
         {/* ============ KATEGORI ============ */}
         <Reveal>
           <section className="mt-14">
-            <h2 className="display-2 text-xl!">Kategori</h2>
+            <h2 className="display-2 text-xl!">Categories</h2>
             <form onSubmit={handleAdd} className="mt-4 flex max-w-md gap-2">
               <div className="relative flex-1">
                 <FolderPlus
@@ -400,13 +400,13 @@ export default function AccountPage() {
                 <input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nama kategori baru"
-                  aria-label="Nama kategori baru"
+                  placeholder="New category name"
+                  aria-label="New category name"
                   className="w-full rounded-full border border-line bg-[var(--bg-elevated)] py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
                 />
               </div>
               <Button type="submit" size="sm">
-                Tambah
+                Add
               </Button>
             </form>
             {categoryError && (
@@ -423,7 +423,7 @@ export default function AccountPage() {
                   {c.name}
                   <button
                     onClick={() => handleDeleteCategory(c.id_category)}
-                    aria-label={`Hapus kategori ${c.name}`}
+                    aria-label={`Delete category ${c.name}`}
                     className="text-faint transition-colors hover:text-[var(--danger)]"
                   >
                     <Trash2 size={12} />
@@ -432,7 +432,7 @@ export default function AccountPage() {
               ))}
               {categories.length === 0 && (
                 <p className="text-sm text-faint">
-                  Belum ada kategori — tambah satu untuk mulai merapikan.
+                  No categories yet — add one to start organizing.
                 </p>
               )}
             </div>
@@ -453,16 +453,16 @@ export default function AccountPage() {
               className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs text-ink transition-colors hover:border-white/40"
             >
               <ImagePlus size={14} />
-              Tambah
+              Add Photo
             </Link>
           </div>
 
           {photos.length === 0 ? (
             <div className="mt-8 flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-16 text-center">
               <ImagePlus size={24} className="text-faint" />
-              <p className="text-sm text-muted">Belum ada foto di vault-mu.</p>
+              <p className="text-sm text-muted">No photos in your vault yet.</p>
               <Link href="/addphoto" className="text-sm text-accent hover:underline">
-                Upload karya pertamamu →
+                Upload your first work →
               </Link>
             </div>
           ) : (
@@ -499,17 +499,17 @@ export default function AccountPage() {
         labelledBy="delete-photo-title"
       >
         <h2 id="delete-photo-title" className="display-2 text-lg!">
-          Hapus foto ini?
+          Delete this photo?
         </h2>
         <p className="mt-2 text-sm text-muted">
-          &ldquo;{pendingDelete?.title}&rdquo; akan dihapus permanen beserta filenya.
+          &ldquo;{pendingDelete?.title}&rdquo; will be permanently deleted along with its file.
         </p>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>
-            Batal
+            Cancel
           </Button>
           <Button variant="danger" size="sm" loading={deleting} onClick={handleDeleteConfirmed}>
-            Hapus
+            Delete
           </Button>
         </div>
       </Modal>

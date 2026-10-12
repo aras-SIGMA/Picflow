@@ -27,11 +27,11 @@ function passwordScore(pw) {
 }
 
 const STRENGTH = [
-  { label: "Terlalu pendek", color: "bg-red-500" },
-  { label: "Lemah", color: "bg-red-400" },
-  { label: "Cukup", color: "bg-amber-500" },
-  { label: "Kuat", color: "bg-blue-600" },
-  { label: "Sangat kuat", color: "bg-emerald-600" },
+  { label: "Too short", color: "bg-red-500" },
+  { label: "Weak", color: "bg-red-400" },
+  { label: "Fair", color: "bg-amber-500" },
+  { label: "Strong", color: "bg-blue-600" },
+  { label: "Very strong", color: "bg-emerald-600" },
 ];
 
 export default function RegisterPage() {
@@ -76,7 +76,7 @@ export default function RegisterPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            aria-label="Kembali ke beranda PicFlow"
+            aria-label="Back to PicFlow home"
             className="group inline-flex items-center transition-transform duration-200 hover:scale-[1.02]"
           >
             <Logo variant="lockup" size={38} showTagline={true} inverted={false} />
@@ -91,10 +91,10 @@ export default function RegisterPage() {
             Create your vault
           </p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
-            Mulai Vault Anda.
+            Create Your Vault.
           </h1>
           <p className="mt-2 text-sm text-stone-600">
-            Simpan karya penuh, pelajari EXIF, dan terima ulasan konstruktif
+            Preserve full-res works, inspect EXIF, and receive constructive critique
           </p>
         </div>
       </Reveal>
@@ -115,7 +115,7 @@ export default function RegisterPage() {
                 htmlFor="reg-username"
                 className="text-xs font-medium text-stone-800"
               >
-                Username fotografer
+                Photographer username
               </label>
               {usernameHint && (
                 <span className="text-[11px] text-amber-600">{usernameHint}</span>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="mis. hendra_lens"
+                placeholder="e.g. alex_optics"
                 autoComplete="username"
                 required
                 className="w-full bg-transparent text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none"
@@ -156,7 +156,7 @@ export default function RegisterPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
+                placeholder="name@email.com"
                 autoComplete="email"
                 required
                 className="w-full bg-transparent text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none"
@@ -179,7 +179,7 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimal 6 karakter"
+                placeholder="Minimum 6 characters"
                 autoComplete="new-password"
                 required
                 className="w-full bg-transparent pr-8 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none"
@@ -187,7 +187,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute right-4 text-stone-400 transition-colors hover:text-stone-700"
               >
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -208,7 +208,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <p className="mt-1.5 text-[11px] font-medium text-stone-500" aria-live="polite">
-                  Kekuatan: <span className="text-stone-800 font-semibold">{STRENGTH[score].label}</span>
+                  Strength: <span className="text-stone-800 font-semibold">{STRENGTH[score].label}</span>
                 </p>
               </div>
             )}
@@ -235,7 +235,7 @@ export default function RegisterPage() {
             className="mt-2 w-full rounded-2xl !bg-blue-600 !text-white py-3.5 text-sm font-semibold transition-all hover:!bg-blue-700 active:scale-[0.99]"
             style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
           >
-            {busy ? "Mendaftarkan Akun..." : "Buat Akun Fotografer"}
+            {busy ? "Creating Account..." : "Create Photographer Account"}
             {!busy && <ArrowRight size={15} className="ml-1 text-white" />}
           </Button>
         </motion.form>
@@ -245,12 +245,12 @@ export default function RegisterPage() {
       <Reveal delay={0.32} y={10}>
         <div className="mt-7 flex flex-col gap-4 border-t border-[#E8DEC9] pt-5">
           <p className="text-center text-xs text-stone-600">
-            Sudah memiliki akun?{" "}
+            Already have an account?{" "}
             <Link
               href="/login"
               className="font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
             >
-              Masuk ke Sini
+              Sign In Here
             </Link>
           </p>
 
@@ -261,7 +261,7 @@ export default function RegisterPage() {
               <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
               <i className="h-1.5 w-1.5 rounded-full bg-[#3B82F6]" />
             </span>
-            <span>Standar sRGB &amp; Hak Cipta Fotografer</span>
+            <span>sRGB Standard &amp; Creator Copyright</span>
           </div>
         </div>
       </Reveal>

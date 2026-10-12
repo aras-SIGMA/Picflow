@@ -73,7 +73,7 @@ export default function Navbar() {
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5">
         <Link
           href={user ? "/home" : "/login"}
-          aria-label="Beranda PicFlow"
+          aria-label="PicFlow Home"
           className="inline-flex items-center transition-transform duration-200 hover:scale-[1.02]"
         >
           <Logo variant="lockup" size={32} showTagline={false} inverted={false} />
@@ -111,7 +111,7 @@ export default function Navbar() {
           <button
             className="rounded-full border border-[#DCD0BE] p-2 text-stone-700 sm:hidden hover:bg-white"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
           >
             {menuOpen ? <X size={16} /> : <Menu size={16} />}

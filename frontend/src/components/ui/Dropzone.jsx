@@ -86,18 +86,18 @@ export default function Dropzone({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={previewUrl || oldImage}
-              alt="Preview gambar terpilih"
+              alt="Selected image preview"
               className="max-h-80 w-full object-cover"
             />
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent p-3">
               <p className="min-w-0 truncate text-xs text-white/80">
-                {file ? `${file.name} · ${formatSize(file.size)}` : "Gambar tersimpan"}
+                {file ? `${file.name} · ${formatSize(file.size)}` : "Stored image"}
               </p>
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
-                  aria-label="Ganti gambar"
+                  aria-label="Replace image"
                   className="rounded-full border border-white/20 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
                 >
                   <RefreshCcw size={14} />
@@ -105,7 +105,7 @@ export default function Dropzone({
                 <button
                   type="button"
                   onClick={() => onFileChange(null, null)}
-                  aria-label="Hapus gambar"
+                  aria-label="Remove image"
                   className="rounded-full border border-white/20 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
                 >
                   <Trash2 size={14} />
@@ -127,7 +127,7 @@ export default function Dropzone({
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            aria-label="Pilih atau jatuhkan gambar"
+            aria-label="Choose or drop image"
             className={`flex w-full flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed px-6 py-14 text-center transition-all duration-300 ${
               dragOver
                 ? "border-accent bg-accent/10 shadow-[0_0_60px_-12px_rgba(124,108,255,0.5)]"
@@ -136,7 +136,7 @@ export default function Dropzone({
           >
             <ImagePlus size={28} className={dragOver ? "text-accent" : "text-faint"} />
             <span className="text-sm text-ink">{label}</span>
-            <span className="text-xs text-faint">JPG, PNG, WEBP, atau TIFF · maks 25MB</span>
+            <span className="text-xs text-faint">JPG, PNG, WEBP, or TIFF · max 25MB</span>
           </motion.button>
         )}
       </AnimatePresence>

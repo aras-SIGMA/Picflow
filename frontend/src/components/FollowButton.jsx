@@ -72,11 +72,11 @@ export default function FollowButton({
         setFollowing(res.data.is_following);
         onFollowChange?.(res.data.is_following);
       }
-      toast.success(next ? "Mengikuti kreator." : "Batal mengikuti kreator.");
+      toast.success(next ? "Following creator." : "Unfollowed creator.");
     } catch (err) {
       setFollowing(prev);
       onFollowChange?.(prev);
-      toast.error(err.message || "Gagal memperbarui status follow.");
+      toast.error(err.message || "Failed to update follow status.");
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function FollowButton({
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-label={following ? "Batal ikuti kreator" : "Ikuti kreator"}
+      aria-label={following ? "Unfollow creator" : "Follow creator"}
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
         following
           ? isHovered
@@ -101,18 +101,18 @@ export default function FollowButton({
         isHovered ? (
           <>
             <UserX size={12} />
-            <span>Berhenti</span>
+            <span>Unfollow</span>
           </>
         ) : (
           <>
             <UserCheck size={12} />
-            <span>Mengikuti</span>
+            <span>Following</span>
           </>
         )
       ) : (
         <>
           <UserPlus size={12} />
-          <span>Ikuti</span>
+          <span>Follow</span>
         </>
       )}
     </button>

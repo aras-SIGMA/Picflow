@@ -31,10 +31,10 @@ import ApertureLoader from "@/components/ui/ApertureLoader";
 import Button from "@/components/ui/Button";
 
 const PILLARS = [
-  { key: "rating_composition", label: "Komposisi", hint: "Framing & Rule of Thirds" },
-  { key: "rating_lighting", label: "Pencahayaan", hint: "Exposure & Shadow/Highlight" },
-  { key: "rating_color", label: "Warna & Tone", hint: "Grading & Keseimbangan sRGB" },
-  { key: "rating_concept", label: "Ide & Konsep", hint: "Storytelling & Pesan Visual" },
+  { key: "rating_composition", label: "Composition", hint: "Framing & Rule of Thirds" },
+  { key: "rating_lighting", label: "Lighting", hint: "Exposure & Dynamic Range" },
+  { key: "rating_color", label: "Color & Tone", hint: "Grading & sRGB Fidelity" },
+  { key: "rating_concept", label: "Concept & Narrative", hint: "Storytelling & Visual Intent" },
 ];
 
 export default function CritiqueSection({
@@ -221,7 +221,7 @@ export default function CritiqueSection({
         setCritiques((prev) =>
           prev.map((c) => (c.id_critique === tempId ? res.data : c))
         );
-        toast.success("Kritik konstruktif berhasil dikirim!");
+        toast.success("Constructive critique submitted successfully!");
         setFormData({
           rating_composition: 4,
           rating_lighting: 4,
@@ -234,7 +234,7 @@ export default function CritiqueSection({
     } catch (err) {
       setCritiques((prev) => prev.filter((c) => c.id_critique !== tempId));
       recalcStats(critiques);
-      toast.error(err.message || "Gagal mengirim kritik.");
+      toast.error(err.message || "Failed to submit critique.");
     } finally {
       setSubmitting(false);
     }
@@ -249,11 +249,11 @@ export default function CritiqueSection({
 
     try {
       await deletePhotoCritique(photoId, critiqueId);
-      toast.success("Kritik dihapus.");
+      toast.success("Critique deleted.");
     } catch (err) {
       setCritiques(prevCritiques);
       recalcStats(prevCritiques);
-      toast.error(err.message || "Gagal menghapus kritik.");
+      toast.error(err.message || "Failed to delete critique.");
     }
   }
 
@@ -266,19 +266,19 @@ export default function CritiqueSection({
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-accent" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
-            Kritik Konstruktif &amp; Saran
+            Constructive Critique &amp; Feedback
           </h3>
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] font-medium text-muted">
-            {stats.total_critiques} Ulasan
+            {stats.total_critiques} Reviews
           </span>
           {!isOwner && (
             <button
               type="button"
               onClick={() => {
                 if (!user) {
-                  toast.info("Silakan masuk atau daftar untuk memberikan kritik & saran.");
+                  toast.info("Please sign in or register to provide critique & feedback.");
                   return;
                 }
                 setIsFormOpen((prev) => !prev);
@@ -287,11 +287,11 @@ export default function CritiqueSection({
             >
               {isFormOpen ? (
                 <>
-                  <X size={12} /> Batal
+                  <X size={12} /> Cancel
                 </>
               ) : (
                 <>
-                  <Plus size={12} /> Beri Kritik
+                  <Plus size={12} /> Add Critique
                 </>
               )}
             </button>
@@ -308,7 +308,7 @@ export default function CritiqueSection({
             </span>
             <div className="flex flex-col">
               <span className="text-[11px] font-medium text-muted">
-                Skor Rata-rata Komunitas
+                Community Average Score
               </span>
               <div className="flex items-center gap-0.5 text-accent">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -326,29 +326,29 @@ export default function CritiqueSection({
             </div>
           </div>
           <span className="font-mono text-[10px] uppercase tracking-wider text-faint">
-            Skala 1 - 5
+            Scale 1 - 5
           </span>
         </div>
 
         {/* 4 Pilar Grid */}
         <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line/40 pt-2.5 sm:grid-cols-4">
           <ScorePill
-            label="Komposisi"
+            label="Composition"
             value={stats.avg_composition}
             color="text-accent"
           />
           <ScorePill
-            label="Pencahayaan"
+            label="Lighting"
             value={stats.avg_lighting}
             color="text-amber-400"
           />
           <ScorePill
-            label="Warna & Tone"
+            label="Color &amp; Tone"
             value={stats.avg_color}
             color="text-emerald-400"
           />
           <ScorePill
-            label="Ide & Konsep"
+            label="Concept"
             value={stats.avg_concept}
             color="text-sky-400"
           />
@@ -358,7 +358,7 @@ export default function CritiqueSection({
       {/* Pesan jika pemilik foto melihat panel ini */}
       {isOwner && (
         <p className="mt-2 text-center text-[11px] text-faint">
-          Kritik teknis dari komunitas akan membantu mengevaluasi framing dan tone karyamu.
+          Technical critiques from the community help evaluate your framing, color grading, and concept.
         </p>
       )}
 
@@ -374,7 +374,7 @@ export default function CritiqueSection({
           >
             <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-ink">
               <SlidersHorizontal size={13} className="text-accent" />
-              <span>Formulir Kritik Konstruktif</span>
+              <span>Constructive Critique Form</span>
             </div>
 
             {/* Input Slider / Rating 4 Pilar */}
@@ -417,7 +417,7 @@ export default function CritiqueSection({
             <div className="mt-2.5">
               <label className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                 <ThumbsUp size={12} />
-                <span>Poin Kekuatan (Apa yang paling memukau dari foto ini?)</span>
+                <span>Strengths (What stands out most in this work?)</span>
               </label>
               <textarea
                 value={formData.strengths}
@@ -426,7 +426,7 @@ export default function CritiqueSection({
                 }
                 rows={2}
                 maxLength={2000}
-                placeholder="Misal: Penempatan leading lines sempurna dan ketajaman fokus di mata subjek sangat presisi..."
+                placeholder="e.g. Leading lines are impeccable and subject focus is pin-sharp..."
                 required
                 className="mt-1 w-full rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-2 text-xs text-ink placeholder:text-faint focus:border-emerald-400 focus:outline-none"
               />
@@ -436,7 +436,7 @@ export default function CritiqueSection({
             <div className="mt-2">
               <label className="flex items-center gap-1.5 text-xs font-medium text-sky-400">
                 <Lightbulb size={12} />
-                <span>Saran Pengembangan (Apa yang bisa disempurnakan?)</span>
+                <span>Areas for Growth (What can be enhanced?)</span>
               </label>
               <textarea
                 value={formData.improvements}
@@ -445,7 +445,7 @@ export default function CritiqueSection({
                 }
                 rows={2}
                 maxLength={2000}
-                placeholder="Misal: Area highlight di awan agak blown out, bisa ditarik sedikit saat color grading..."
+                placeholder="e.g. Highlight roll-off in the clouds is slightly clipped, consider recovering highlights in post..."
                 required
                 className="mt-1 w-full rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-2 text-xs text-ink placeholder:text-faint focus:border-sky-400 focus:outline-none"
               />
@@ -459,7 +459,7 @@ export default function CritiqueSection({
                 onClick={() => setIsFormOpen(false)}
                 className="text-xs"
               >
-                Batal
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -467,7 +467,7 @@ export default function CritiqueSection({
                 loading={submitting}
                 className="text-xs"
               >
-                <Send size={12} className="mr-1" /> Kirim Kritik
+                <Send size={12} className="mr-1" /> Submit Critique
               </Button>
             </div>
           </motion.form>
@@ -482,15 +482,15 @@ export default function CritiqueSection({
           </div>
         ) : critiques.length === 0 ? (
           <p className="py-6 text-center text-xs text-faint">
-            Belum ada ulasan teknis. Jadilah fotografer pertama yang memberikan kritik konstruktif!
+            No technical reviews yet. Be the first photographer to provide constructive critique!
           </p>
         ) : (
           <AnimatePresence initial={false}>
             {critiques.map((c) => {
-              const authorName = c.user?.username || "Kritikus";
+              const authorName = c.user?.username || "Critic";
               const authorAvatar = c.user?.avatar_url;
               const dateStr = c.created_at
-                ? new Date(c.created_at).toLocaleDateString("id-ID", {
+                ? new Date(c.created_at).toLocaleDateString("en-US", {
                     day: "numeric",
                     month: "short",
                   })
@@ -534,7 +534,7 @@ export default function CritiqueSection({
                         <button
                           type="button"
                           onClick={() => handleDelete(c.id_critique)}
-                          aria-label="Hapus kritik"
+                          aria-label="Delete critique"
                           className="text-faint transition-colors hover:text-danger"
                         >
                           <Trash2 size={12} />
@@ -546,16 +546,16 @@ export default function CritiqueSection({
                   {/* Micro Breakdown 4 Pilar */}
                   <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-[9px] text-muted">
                     <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Komp: <strong className="text-ink">{c.rating_composition}</strong>
+                      Comp: <strong className="text-ink">{c.rating_composition}</strong>
                     </span>
                     <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Cahaya: <strong className="text-ink">{c.rating_lighting}</strong>
+                      Light: <strong className="text-ink">{c.rating_lighting}</strong>
                     </span>
                     <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Warna: <strong className="text-ink">{c.rating_color}</strong>
+                      Color: <strong className="text-ink">{c.rating_color}</strong>
                     </span>
                     <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Konsep: <strong className="text-ink">{c.rating_concept}</strong>
+                      Concept: <strong className="text-ink">{c.rating_concept}</strong>
                     </span>
                   </div>
 
@@ -564,7 +564,7 @@ export default function CritiqueSection({
                     <div className="mt-2.5 rounded bg-emerald-950/20 p-2 text-xs border border-emerald-900/30">
                       <div className="flex items-center gap-1 font-semibold text-emerald-400 text-[10px]">
                         <ThumbsUp size={10} />
-                        <span>Kekuatan Visual</span>
+                        <span>Visual Strengths</span>
                       </div>
                       <p className="mt-0.5 text-xs text-ink/90 leading-relaxed">
                         {c.strengths}
@@ -577,7 +577,7 @@ export default function CritiqueSection({
                     <div className="mt-1.5 rounded bg-sky-950/20 p-2 text-xs border border-sky-900/30">
                       <div className="flex items-center gap-1 font-semibold text-sky-400 text-[10px]">
                         <Lightbulb size={10} />
-                        <span>Saran Perbaikan</span>
+                        <span>Improvement Suggestions</span>
                       </div>
                       <p className="mt-0.5 text-xs text-ink/90 leading-relaxed">
                         {c.improvements}

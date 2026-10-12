@@ -223,12 +223,12 @@ export default function AuthCollage() {
           </span>
         </div>
         <p className="mt-2.5 text-xs leading-relaxed text-slate-200">
-          &ldquo;Presisi rendering warna dan diskusi parameter EXIF di PicFlow
-          memberikan rumah terbaik bagi karya fotografi kami.&rdquo;
+          &ldquo;Color rendering precision and transparent EXIF discussions make PicFlow
+          the authentic sanctuary for our photographic craft.&rdquo;
         </p>
         <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2 text-[10px] text-slate-400">
-          <span>Komunitas Fotografer Kurasi</span>
-          <span className="font-mono text-emerald-400">12,400+ Karya</span>
+          <span>Curated Photography Community</span>
+          <span className="font-mono text-emerald-400">12,400+ Works</span>
         </div>
       </motion.div>
     </aside>

@@ -76,7 +76,7 @@ export default function LikeButton({
       setLiked(prevLiked);
       setCount(prevCount);
       onLikeChange?.(prevLiked, prevCount);
-      toast.error(err.message || "Gagal menyukai foto.");
+      toast.error(err.message || "Failed to like photo.");
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function LikeButton({
     <button
       type="button"
       onClick={handleClick}
-      aria-label={liked ? "Batalkan suka" : "Sukai foto"}
+      aria-label={liked ? "Unlike photo" : "Like photo"}
       aria-pressed={liked}
       className={`group/like inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
         liked

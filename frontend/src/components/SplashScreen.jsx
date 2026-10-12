@@ -122,7 +122,7 @@ export default function SplashScreen({ onFinish }) {
           />
         </div>
         <div className="flex w-56 sm:w-64 items-center justify-between font-mono text-[11px] text-stone-500">
-          <span>Memuat kalibrasi sRGB...</span>
+          <span>Loading sRGB calibration...</span>
           <span className="font-semibold text-stone-700">{progress}%</span>
         </div>
       </div>

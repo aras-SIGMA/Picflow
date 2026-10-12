@@ -127,7 +127,7 @@ export default function CommentSection({
       setComments((prev) => prev.filter((c) => c.id_comment !== tempId));
       onCountChange?.(comments.length);
       setContent(text);
-      toast.error(err.message || "Gagal mengirim komentar.");
+      toast.error(err.message || "Failed to post comment.");
     } finally {
       setSubmitting(false);
     }
@@ -144,11 +144,11 @@ export default function CommentSection({
       if (res?.data?.comments_count != null) {
         onCountChange?.(res.data.comments_count);
       }
-      toast.success("Komentar dihapus.");
+      toast.success("Comment deleted.");
     } catch (err) {
       setComments(prevComments);
       onCountChange?.(prevComments.length);
-      toast.error(err.message || "Gagal menghapus komentar.");
+      toast.error(err.message || "Failed to delete comment.");
     }
   }
 
@@ -158,7 +158,7 @@ export default function CommentSection({
         <div className="flex items-center gap-2">
           <MessageSquare size={15} className="text-accent" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
-            Komentar & Diskusi Teknis
+            Comments &amp; Technical Discussion
           </h3>
         </div>
         <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] font-medium text-muted">
@@ -177,15 +177,15 @@ export default function CommentSection({
           </div>
         ) : comments.length === 0 ? (
           <p className="py-6 text-center text-xs text-faint">
-            Belum ada diskusi. Jadilah yang pertama memberikan apresiasi atau pertanyaan teknis!
+            No discussions yet. Be the first to share feedback or ask a technical question!
           </p>
         ) : (
           <AnimatePresence initial={false}>
             {comments.map((c) => {
-              const authorName = c.user?.username || "Fotografer";
+              const authorName = c.user?.username || "Photographer";
               const authorAvatar = c.user?.avatar_url;
               const dateStr = c.created_at
-                ? new Date(c.created_at).toLocaleTimeString("id-ID", {
+                ? new Date(c.created_at).toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
@@ -223,7 +223,7 @@ export default function CommentSection({
                           <button
                             type="button"
                             onClick={() => handleDelete(c.id_comment)}
-                            aria-label="Hapus komentar"
+                            aria-label="Delete comment"
                             className="text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                           >
                             <Trash2 size={12} />
@@ -249,7 +249,7 @@ export default function CommentSection({
             <input
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Tulis tanggapan atau pertanyaan teknis..."
+              placeholder="Write feedback or technical question..."
               maxLength={1000}
               className="flex-1 rounded-full border border-line bg-[var(--bg-elevated)] px-3.5 py-2 text-xs text-ink placeholder:text-faint focus:border-accent focus:outline-none"
             />
@@ -267,13 +267,13 @@ export default function CommentSection({
         <div className="mt-auto border-t border-line/60 pt-3 text-center">
           <p className="text-xs text-stone-500">
             <Link href="/login" className="font-semibold text-blue-600 hover:underline">
-              Masuk
+              Sign in
             </Link>{" "}
-            atau{" "}
+            or{" "}
             <Link href="/register" className="font-semibold text-blue-600 hover:underline">
-              Daftar
+              Register
             </Link>{" "}
-            untuk ikut berdiskusi.
+            to join the discussion.
           </p>
         </div>
       )}
