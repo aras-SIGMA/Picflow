@@ -12,13 +12,19 @@ import {
   CalendarDays,
   Check,
   Copy,
+  MessageSquare,
   Pencil,
   RefreshCcw,
+  Sparkles,
   Tag,
 } from "lucide-react";
 import { fileUrl, getPhoto, getToken } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import ExifMetadataPanel from "@/components/ExifMetadataPanel";
+import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
+import CritiqueSection from "@/components/CritiqueSection";
+import FollowButton from "@/components/FollowButton";
 import ApertureLoader from "@/components/ui/ApertureLoader";
 import Button from "@/components/ui/Button";
 import PillBadge from "@/components/ui/PillBadge";
@@ -34,12 +40,9 @@ export default function PhotoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [socialTab, setSocialTab] = useState("critique"); // "critique" | "comments"
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login");
-      return;
-    }
     if (!id) return;
 
     let active = true;
@@ -52,7 +55,7 @@ export default function PhotoDetailPage() {
         if (active) setPhoto(res.data);
       } catch (err) {
         if (err.status === 401) router.replace("/login");
-        else if (active) setError(err.message || "Gagal memuat detail foto.");
+        else if (active) setError(err.message || "Failed to load photo details.");
       } finally {
         if (active) setLoading(false);
       }
@@ -68,10 +71,10 @@ export default function PhotoDetailPage() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      toast.success("Link foto disalin ke clipboard.");
+      toast.success("Photo link copied to clipboard.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Gagal menyalin link.");
+      toast.error("Failed to copy link.");
     }
   }
 
@@ -81,7 +84,7 @@ export default function PhotoDetailPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-24">
           <div className="flex flex-col items-center gap-4">
             <ApertureLoader size={32} />
-            <p className="text-sm text-muted">Memuat karya...</p>
+            <p className="text-sm text-muted">Loading photo...</p>
           </div>
         </div>
       </PageTransition>
@@ -93,12 +96,12 @@ export default function PhotoDetailPage() {
       <PageTransition>
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-24 text-center">
           <p className="text-sm text-danger" role="alert">
-            {error || "Foto tidak ditemukan."}
+            {error || "Photo not found."}
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="ghost" onClick={() => router.push("/home")}>
               <ArrowLeft size={14} />
-              Kembali ke Galeri
+              Back to Gallery
             </Button>
             <Button
               variant="outline"
@@ -111,7 +114,7 @@ export default function PhotoDetailPage() {
               }}
             >
               <RefreshCcw size={14} />
-              Coba lagi
+              Try again
             </Button>
           </div>
         </div>
@@ -131,10 +134,15 @@ export default function PhotoDetailPage() {
             className="inline-flex items-center gap-2 text-xs font-medium text-muted transition-colors hover:text-ink"
           >
             <ArrowLeft size={14} />
-            Kembali ke feed
+            Back to feed
           </Link>
 
           <div className="flex items-center gap-2">
+            <LikeButton
+              photoId={photo.id_photo}
+              initialLiked={photo.is_liked}
+              initialCount={photo.likes_count}
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -142,17 +150,19 @@ export default function PhotoDetailPage() {
               className="text-xs"
             >
               {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
-              {copied ? "Tersalin" : "Salin link"}
+              {copied ? "Copied" : "Copy link"}
             </Button>
-            <Button
-              href={`/addphoto?id=${photo.id_photo}`}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              <Pencil size={13} />
-              Edit karya
-            </Button>
+            {photo.is_owner && (
+              <Button
+                href={`/addphoto?id=${photo.id_photo}`}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                <Pencil size={13} />
+                Edit photo
+              </Button>
+            )}
           </div>
         </div>
 
@@ -163,7 +173,7 @@ export default function PhotoDetailPage() {
               <Image
                 src={src}
                 loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
-                alt={photo.title || "Karya fotografi"}
+                alt={photo.title || "Photographic work"}
                 width={2048}
                 height={1536}
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 2048px"
@@ -171,7 +181,7 @@ export default function PhotoDetailPage() {
                 priority
               />
             ) : (
-              <p className="py-24 text-sm text-faint">Gambar tidak tersedia.</p>
+              <p className="py-24 text-sm text-faint">Image unavailable.</p>
             )}
           </div>
         </Reveal>
@@ -180,6 +190,35 @@ export default function PhotoDetailPage() {
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Info */}
           <div className="lg:col-span-2">
+            {/* Creator Bar */}
+            {photo.creator?.username && (
+              <div className="mb-4 flex items-center justify-between rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-line bg-[var(--bg-elevated)] text-xs font-bold text-ink">
+                    {photo.creator.avatar_url ? (
+                      <Image
+                        src={photo.creator.avatar_url}
+                        alt={photo.creator.username}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      photo.creator.username.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-ink">
+                      @{photo.creator.username}
+                    </p>
+                    <p className="text-[11px] text-faint">Photo Creator</p>
+                  </div>
+                </div>
+                <FollowButton
+                  creatorId={photo.creator.id_user || photo.id_user}
+                />
+              </div>
+            )}
+
             <PillBadge>
               {photo.category_name || `#${photo.id_category}`}
             </PillBadge>
@@ -195,7 +234,7 @@ export default function PhotoDetailPage() {
               {photo.created_at && (
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays size={13} className="text-accent2" />
-                  {new Date(photo.created_at).toLocaleDateString("id-ID", {
+                  {new Date(photo.created_at).toLocaleDateString("en-US", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -210,7 +249,7 @@ export default function PhotoDetailPage() {
               </div>
             ) : (
               <p className="mt-4 text-xs italic text-faint">
-                Tidak ada deskripsi untuk karya ini.
+                No description provided for this work.
               </p>
             )}
 
@@ -218,17 +257,61 @@ export default function PhotoDetailPage() {
             <div className="mt-6">
               <ExifMetadataPanel photo={photo} />
             </div>
+
+            {/* Komentar & Kritik Tabs */}
+            <div className="mt-8">
+              <div className="flex gap-2 border-b border-line pb-2">
+                <button
+                  type="button"
+                  onClick={() => setSocialTab("critique")}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                    socialTab === "critique"
+                      ? "bg-accent/20 text-accent font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Sparkles size={13} />
+                  Constructive Critique
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSocialTab("comments")}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                    socialTab === "comments"
+                      ? "bg-accent/20 text-accent font-semibold"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <MessageSquare size={13} />
+                  Discussion ({photo.comments_count || 0})
+                </button>
+              </div>
+
+              <div className="mt-4">
+                {socialTab === "critique" ? (
+                  <CritiqueSection
+                    photoId={photo.id_photo}
+                    photoOwnerId={photo.creator?.id_user || photo.id_user}
+                  />
+                ) : (
+                  <CommentSection
+                    photoId={photo.id_photo}
+                    initialCount={photo.comments_count}
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Sidebar / Quick Summary Card */}
           <div>
             <div className="rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)] p-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-faint">
-                Ringkasan File
+                File Summary
               </h3>
               <dl className="mt-4 space-y-3 text-xs">
                 <div className="flex justify-between border-b border-line/50 pb-2">
-                  <dt className="text-muted">Resolusi Asli</dt>
+                  <dt className="text-muted">Native Resolution</dt>
                   <dd className="font-medium text-ink">
                     {photo.width && photo.height
                       ? `${photo.width} × ${photo.height} px`
@@ -236,7 +319,7 @@ export default function PhotoDetailPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between border-b border-line/50 pb-2">
-                  <dt className="text-muted">Format Pengiriman</dt>
+                  <dt className="text-muted">Delivery Format</dt>
                   <dd className="font-medium text-accent">
                     WebP / AVIF (Auto)
                   </dd>
@@ -248,9 +331,9 @@ export default function PhotoDetailPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <dt className="text-muted">Proteksi GPS</dt>
+                  <dt className="text-muted">GPS Privacy</dt>
                   <dd className="font-medium text-success">
-                    Stripped (Aman)
+                    Stripped (Secure)
                   </dd>
                 </div>
               </dl>

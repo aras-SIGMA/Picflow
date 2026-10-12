@@ -78,12 +78,12 @@ export default function Modal({ open, onClose, children, labelledBy, wide = fals
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
             transition={{ duration: 0.4, ease: EASE }}
-            className={`relative w-full ${wide ? "max-w-4xl" : "max-w-md"} rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)] p-6 outline-none`}
+            className={`relative w-full ${wide ? "max-w-4xl" : "max-w-md"} rounded-3xl border border-[#DCD0BE] bg-[#FEFAF3] p-6 shadow-xl outline-none text-stone-900`}
           >
             <button
               onClick={onClose}
               aria-label="Tutup"
-              className="absolute right-4 top-4 rounded-full border border-line p-1.5 text-muted transition-colors hover:bg-white/5 hover:text-ink"
+              className="absolute right-4 top-4 rounded-full border border-[#DCD0BE] p-1.5 text-stone-500 transition-colors hover:bg-[#F5EFE6] hover:text-stone-900"
             >
               <X size={16} />
             </button>

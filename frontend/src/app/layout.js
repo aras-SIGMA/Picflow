@@ -16,8 +16,8 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata = {
-  title: "PicFlow",
-  description: "Vault pribadi untuk karya fotografi terbaikmu (Next.js + Express)",
+  title: "PicFlow — Curated sRGB Photography Showcase",
+  description: "Curated photography showcase with true sRGB color calibration & open EXIF parameters",
 };
 
 // Root layout TIDAK memasang Navbar/Footer lagi: chrome halaman privat
@@ -25,7 +25,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html
-      lang="id"
+      lang="en"
       className={`${geistSans.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">

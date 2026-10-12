@@ -186,7 +186,7 @@ function AddPhotoForm() {
       else await createPhoto(fd);
 
       // Sukses: toast + shutter flash singkat lalu ke galeri (perilaku lama).
-      toast.success(editId ? "Foto berhasil diperbarui." : "Foto berhasil diunggah.");
+      toast.success(editId ? "Photo updated successfully." : "Photo uploaded successfully.");
       setFlash(true);
       setTimeout(() => router.push("/home"), 1000);
     } catch (err) {
@@ -202,7 +202,7 @@ function AddPhotoForm() {
         <div className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-24">
           <div className="flex flex-col items-center gap-4">
             <ApertureLoader size={30} />
-            <p className="text-sm text-muted">Memuat form...</p>
+            <p className="text-sm text-muted">Loading form...</p>
           </div>
         </div>
       </PageTransition>
@@ -253,24 +253,24 @@ function AddPhotoForm() {
               previewUrl={previewUrl}
               oldImage={oldImage}
               label={
-                editId ? "Ganti gambar (opsional)" : "Tarik & lepas gambarmu di sini"
+                editId ? "Replace image (optional)" : "Drag & drop your image here"
               }
             />
             <p className={`mt-3 text-xs ${imageInvalid ? "text-danger" : "text-faint"}`}>
               {imageInvalid
-                ? "File gambar wajib dipilih."
+                ? "Image file is required."
                 : file
                   ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`
                   : editId
-                    ? "Biarkan kosong jika tidak ingin mengganti gambar."
-                    : "JPG, PNG, WEBP, atau TIFF · maksimal 25MB."}
+                    ? "Leave blank to keep existing image."
+                    : "JPG, PNG, WEBP, or TIFF · maximum 25MB."}
             </p>
 
             {/* Live EXIF Preview */}
             {parsingExif && (
               <div className="mt-3 flex items-center gap-2 rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] px-3 py-2 text-xs text-muted">
                 <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
-                Mengekstrak metadata EXIF kamera...
+                Extracting camera EXIF metadata...
               </div>
             )}
 
@@ -279,7 +279,7 @@ function AddPhotoForm() {
                 <div className="mb-2 flex items-center justify-between border-b border-line/50 pb-1.5">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
                     <Sparkles size={11} />
-                    EXIF Terdeteksi Otomatis
+                    Auto-Detected EXIF
                   </span>
                   <span className="text-[10px] text-faint">
                     Client Pre-parsed
@@ -287,7 +287,7 @@ function AddPhotoForm() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="truncate text-muted">
-                    <span className="text-faint">Kamera: </span>
+                    <span className="text-faint">Camera: </span>
                     <span className="font-medium text-ink">
                       {[clientExif.camera_make, clientExif.camera_model]
                         .filter(Boolean)
@@ -295,7 +295,7 @@ function AddPhotoForm() {
                     </span>
                   </div>
                   <div className="truncate text-muted">
-                    <span className="text-faint">Lensa: </span>
+                    <span className="text-faint">Lens: </span>
                     <span className="font-medium text-ink">
                       {clientExif.lens || "N/A"}
                     </span>
@@ -326,7 +326,7 @@ function AddPhotoForm() {
 
           {/* Kanan: form */}
           <div className="flex flex-col gap-5">
-            <Field label="Title" error={titleInvalid ? "Title wajib diisi." : null}>
+            <Field label="Title" error={titleInvalid ? "Title is required." : null}>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -340,9 +340,9 @@ function AddPhotoForm() {
                 label="Category"
                 value={idCategory}
                 onChange={(v) => setIdCategory(v)}
-                placeholder="Pilih kategori"
+                placeholder="Select category"
                 required
-                error={categoryInvalid ? "Kategori wajib dipilih." : null}
+                error={categoryInvalid ? "Category is required." : null}
                 options={categories.map((c) => ({
                   value: String(c.id_category),
                   label: c.name,
@@ -353,7 +353,7 @@ function AddPhotoForm() {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label htmlFor="photo-desc" className="text-xs font-medium text-muted">
-                  Description <span className="text-faint">(opsional)</span>
+                  Description <span className="text-faint">(optional)</span>
                 </label>
                 <span
                   className={`text-xs ${description.length >= DESC_MAX ? "text-danger" : "text-faint"}`}
@@ -367,7 +367,7 @@ function AddPhotoForm() {
                 maxLength={DESC_MAX}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ceritakan konteks foto ini..."
+                placeholder="Tell the story behind this shot..."
                 className="w-full rounded-[var(--radius-sm)] border border-line bg-[var(--bg-elevated)] px-4 py-3 text-sm text-ink placeholder:text-faint transition-colors focus:border-accent focus:outline-none"
               />
             </div>
@@ -385,14 +385,14 @@ function AddPhotoForm() {
                 magnetic
                 disabled={!canSubmit && submitted}
               >
-                {busy ? "Menyimpan..." : editId ? "Update foto" : "Upload foto"}
+                {busy ? "Saving..." : editId ? "Update photo" : "Upload photo"}
               </Button>
               <button
                 type="button"
                 onClick={() => router.push("/home")}
                 className="text-sm text-muted transition-colors hover:text-ink"
               >
-                Batal
+                Cancel
               </button>
             </div>
           </div>
@@ -408,7 +408,7 @@ export default function AddPhotoPage() {
       fallback={
         <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24">
           <ApertureLoader size={30} />
-          <p className="text-sm text-muted">Memuat form...</p>
+          <p className="text-sm text-muted">Loading form...</p>
         </div>
       }
     >

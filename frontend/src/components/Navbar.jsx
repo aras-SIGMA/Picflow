@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import Logo from "@/components/ui/Logo";
 import { EASE } from "@/components/ui/motion";
 
 const LINKS = [
@@ -27,8 +28,8 @@ function NavLink({ href, label, onClick }) {
       href={href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`relative px-1 py-1 text-sm transition-colors ${
-        active ? "text-ink" : "text-muted hover:text-ink"
+      className={`relative px-1 py-1 text-sm font-medium transition-colors ${
+        active ? "text-stone-900 font-semibold" : "text-stone-600 hover:text-stone-900"
       }`}
     >
       {label}
@@ -36,7 +37,7 @@ function NavLink({ href, label, onClick }) {
         <motion.span
           layoutId="nav-underline"
           transition={{ duration: 0.4, ease: EASE }}
-          className="absolute -bottom-0.5 left-0 right-0 h-px bg-white"
+          className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full bg-blue-600"
         />
       )}
     </Link>
@@ -65,16 +66,17 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: EASE }}
       className={`sticky top-0 z-40 transition-colors duration-500 ${
         scrolled
-          ? "border-b border-line bg-[var(--bg)]/85 backdrop-blur-md"
+          ? "border-b border-[#E8DEC9] bg-[#FEFAF3]/90 backdrop-blur-md"
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5">
         <Link
           href={user ? "/home" : "/login"}
-          className="text-base font-bold tracking-tight text-ink"
+          aria-label="PicFlow Home"
+          className="inline-flex items-center transition-transform duration-200 hover:scale-[1.02]"
         >
-          PicFlow
+          <Logo variant="lockup" size={32} showTagline={false} inverted={false} />
         </Link>
 
         {/* Desktop */}
@@ -85,19 +87,19 @@ export default function Navbar() {
             ))}
             <button
               onClick={logout}
-              className="rounded-full border border-white/15 px-4 py-1.5 text-sm text-muted transition-colors hover:border-white/40 hover:text-ink"
+              className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-4 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900 hover:bg-white"
             >
               Logout
             </button>
           </div>
         ) : (
           <div className="hidden items-center gap-7 sm:flex">
-            <Link href="/login" className="text-sm text-muted transition-colors hover:text-ink">
+            <Link href="/login" className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900">
               Login
             </Link>
             <Link
               href="/register"
-              className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
+              className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
             >
               Register
             </Link>
@@ -107,9 +109,9 @@ export default function Navbar() {
         {/* Mobile: tombol menu (hanya saat sudah login) */}
         {!loading && user && (
           <button
-            className="rounded-full border border-line p-2 text-muted sm:hidden"
+            className="rounded-full border border-[#DCD0BE] p-2 text-stone-700 sm:hidden hover:bg-white"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
           >
             {menuOpen ? <X size={16} /> : <Menu size={16} />}
@@ -125,7 +127,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className="border-b border-line bg-[var(--bg)]/95 backdrop-blur-md sm:hidden"
+            className="border-b border-[#E8DEC9] bg-[#FEFAF3]/98 backdrop-blur-md sm:hidden"
           >
             <div className="flex flex-col gap-1 px-4 py-3">
               {LINKS.map((l) => (
@@ -136,7 +138,7 @@ export default function Navbar() {
                   setMenuOpen(false);
                   logout();
                 }}
-                className="mt-1 w-fit rounded-full border border-white/15 px-4 py-1.5 text-sm text-muted"
+                className="mt-1 w-fit rounded-full border border-[#DCD0BE] bg-white px-4 py-1.5 text-xs font-semibold text-stone-700"
               >
                 Logout
               </button>

@@ -10,9 +10,12 @@ import ApertureLoader from "./ApertureLoader";
 import { prefersReducedMotion } from "./motion";
 
 const VARIANTS = {
-  primary: "bg-white text-black hover:bg-white/85 border border-transparent",
-  ghost: "border border-white/15 text-ink hover:bg-white/5 hover:border-white/30",
-  danger: "border border-[var(--danger)]/40 text-danger hover:bg-[var(--danger)]/10",
+  primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent",
+  accent: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent",
+  dark: "bg-stone-900 text-white hover:bg-stone-800 border border-transparent",
+  ghost: "border border-[#DECDB8] text-stone-800 hover:bg-[#F5EFE6] hover:border-stone-400",
+  outline: "border border-[#DECDB8] text-stone-800 hover:bg-[#F5EFE6] hover:border-stone-400",
+  danger: "border border-red-300 text-red-600 hover:bg-red-50",
 };
 
 const SIZES = {
@@ -53,17 +56,18 @@ export default function Button({
   }
 
   const Tag = href ? motion.a : motion.button;
+  const { style: customStyle, ...otherRest } = rest;
 
   return (
     <Tag
       ref={ref}
       {...(href ? { href } : { type, disabled: disabled || loading })}
-      style={{ x: sx, y: sy }}
+      style={{ x: sx, y: sy, ...customStyle }}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       whileTap={{ scale: 0.97 }}
       className={`inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-tight transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
-      {...rest}
+      {...otherRest}
     >
       {loading && <ApertureLoader size={16} light={variant !== "primary"} />}
       {children}

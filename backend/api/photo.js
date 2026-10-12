@@ -10,13 +10,11 @@ import fs from "fs/promises";
 import exifr from "exifr";
 import supabase from "../config/supabase.js";
 import cloudinary from "../config/cloudinary.js";
-import verifyToken from "../middleware/authMiddleware.js";
+import verifyToken, { optionalToken } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
+import { broadcastEvent } from "../lib/realtime.js";
 
 const router = express.Router();
-
-// Semua route di file ini wajib login
-router.use(verifyToken);
 
 const photoSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -35,17 +33,37 @@ function getCloudinaryDeliveryUrl(imageUrl, width) {
   );
 }
 
-// Petakan baris Supabase ke bentuk lama frontend.
-function serializePhoto(row, categoryName) {
+// Petakan baris Supabase ke bentuk seragam untuk frontend.
+function serializePhoto(row, categoryName, isLiked = false) {
   const isCloudinary =
     typeof row.image_url === "string" &&
     row.image_url.includes("res.cloudinary.com");
+
+  const likesCount = Array.isArray(row.likes)
+    ? (row.likes[0]?.count ?? 0)
+    : typeof row.likes_count === "number"
+      ? row.likes_count
+      : 0;
+
+  const commentsCount = Array.isArray(row.comments)
+    ? (row.comments[0]?.count ?? 0)
+    : typeof row.comments_count === "number"
+      ? row.comments_count
+      : 0;
+
+  const creator = row.profiles
+    ? {
+        id_user: row.profiles.id,
+        username: row.profiles.username,
+        avatar_url: row.profiles.avatar_url,
+      }
+    : null;
 
   return {
     id_photo: row.id,
     id_user: row.user_id,
     id_category: row.category_id,
-    category_name: categoryName ?? row.category_name ?? null,
+    category_name: categoryName ?? row.category_name ?? row.categories?.name ?? null,
     title: row.title,
     description: row.description,
     image_url: row.image_url,
@@ -71,6 +89,10 @@ function serializePhoto(row, categoryName) {
     taken_at: row.taken_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    likes_count: likesCount,
+    comments_count: commentsCount,
+    is_liked: Boolean(isLiked),
+    creator,
   };
 }
 
@@ -149,10 +171,94 @@ async function uploadToCloudinary(file, folder) {
   return result;
 }
 
+const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty")
+    .max(1000, "Comment cannot exceed 1000 characters"),
+});
+
+const CRITIQUE_PREFIX = "__PICFLOW_CRITIQUE__:";
+
+const critiqueSchema = z.object({
+  rating_composition: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating komposisi minimal 1")
+    .max(5, "Rating komposisi maksimal 5"),
+  rating_lighting: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating pencahayaan minimal 1")
+    .max(5, "Rating pencahayaan maksimal 5"),
+  rating_color: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating warna minimal 1")
+    .max(5, "Rating warna maksimal 5"),
+  rating_concept: z.coerce
+    .number()
+    .int()
+    .min(1, "Rating konsep minimal 1")
+    .max(5, "Rating konsep maksimal 5"),
+  strengths: z
+    .string()
+    .trim()
+    .min(3, "Poin kekuatan minimal 3 karakter")
+    .max(2000, "Poin kekuatan maksimal 2000 karakter"),
+  improvements: z
+    .string()
+    .trim()
+    .min(3, "Saran perbaikan minimal 3 karakter")
+    .max(2000, "Saran perbaikan maksimal 2000 karakter"),
+});
+
+function calculateCritiqueStats(critiques) {
+  if (!critiques || critiques.length === 0) {
+    return {
+      total_critiques: 0,
+      avg_composition: 0,
+      avg_lighting: 0,
+      avg_color: 0,
+      avg_concept: 0,
+      overall_avg: 0,
+    };
+  }
+  const sum = critiques.reduce(
+    (acc, c) => {
+      acc.composition += c.rating_composition;
+      acc.lighting += c.rating_lighting;
+      acc.color += c.rating_color;
+      acc.concept += c.rating_concept;
+      return acc;
+    },
+    { composition: 0, lighting: 0, color: 0, concept: 0 }
+  );
+  const n = critiques.length;
+  const avg_composition = +(sum.composition / n).toFixed(1);
+  const avg_lighting = +(sum.lighting / n).toFixed(1);
+  const avg_color = +(sum.color / n).toFixed(1);
+  const avg_concept = +(sum.concept / n).toFixed(1);
+  const overall_avg = +(
+    (avg_composition + avg_lighting + avg_color + avg_concept) /
+    4
+  ).toFixed(1);
+
+  return {
+    total_critiques: n,
+    avg_composition,
+    avg_lighting,
+    avg_color,
+    avg_concept,
+    overall_avg,
+  };
+}
+
 // ====== ROUTES ======
 
 // CREATE: tambah foto baru + upload ke Cloudinary + EXIF.
-router.post("/", upload.single("image"), async (req, res, next) => {
+router.post("/", verifyToken, upload.single("image"), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -202,7 +308,7 @@ router.post("/", upload.single("image"), async (req, res, next) => {
           : null,
         ...exif,
       })
-      .select("*")
+      .select("*, categories(name), profiles(id, username, avatar_url)")
       .single();
 
     if (error) {
@@ -215,7 +321,7 @@ router.post("/", upload.single("image"), async (req, res, next) => {
 
     res.status(201).json({
       message: "Photo created",
-      data: serializePhoto(data),
+      data: serializePhoto(data, data.categories?.name, false),
     });
   } catch (error) {
     await cleanupTemp(req.file);
@@ -223,21 +329,68 @@ router.post("/", upload.single("image"), async (req, res, next) => {
   }
 });
 
-// READ: semua foto milik user yang login.
-router.get("/", async (req, res, next) => {
+// READ: feed foto (Explore komunitas, Following, atau My photos).
+router.get("/", optionalToken, async (req, res, next) => {
   try {
-    const { data, error } = await supabase
+    const feed = req.query.feed || "explore";
+    const categoryId = req.query.category_id || req.query.id_category;
+    const targetUserId = req.query.user_id;
+
+    let query = supabase
       .from("photos")
-      .select("*, categories(name)")
-      .eq("user_id", req.user.id)
+      .select(
+        "*, categories(name), profiles(id, username, avatar_url), likes(count), comments(count)"
+      )
       .order("created_at", { ascending: false });
 
+    if (feed === "my" || feed === "mine") {
+      if (!req.user) {
+        return res.status(401).json({ message: "Login required to access your photos" });
+      }
+      query = query.eq("user_id", req.user.id);
+    } else if (feed === "following") {
+      if (!req.user) {
+        return res.status(401).json({ message: "Login required to access following feed" });
+      }
+      // Ambil daftar user yang di-follow oleh user saat ini
+      const { data: followRows } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", req.user.id);
+
+      const followingIds = (followRows || []).map((r) => r.following_id);
+      if (followingIds.length === 0) {
+        return res.json({ message: "Photos fetched", data: [] });
+      }
+      query = query.in("user_id", followingIds);
+    } else if (targetUserId) {
+      query = query.eq("user_id", targetUserId);
+    }
+
+    if (categoryId && categoryId !== "all") {
+      query = query.eq("category_id", Number(categoryId));
+    }
+
+    const { data, error } = await query;
     if (error) return next(new Error(error.message));
+
+    // Ambil daftar like milik user saat ini untuk menandai is_liked (jika user login)
+    const photoIds = (data || []).map((p) => p.id);
+    let userLikedSet = new Set();
+    if (photoIds.length > 0 && req.user?.id) {
+      const { data: userLikes } = await supabase
+        .from("likes")
+        .select("photo_id")
+        .eq("user_id", req.user.id)
+        .in("photo_id", photoIds);
+
+      userLikedSet = new Set((userLikes || []).map((l) => l.photo_id));
+    }
 
     res.json({
       message: "Photos fetched",
       data: (data || []).map((row) =>
-        serializePhoto(row, row.categories?.name),
+        serializePhoto(row, row.categories?.name, userLikedSet.has(row.id))
       ),
     });
   } catch (error) {
@@ -245,22 +398,629 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// READ: satu foto milik sendiri.
-router.get("/:id", async (req, res, next) => {
+// READ: satu foto detail.
+router.get("/:id", optionalToken, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from("photos")
-      .select("*, categories(name)")
+      .select(
+        "*, categories(name), profiles(id, username, avatar_url), likes(count), comments(count)"
+      )
       .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
       .maybeSingle();
 
     if (error) return next(new Error(error.message));
     if (!data) return res.status(404).json({ message: "Photo not found" });
 
+    // Cek apakah user saat ini menyukai foto ini (jika login)
+    let userLike = null;
+    if (req.user?.id) {
+      const { data: likeRow } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("photo_id", data.id)
+        .eq("user_id", req.user.id)
+        .maybeSingle();
+      userLike = likeRow;
+    }
+
+    const serialized = serializePhoto(
+      data,
+      data.categories?.name,
+      Boolean(userLike)
+    );
+    serialized.is_owner = Boolean(req.user?.id && data.user_id === req.user.id);
+
     res.json({
       message: "Photo fetched",
-      data: serializePhoto(data, data.categories?.name),
+      data: serialized,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// LIKE / UNLIKE: toggle like foto.
+router.post("/:id/like", verifyToken, async (req, res, next) => {
+  try {
+    const photoId = req.params.id;
+
+    // Pastikan foto ada
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id, user_id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    // Cek apakah sudah di-like sebelumnya
+    const { data: existingLike } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("photo_id", photoId)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    let isLiked = false;
+    if (existingLike) {
+      const { error: delErr } = await supabase
+        .from("likes")
+        .delete()
+        .eq("id", existingLike.id);
+      if (delErr) return next(new Error(delErr.message));
+      isLiked = false;
+    } else {
+      const { error: insErr } = await supabase
+        .from("likes")
+        .insert({ photo_id: photoId, user_id: req.user.id });
+      if (insErr) return next(new Error(insErr.message));
+      isLiked = true;
+    }
+
+    // Hitung total like terkini
+    const { count } = await supabase
+      .from("likes")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const likesCount = count ?? 0;
+
+    // Broadcast update real-time
+    broadcastEvent("photo:liked", {
+      photo_id: photoId,
+      user_id: req.user.id,
+      is_liked: isLiked,
+      likes_count: likesCount,
+    });
+
+    res.json({
+      message: isLiked ? "Photo liked" : "Photo unliked",
+      data: {
+        is_liked: isLiked,
+        likes_count: likesCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: daftar komentar suatu foto.
+router.get("/:id/comments", optionalToken, async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(
+        "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .eq("photo_id", req.params.id)
+      .order("created_at", { ascending: true });
+
+    if (error) return next(new Error(error.message));
+
+    const comments = (data || [])
+      .filter((c) => !c.content?.startsWith(CRITIQUE_PREFIX))
+      .map((c) => ({
+        id_comment: c.id,
+        id_photo: c.photo_id,
+        id_user: c.user_id,
+        content: c.content,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        user: {
+          id_user: c.profiles?.id,
+          username: c.profiles?.username,
+          avatar_url: c.profiles?.avatar_url,
+        },
+        is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
+      }));
+
+    res.json({
+      message: "Comments fetched",
+      data: comments,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: tambah komentar baru.
+router.post("/:id/comments", verifyToken, async (req, res, next) => {
+  try {
+    const validation = commentSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.issues.map((i) => i.message),
+      });
+    }
+
+    const photoId = req.params.id;
+
+    // Pastikan foto ada
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("comments")
+      .insert({
+        photo_id: photoId,
+        user_id: req.user.id,
+        content: validation.data.content,
+      })
+      .select(
+        "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .single();
+
+    if (insErr) return next(new Error(insErr.message));
+
+    const { count } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const commentsCount = count ?? 0;
+    const commentPayload = {
+      id_comment: inserted.id,
+      id_photo: inserted.photo_id,
+      id_user: inserted.user_id,
+      content: inserted.content,
+      created_at: inserted.created_at,
+      updated_at: inserted.updated_at,
+      user: {
+        id_user: inserted.profiles?.id,
+        username: inserted.profiles?.username,
+        avatar_url: inserted.profiles?.avatar_url,
+      },
+      is_owner: true,
+    };
+
+    // Broadcast penambahan komentar real-time
+    broadcastEvent("comment:added", {
+      photo_id: photoId,
+      comment: commentPayload,
+      comments_count: commentsCount,
+    });
+
+    res.status(201).json({
+      message: "Comment added",
+      data: {
+        comment: commentPayload,
+        comments_count: commentsCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// COMMENTS: hapus komentar.
+router.delete("/:id/comments/:commentId", verifyToken, async (req, res, next) => {
+  try {
+    const { id: photoId, commentId } = req.params;
+
+    const { data: comment, error: cErr } = await supabase
+      .from("comments")
+      .select("id, user_id, photo_id, photos(user_id)")
+      .eq("id", commentId)
+      .eq("photo_id", photoId)
+      .maybeSingle();
+
+    if (cErr) return next(new Error(cErr.message));
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    // Izin hapus: pembuat komentar atau pemilik foto
+    const isCommentAuthor = comment.user_id === req.user.id;
+    const isPhotoOwner = comment.photos?.user_id === req.user.id;
+    if (!isCommentAuthor && !isPhotoOwner) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+
+    const { error: delErr } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (delErr) return next(new Error(delErr.message));
+
+    const { count } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("photo_id", photoId);
+
+    const commentsCount = count ?? 0;
+
+    // Broadcast penghapusan komentar real-time
+    broadcastEvent("comment:deleted", {
+      photo_id: photoId,
+      comment_id: commentId,
+      comments_count: commentsCount,
+    });
+
+    res.json({
+      message: "Comment deleted",
+      data: { comments_count: commentsCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: daftar kritik & saran konstruktif suatu foto beserta statistik.
+router.get("/:id/critiques", optionalToken, async (req, res, next) => {
+  try {
+    const photoId = req.params.id;
+
+    // 1. Coba dari tabel critiques
+    const { data, error } = await supabase
+      .from("critiques")
+      .select(
+        "id, user_id, photo_id, rating_composition, rating_lighting, rating_color, rating_concept, strengths, improvements, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .eq("photo_id", photoId)
+      .order("created_at", { ascending: false });
+
+    let critiques = [];
+    if (error) {
+      // Jika tabel critiques belum ada di Supabase (PGRST205), fallback ke comments
+      if (error.code === "PGRST205") {
+        const { data: cData, error: cErr } = await supabase
+          .from("comments")
+          .select(
+            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+          )
+          .eq("photo_id", photoId)
+          .order("created_at", { ascending: false });
+
+        if (cErr) return next(new Error(cErr.message));
+
+        critiques = (cData || [])
+          .filter((c) => c.content?.startsWith(CRITIQUE_PREFIX))
+          .map((c) => {
+            let parsed = {};
+            try {
+              parsed = JSON.parse(c.content.slice(CRITIQUE_PREFIX.length));
+            } catch (_) {}
+            const rating_comp = parsed.rating_composition || 3;
+            const rating_light = parsed.rating_lighting || 3;
+            const rating_col = parsed.rating_color || 3;
+            const rating_conc = parsed.rating_concept || 3;
+            const overall = +(
+              (rating_comp + rating_light + rating_col + rating_conc) /
+              4
+            ).toFixed(1);
+
+            return {
+              id_critique: c.id,
+              id_photo: c.photo_id,
+              id_user: c.user_id,
+              rating_composition: rating_comp,
+              rating_lighting: rating_light,
+              rating_color: rating_col,
+              rating_concept: rating_conc,
+              overall_score: overall,
+              strengths: parsed.strengths || "",
+              improvements: parsed.improvements || "",
+              created_at: c.created_at,
+              updated_at: c.updated_at,
+              user: {
+                id_user: c.profiles?.id,
+                username: c.profiles?.username,
+                avatar_url: c.profiles?.avatar_url,
+              },
+              is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
+            };
+          });
+      } else {
+        return next(new Error(error.message));
+      }
+    } else {
+      critiques = (data || []).map((c) => {
+        const overall = +(
+          (c.rating_composition +
+            c.rating_lighting +
+            c.rating_color +
+            c.rating_concept) /
+          4
+        ).toFixed(1);
+        return {
+          id_critique: c.id,
+          id_photo: c.photo_id,
+          id_user: c.user_id,
+          rating_composition: c.rating_composition,
+          rating_lighting: c.rating_lighting,
+          rating_color: c.rating_color,
+          rating_concept: c.rating_concept,
+          overall_score: overall,
+          strengths: c.strengths,
+          improvements: c.improvements,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+          user: {
+            id_user: c.profiles?.id,
+            username: c.profiles?.username,
+            avatar_url: c.profiles?.avatar_url,
+          },
+          is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
+        };
+      });
+    }
+
+    const stats = calculateCritiqueStats(critiques);
+
+    res.json({
+      message: "Critiques fetched",
+      data: {
+        critiques,
+        stats,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: buat kritik baru untuk suatu foto.
+router.post("/:id/critiques", verifyToken, async (req, res, next) => {
+  try {
+    const validation = critiqueSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.issues.map((i) => i.message),
+      });
+    }
+
+    const photoId = req.params.id;
+
+    // Pastikan foto ada dan ambil pemiliknya
+    const { data: photo, error: photoErr } = await supabase
+      .from("photos")
+      .select("id, user_id")
+      .eq("id", photoId)
+      .maybeSingle();
+
+    if (photoErr) return next(new Error(photoErr.message));
+    if (!photo) return res.status(404).json({ message: "Photo not found" });
+
+    // Cegah fotografer memberikan kritik pada foto miliknya sendiri
+    if (photo.user_id === req.user.id) {
+      return res.status(400).json({
+        message: "Anda tidak dapat memberikan kritik pada karya Anda sendiri.",
+      });
+    }
+
+    const {
+      rating_composition,
+      rating_lighting,
+      rating_color,
+      rating_concept,
+      strengths,
+      improvements,
+    } = validation.data;
+
+    let createdCritique = null;
+
+    // 1. Coba insert ke tabel critiques
+    const { data: insData, error: insErr } = await supabase
+      .from("critiques")
+      .insert({
+        photo_id: photoId,
+        user_id: req.user.id,
+        rating_composition,
+        rating_lighting,
+        rating_color,
+        rating_concept,
+        strengths,
+        improvements,
+      })
+      .select(
+        "id, user_id, photo_id, rating_composition, rating_lighting, rating_color, rating_concept, strengths, improvements, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .single();
+
+    if (insErr) {
+      if (insErr.code === "PGRST205") {
+        // Fallback simpan ke comments
+        const fallbackContent =
+          CRITIQUE_PREFIX +
+          JSON.stringify({
+            rating_composition,
+            rating_lighting,
+            rating_color,
+            rating_concept,
+            strengths,
+            improvements,
+          });
+
+        const { data: fData, error: fErr } = await supabase
+          .from("comments")
+          .insert({
+            photo_id: photoId,
+            user_id: req.user.id,
+            content: fallbackContent,
+          })
+          .select(
+            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
+          )
+          .single();
+
+        if (fErr) return next(new Error(fErr.message));
+
+        const overall = +(
+          (rating_composition +
+            rating_lighting +
+            rating_color +
+            rating_concept) /
+          4
+        ).toFixed(1);
+
+        createdCritique = {
+          id_critique: fData.id,
+          id_photo: fData.photo_id,
+          id_user: fData.user_id,
+          rating_composition,
+          rating_lighting,
+          rating_color,
+          rating_concept,
+          overall_score: overall,
+          strengths,
+          improvements,
+          created_at: fData.created_at,
+          updated_at: fData.updated_at,
+          user: {
+            id_user: fData.profiles?.id,
+            username: fData.profiles?.username,
+            avatar_url: fData.profiles?.avatar_url,
+          },
+          is_owner: true,
+        };
+      } else {
+        return next(new Error(insErr.message));
+      }
+    } else {
+      const overall = +(
+        (insData.rating_composition +
+          insData.rating_lighting +
+          insData.rating_color +
+          insData.rating_concept) /
+        4
+      ).toFixed(1);
+
+      createdCritique = {
+        id_critique: insData.id,
+        id_photo: insData.photo_id,
+        id_user: insData.user_id,
+        rating_composition: insData.rating_composition,
+        rating_lighting: insData.rating_lighting,
+        rating_color: insData.rating_color,
+        rating_concept: insData.rating_concept,
+        overall_score: overall,
+        strengths: insData.strengths,
+        improvements: insData.improvements,
+        created_at: insData.created_at,
+        updated_at: insData.updated_at,
+        user: {
+          id_user: insData.profiles?.id,
+          username: insData.profiles?.username,
+          avatar_url: insData.profiles?.avatar_url,
+        },
+        is_owner: true,
+      };
+    }
+
+    // Broadcast penambahan kritik real-time
+    broadcastEvent("critique:added", {
+      photo_id: photoId,
+      critique: createdCritique,
+    });
+
+    res.status(201).json({
+      message: "Critique submitted successfully",
+      data: createdCritique,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: hapus kritik (oleh pembuat atau pemilik foto).
+router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) => {
+  try {
+    const { id: photoId, critiqueId } = req.params;
+
+    // 1. Cek di tabel critiques jika ada
+    const { data: critique, error: cErr } = await supabase
+      .from("critiques")
+      .select("id, user_id, photo_id, photos(user_id)")
+      .eq("id", critiqueId)
+      .eq("photo_id", photoId)
+      .maybeSingle();
+
+    if (cErr && cErr.code !== "PGRST205") return next(new Error(cErr.message));
+
+    if (critique) {
+      const isAuthor = critique.user_id === req.user.id;
+      const isPhotoOwner = critique.photos?.user_id === req.user.id;
+      if (!isAuthor && !isPhotoOwner) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this critique" });
+      }
+
+      const { error: delErr } = await supabase
+        .from("critiques")
+        .delete()
+        .eq("id", critiqueId);
+
+      if (delErr) return next(new Error(delErr.message));
+    } else {
+      // 2. Cek di fallback comments
+      const { data: fbComment, error: fbErr } = await supabase
+        .from("comments")
+        .select("id, user_id, photo_id, content, photos(user_id)")
+        .eq("id", critiqueId)
+        .eq("photo_id", photoId)
+        .maybeSingle();
+
+      if (fbErr) return next(new Error(fbErr.message));
+      if (!fbComment || !fbComment.content?.startsWith(CRITIQUE_PREFIX)) {
+        return res.status(404).json({ message: "Critique not found" });
+      }
+
+      const isAuthor = fbComment.user_id === req.user.id;
+      const isPhotoOwner = fbComment.photos?.user_id === req.user.id;
+      if (!isAuthor && !isPhotoOwner) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this critique" });
+      }
+
+      const { error: delErr } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", critiqueId);
+
+      if (delErr) return next(new Error(delErr.message));
+    }
+
+    broadcastEvent("critique:deleted", {
+      photo_id: photoId,
+      critique_id: critiqueId,
+    });
+
+    res.json({
+      message: "Critique deleted",
+      data: { id_critique: critiqueId, id_photo: photoId },
     });
   } catch (error) {
     next(error);
@@ -268,7 +1028,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // UPDATE: ubah data foto, gambar boleh diganti (opsional).
-router.put("/:id", upload.single("image"), async (req, res, next) => {
+router.put("/:id", verifyToken, upload.single("image"), async (req, res, next) => {
   try {
     const validation = photoSchema.safeParse(req.body);
     if (!validation.success) {
@@ -364,7 +1124,7 @@ router.put("/:id", upload.single("image"), async (req, res, next) => {
 });
 
 // DELETE: hapus foto + aset Cloudinary-nya.
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", verifyToken, async (req, res, next) => {
   try {
     const { data: existing } = await supabase
       .from("photos")
