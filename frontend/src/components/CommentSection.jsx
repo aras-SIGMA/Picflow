@@ -5,6 +5,7 @@
 // interaksi via usePhotoRealtime.
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, Trash2 } from "lucide-react";
 import {
@@ -241,26 +242,41 @@ export default function CommentSection({
         )}
       </div>
 
-      {/* Form Input Komentar */}
-      <form onSubmit={handleSubmit} className="mt-auto border-t border-line/60 pt-3">
-        <div className="flex items-center gap-2">
-          <input
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Tulis tanggapan atau pertanyaan teknis..."
-            maxLength={1000}
-            className="flex-1 rounded-full border border-line bg-[var(--bg-elevated)] px-3.5 py-2 text-xs text-ink placeholder:text-faint focus:border-accent focus:outline-none"
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!content.trim() || submitting}
-            className="rounded-full px-3 py-2 text-xs"
-          >
-            <Send size={13} />
-          </Button>
+      {/* Form Input Komentar (User) atau Pesan Ajakan (Guest) */}
+      {user ? (
+        <form onSubmit={handleSubmit} className="mt-auto border-t border-line/60 pt-3">
+          <div className="flex items-center gap-2">
+            <input
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Tulis tanggapan atau pertanyaan teknis..."
+              maxLength={1000}
+              className="flex-1 rounded-full border border-line bg-[var(--bg-elevated)] px-3.5 py-2 text-xs text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!content.trim() || submitting}
+              className="rounded-full px-3 py-2 text-xs"
+            >
+              <Send size={13} />
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="mt-auto border-t border-line/60 pt-3 text-center">
+          <p className="text-xs text-stone-500">
+            <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+              Masuk
+            </Link>{" "}
+            atau{" "}
+            <Link href="/register" className="font-semibold text-blue-600 hover:underline">
+              Daftar
+            </Link>{" "}
+            untuk ikut berdiskusi.
+          </p>
         </div>
-      </form>
+      )}
     </div>
   );
 }

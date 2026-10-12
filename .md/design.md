@@ -74,15 +74,15 @@ Warna utama PicFlow diturunkan langsung dari blade kalibrasi logo resmi (**Trio 
 | **sRGB Blue (Biru Elektrik)** | `#3B82F6` | `#DBEAFE` / `#60A5FA` | Tombol aksi primer ("Jelajahi Karya", search button), link aktif, indikator fokus, genre Tech/Arsitektur. |
 | **Neutral Slate** | `#475569` | `#F1F5F9` / `#94A3B8` | Elemen struktural barrel, border kartu, ikon teknis kamera, metadata EXIF. |
 
-### 4.2 Permukaan & Kanvas (Base Canvas)
+### 4.2 Permukaan & Kanvas (Base Canvas — Warm Cream & Editorial Clarity)
 | Token | Nilai Hex | Fungsi |
 | --- | --- | --- |
-| `--canvas-bg` | `#FFFFFF` | Latar belakang utama halaman bersih & cerah. |
-| `--canvas-subtle` | `#F8FAFC` | Latar seksi sekunder / elevated strip. |
-| `--surface-card` | `#FFFFFF` | Kartu konten dengan border tipis dan bayangan lembut. |
-| `--surface-elevated` | `#F1F5F9` | Latar input field dan chip tidak aktif. |
-| `--border-subtle` | `#E2E8F0` | Garis pembatas ringan dan outline kapsul input. |
-| `--border-strong` | `#CBD5E1` | Garis batas elemen interaktif / fokus. |
+| `--canvas-bg` | `#FEFAF3` | Latar belakang kanvas utama aplikasi (warm cream/ivory yang nyaman di mata & bernuansa editorial galeri). |
+| `--canvas-subtle` | `#F5EFE6` | Latar seksi sekunder, strip elevated, atau border frame luar window. |
+| `--surface-card` | `#FEFAF3` / `#FFFFFF` | Kartu konten dan panel form dengan border natural tanpa bayangan berlebihan. |
+| `--surface-elevated` | `#F8F3E8` | Latar input field aktif dan chip kategori. |
+| `--border-subtle` | `#E8DEC9` | Garis pembatas ringan, frame divider, dan outline kapsul input. |
+| `--border-strong` | `#DCD0BE` | Garis batas elemen interaktif, input focus, dan kartu foto. |
 
 ### 4.3 Gradien Fluid Wave (Multi-Gamut sRGB Hero)
 Kurva organik mengalir di area visual kanan memancarkan spektrum penuh logo:
@@ -168,6 +168,16 @@ Panel ulasan teknis fotografi terstruktur:
 - **Kotak Ulasan**: Dua section terpisah dengan aksen kartu bersih:
   - *Kekuatan Visual* (border hijau lembut, ikon `ThumbsUp`).
   - *Saran Pengembangan* (border biru lembut, ikon `Lightbulb`).
+
+### 6.7 Layout Autentikasi & Showcase Slider
+- **Split-Screen Desktop**: Panel formulir berada di sisi **kiri** (`lg:col-span-5`), dan artboard preview foto di sisi **kanan** (`lg:col-span-7`).
+- **Kanvas Warm Cream `#FEFAF3`**: Latar form, input field, dan border seragam menggunakan `#FEFAF3` dengan aksen border `#DCD0BE` / `#E8DEC9`.
+- **Photo Marquee Slider (1 Jalur Potret)**:
+  - Format kartu **portrait** (`h-[420px] w-[270px]`) menampilkan preview foto kurasi / unggahan pengguna.
+  - Animasi kontinu bergerak otomatis ke **arah kanan** (`marquee-right`, `translateX(-50%)` → `0%`).
+  - Kartu dilengkapi kapsul informasi putih/krem semi-transparan (`bg-[#FEFAF3]/95`) di bagian bawah dengan metadata EXIF aperture dan username fotografer.
+  - Masking gradien shadow gelap kiri-kanan dihapus untuk estetika flat yang jernih.
+- **Tombol Aksi**: Pill solid biru royal `#2563EB` dengan teks putih tegas (`#FFFFFF`).
 
 ---
 

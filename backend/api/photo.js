@@ -10,14 +10,11 @@ import fs from "fs/promises";
 import exifr from "exifr";
 import supabase from "../config/supabase.js";
 import cloudinary from "../config/cloudinary.js";
-import verifyToken from "../middleware/authMiddleware.js";
+import verifyToken, { optionalToken } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 import { broadcastEvent } from "../lib/realtime.js";
 
 const router = express.Router();
-
-// Semua route di file ini wajib login
-router.use(verifyToken);
 
 const photoSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -261,7 +258,7 @@ function calculateCritiqueStats(critiques) {
 // ====== ROUTES ======
 
 // CREATE: tambah foto baru + upload ke Cloudinary + EXIF.
-router.post("/", upload.single("image"), async (req, res, next) => {
+router.post("/", verifyToken, upload.single("image"), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -333,7 +330,7 @@ router.post("/", upload.single("image"), async (req, res, next) => {
 });
 
 // READ: feed foto (Explore komunitas, Following, atau My photos).
-router.get("/", async (req, res, next) => {
+router.get("/", optionalToken, async (req, res, next) => {
   try {
     const feed = req.query.feed || "explore";
     const categoryId = req.query.category_id || req.query.id_category;
@@ -347,8 +344,14 @@ router.get("/", async (req, res, next) => {
       .order("created_at", { ascending: false });
 
     if (feed === "my" || feed === "mine") {
+      if (!req.user) {
+        return res.status(401).json({ message: "Login required to access your photos" });
+      }
       query = query.eq("user_id", req.user.id);
     } else if (feed === "following") {
+      if (!req.user) {
+        return res.status(401).json({ message: "Login required to access following feed" });
+      }
       // Ambil daftar user yang di-follow oleh user saat ini
       const { data: followRows } = await supabase
         .from("follows")
@@ -371,10 +374,10 @@ router.get("/", async (req, res, next) => {
     const { data, error } = await query;
     if (error) return next(new Error(error.message));
 
-    // Ambil daftar like milik user saat ini untuk menandai is_liked
+    // Ambil daftar like milik user saat ini untuk menandai is_liked (jika user login)
     const photoIds = (data || []).map((p) => p.id);
     let userLikedSet = new Set();
-    if (photoIds.length > 0) {
+    if (photoIds.length > 0 && req.user?.id) {
       const { data: userLikes } = await supabase
         .from("likes")
         .select("photo_id")
@@ -396,7 +399,7 @@ router.get("/", async (req, res, next) => {
 });
 
 // READ: satu foto detail.
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", optionalToken, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from("photos")
@@ -409,20 +412,24 @@ router.get("/:id", async (req, res, next) => {
     if (error) return next(new Error(error.message));
     if (!data) return res.status(404).json({ message: "Photo not found" });
 
-    // Cek apakah user saat ini menyukai foto ini
-    const { data: userLike } = await supabase
-      .from("likes")
-      .select("id")
-      .eq("photo_id", data.id)
-      .eq("user_id", req.user.id)
-      .maybeSingle();
+    // Cek apakah user saat ini menyukai foto ini (jika login)
+    let userLike = null;
+    if (req.user?.id) {
+      const { data: likeRow } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("photo_id", data.id)
+        .eq("user_id", req.user.id)
+        .maybeSingle();
+      userLike = likeRow;
+    }
 
     const serialized = serializePhoto(
       data,
       data.categories?.name,
       Boolean(userLike)
     );
-    serialized.is_owner = data.user_id === req.user.id;
+    serialized.is_owner = Boolean(req.user?.id && data.user_id === req.user.id);
 
     res.json({
       message: "Photo fetched",
@@ -434,7 +441,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // LIKE / UNLIKE: toggle like foto.
-router.post("/:id/like", async (req, res, next) => {
+router.post("/:id/like", verifyToken, async (req, res, next) => {
   try {
     const photoId = req.params.id;
 
@@ -501,7 +508,7 @@ router.post("/:id/like", async (req, res, next) => {
 });
 
 // COMMENTS: daftar komentar suatu foto.
-router.get("/:id/comments", async (req, res, next) => {
+router.get("/:id/comments", optionalToken, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from("comments")
@@ -527,7 +534,7 @@ router.get("/:id/comments", async (req, res, next) => {
           username: c.profiles?.username,
           avatar_url: c.profiles?.avatar_url,
         },
-        is_owner: c.user_id === req.user.id,
+        is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
       }));
 
     res.json({
@@ -540,7 +547,7 @@ router.get("/:id/comments", async (req, res, next) => {
 });
 
 // COMMENTS: tambah komentar baru.
-router.post("/:id/comments", async (req, res, next) => {
+router.post("/:id/comments", verifyToken, async (req, res, next) => {
   try {
     const validation = commentSchema.safeParse(req.body);
     if (!validation.success) {
@@ -617,7 +624,7 @@ router.post("/:id/comments", async (req, res, next) => {
 });
 
 // COMMENTS: hapus komentar.
-router.delete("/:id/comments/:commentId", async (req, res, next) => {
+router.delete("/:id/comments/:commentId", verifyToken, async (req, res, next) => {
   try {
     const { id: photoId, commentId } = req.params;
 
@@ -669,7 +676,7 @@ router.delete("/:id/comments/:commentId", async (req, res, next) => {
 });
 
 // CRITIQUES: daftar kritik & saran konstruktif suatu foto beserta statistik.
-router.get("/:id/critiques", async (req, res, next) => {
+router.get("/:id/critiques", optionalToken, async (req, res, next) => {
   try {
     const photoId = req.params.id;
 
@@ -730,7 +737,7 @@ router.get("/:id/critiques", async (req, res, next) => {
                 username: c.profiles?.username,
                 avatar_url: c.profiles?.avatar_url,
               },
-              is_owner: c.user_id === req.user.id,
+              is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
             };
           });
       } else {
@@ -763,7 +770,7 @@ router.get("/:id/critiques", async (req, res, next) => {
             username: c.profiles?.username,
             avatar_url: c.profiles?.avatar_url,
           },
-          is_owner: c.user_id === req.user.id,
+          is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
         };
       });
     }
@@ -783,7 +790,7 @@ router.get("/:id/critiques", async (req, res, next) => {
 });
 
 // CRITIQUES: buat kritik baru untuk suatu foto.
-router.post("/:id/critiques", async (req, res, next) => {
+router.post("/:id/critiques", verifyToken, async (req, res, next) => {
   try {
     const validation = critiqueSchema.safeParse(req.body);
     if (!validation.success) {
@@ -947,7 +954,7 @@ router.post("/:id/critiques", async (req, res, next) => {
 });
 
 // CRITIQUES: hapus kritik (oleh pembuat atau pemilik foto).
-router.delete("/:id/critiques/:critiqueId", async (req, res, next) => {
+router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) => {
   try {
     const { id: photoId, critiqueId } = req.params;
 
@@ -1021,7 +1028,7 @@ router.delete("/:id/critiques/:critiqueId", async (req, res, next) => {
 });
 
 // UPDATE: ubah data foto, gambar boleh diganti (opsional).
-router.put("/:id", upload.single("image"), async (req, res, next) => {
+router.put("/:id", verifyToken, upload.single("image"), async (req, res, next) => {
   try {
     const validation = photoSchema.safeParse(req.body);
     if (!validation.success) {
@@ -1117,7 +1124,7 @@ router.put("/:id", upload.single("image"), async (req, res, next) => {
 });
 
 // DELETE: hapus foto + aset Cloudinary-nya.
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", verifyToken, async (req, res, next) => {
   try {
     const { data: existing } = await supabase
       .from("photos")

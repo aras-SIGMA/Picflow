@@ -75,7 +75,7 @@ export default function HomePage() {
   useEffect(() => {
     if (loading) return;
     if (!getToken()) {
-      router.replace("/login");
+      router.replace("/");
       return;
     }
     async function load() {
@@ -89,7 +89,7 @@ export default function HomePage() {
         setPhotos(pRes.data || []);
         setCategories(cRes.data || []);
       } catch (err) {
-        if (err.status === 401) router.replace("/login");
+        if (err.status === 401) router.replace("/");
         else setError(err.message);
       } finally {
         setFetching(false);
@@ -289,7 +289,7 @@ export default function HomePage() {
                     }}
                     className="block w-full text-left"
                   >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)]">
+                    <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#F5EFE6]">
                       {c.cover ? (
                         <Image
                           src={fileUrl(c.cover)}
@@ -301,12 +301,12 @@ export default function HomePage() {
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <Camera size={22} className="text-faint" />
+                          <Camera size={22} className="text-stone-400" />
                         </div>
                       )}
                     </div>
-                    <p className="mt-2 truncate text-xs font-medium text-ink">{c.name}</p>
-                    <p className="text-[11px] text-faint">{c.count} foto</p>
+                    <p className="mt-2 truncate text-xs font-semibold text-stone-900">{c.name}</p>
+                    <p className="text-[11px] text-stone-500">{c.count} foto</p>
                   </button>
                 </SpotlightCard>
               </motion.div>
@@ -329,15 +329,15 @@ export default function HomePage() {
           <>
             {/* Feed Switcher (Explore vs Following) */}
             <Reveal>
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-                <div className="flex items-center gap-2 rounded-full border border-line bg-[var(--surface)] p-1">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#E8DEC9] pb-4">
+                <div className="flex items-center gap-1.5 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] p-1">
                   <button
                     type="button"
                     onClick={() => setFeedTab("explore")}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                       feedTab === "explore"
-                        ? "bg-white text-black shadow-sm"
-                        : "text-muted hover:text-ink"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-stone-600 hover:text-stone-900"
                     }`}
                   >
                     <Compass size={14} />
@@ -348,15 +348,15 @@ export default function HomePage() {
                     onClick={() => setFeedTab("following")}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                       feedTab === "following"
-                        ? "bg-white text-black shadow-sm"
-                        : "text-muted hover:text-ink"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-stone-600 hover:text-stone-900"
                     }`}
                   >
                     <Users size={14} />
                     Following
                   </button>
                 </div>
-                <span className="text-xs text-faint">
+                <span className="text-xs text-stone-500">
                   {feedTab === "explore"
                     ? "Feed publik semua karya fotografer"
                     : "Feed karya dari kreator yang kamu ikuti"}
@@ -370,14 +370,14 @@ export default function HomePage() {
                 <div className="relative w-full max-w-xs">
                   <Search
                     size={15}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone-400"
                   />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Cari foto..."
                     aria-label="Cari foto"
-                    className="w-full rounded-full border border-line bg-[var(--bg-elevated)] py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+                    className="w-full rounded-full border border-[#DCD0BE] bg-[#FEFAF3] py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 focus:outline-none"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -389,10 +389,10 @@ export default function HomePage() {
                         type="button"
                         onClick={() => setFilter(String(c.id_category))}
                         aria-pressed={active}
-                        className={`rounded-full border px-4 py-1.5 text-xs transition-colors duration-300 ${
+                        className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
                           active
-                            ? "border-accent bg-accent/15 text-ink"
-                            : "border-line text-muted hover:border-white/30 hover:text-ink"
+                            ? "border-blue-600 bg-blue-600 text-white font-semibold shadow-xs"
+                            : "border-[#DCD0BE] bg-[#FEFAF3] text-stone-700 hover:border-stone-400 hover:bg-white"
                         }`}
                       >
                         {c.name}
@@ -413,37 +413,37 @@ export default function HomePage() {
             {/* Empty state ilustratif */}
             {shown.length === 0 ? (
               feedTab === "following" ? (
-                <div className="mt-8 flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-20 text-center">
-                  <div className="rounded-full border border-line p-4">
-                    <Users size={24} className="text-faint" />
+                <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[#DCD0BE] bg-[#F5EFE6]/50 py-20 text-center">
+                  <div className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] p-4 text-stone-500">
+                    <Users size={24} />
                   </div>
                   <div>
-                    <p className="font-medium text-ink">Belum ada karya di tab Following</p>
-                    <p className="mt-1 max-w-md text-sm text-muted">
+                    <p className="font-bold text-stone-900">Belum ada karya di tab Following</p>
+                    <p className="mt-1 max-w-md text-sm text-stone-600">
                       Kamu belum mengikuti kreator manapun atau mereka belum mengunggah karya baru. Jelajahi Explore untuk menemukan kreator inspiratif!
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setFeedTab("explore")}
-                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
+                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
                   >
                     <Compass size={15} />
                     Jelajahi Explore
                   </button>
                 </div>
               ) : (
-                <div className="mt-8 flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-white/10 py-20 text-center">
-                  <div className="rounded-full border border-line p-4">
-                    <ImagePlus size={24} className="text-faint" />
+                <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[#DCD0BE] bg-[#F5EFE6]/50 py-20 text-center">
+                  <div className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] p-4 text-stone-500">
+                    <ImagePlus size={24} />
                   </div>
                   <div>
-                    <p className="font-medium text-ink">
+                    <p className="font-bold text-stone-900">
                       {photos.length === 0
                         ? "Belum ada foto"
                         : "Tidak ada foto yang cocok"}
                     </p>
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="mt-1 text-sm text-stone-600">
                       {photos.length === 0
                         ? "Upload karya pertamamu untuk mengisi vault ini."
                         : "Coba kata kunci atau kategori lain."}
@@ -451,7 +451,7 @@ export default function HomePage() {
                   </div>
                   <Link
                     href="/addphoto"
-                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85"
+                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
                   >
                     <ImagePlus size={15} />
                     Tambah Foto
@@ -477,7 +477,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ============ FLOATING INFO CARD (bergaya referensi) ============ */}
+      {/* ============ FLOATING INFO CARD ============ */}
       <AnimatePresence>
         {peek && !selected && shown.length > 0 && (
           <motion.aside
@@ -486,15 +486,15 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className="fixed bottom-6 right-6 z-30 hidden w-60 rounded-[var(--radius-md)] border border-black/5 bg-ink p-4 shadow-xl shadow-black/40 lg:block"
+            className="fixed bottom-6 right-6 z-30 hidden w-64 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-4 shadow-lg lg:block"
           >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-canvas/50">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">
               Sedang dibuka
             </p>
-            <p className="mt-1.5 truncate text-sm font-semibold text-canvas">
+            <p className="mt-1 truncate text-sm font-bold text-stone-900">
               {peek.title}
             </p>
-            <p className="truncate text-xs text-canvas/60">
+            <p className="truncate text-xs text-stone-600">
               {peek.category_name || `#${peek.id_category}`}
             </p>
             <button
@@ -503,7 +503,7 @@ export default function HomePage() {
                 setSelected(peek);
                 setPeek(null);
               }}
-              className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent-deep)] underline underline-offset-2 transition-opacity hover:opacity-75"
+              className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 underline underline-offset-2 transition-opacity hover:opacity-80"
             >
               Buka detail
               <ArrowRight size={12} />

@@ -10,12 +10,12 @@ import ApertureLoader from "./ApertureLoader";
 import { prefersReducedMotion } from "./motion";
 
 const VARIANTS = {
-  primary: "bg-white text-black hover:bg-white/85 border border-transparent",
-  accent: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/25 border border-transparent",
-  dark: "bg-slate-900 text-white hover:bg-slate-800 border border-transparent",
-  ghost: "border border-white/15 text-ink hover:bg-white/5 hover:border-white/30",
-  outline: "border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300",
-  danger: "border border-[var(--danger)]/40 text-danger hover:bg-[var(--danger)]/10",
+  primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent",
+  accent: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-transparent",
+  dark: "bg-stone-900 text-white hover:bg-stone-800 border border-transparent",
+  ghost: "border border-[#DECDB8] text-stone-800 hover:bg-[#F5EFE6] hover:border-stone-400",
+  outline: "border border-[#DECDB8] text-stone-800 hover:bg-[#F5EFE6] hover:border-stone-400",
+  danger: "border border-red-300 text-red-600 hover:bg-red-50",
 };
 
 const SIZES = {

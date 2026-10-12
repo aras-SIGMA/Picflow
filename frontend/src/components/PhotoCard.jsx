@@ -38,7 +38,7 @@ export default function PhotoCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.55, ease: EASE }}
-      className="group mb-4 break-inside-avoid overflow-hidden rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)]"
+      className="group mb-4 break-inside-avoid overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#FEFAF3] transition-all hover:border-[#DCD0BE]"
       onMouseEnter={() => onPeek?.(photo)}
     >
       <div className="relative">
@@ -50,7 +50,7 @@ export default function PhotoCard({
         >
           <motion.div
             layoutId={layoutId ? `${layoutId}-${photo.id_photo}` : undefined}
-            className={`relative w-full overflow-hidden bg-[var(--surface)] ${aspect}`}
+            className={`relative w-full overflow-hidden bg-[#F5EFE6] ${aspect}`}
           >
             {src ? (
               <Image

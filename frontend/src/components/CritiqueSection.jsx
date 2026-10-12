@@ -276,7 +276,13 @@ export default function CritiqueSection({
           {!isOwner && (
             <button
               type="button"
-              onClick={() => setIsFormOpen((prev) => !prev)}
+              onClick={() => {
+                if (!user) {
+                  toast.info("Silakan masuk atau daftar untuk memberikan kritik & saran.");
+                  return;
+                }
+                setIsFormOpen((prev) => !prev);
+              }}
               className="inline-flex items-center gap-1 rounded-full border border-line bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-medium text-ink transition-colors hover:border-accent hover:text-accent"
             >
               {isFormOpen ? (

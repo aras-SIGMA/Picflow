@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { togglePhotoLike } from "@/lib/api";
+import { getToken, togglePhotoLike } from "@/lib/api";
 import { usePhotoRealtime } from "@/lib/realtime";
 import { useToast } from "@/components/ui/Toast";
 
@@ -47,6 +47,11 @@ export default function LikeButton({
     e.stopPropagation();
     e.preventDefault();
     if (loading || !photoId) return;
+
+    if (!getToken()) {
+      toast.info("Silakan masuk atau daftar untuk menyukai foto ini.");
+      return;
+    }
 
     // 1. Optimistic UI update dalam < 50ms
     const prevLiked = liked;

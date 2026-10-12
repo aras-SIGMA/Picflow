@@ -43,10 +43,6 @@ export default function PhotoDetailPage() {
   const [socialTab, setSocialTab] = useState("critique"); // "critique" | "comments"
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login");
-      return;
-    }
     if (!id) return;
 
     let active = true;
