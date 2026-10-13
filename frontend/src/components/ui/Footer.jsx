@@ -8,13 +8,122 @@
 // - Indikator status sistem sRGB real-time
 // - Ikon media sosial komunitas fotografer
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Camera } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import GradientWaves from "@/components/ui/GradientWaves";
 
-export default function Footer() {
+export default function Footer({ withCommunityCta = false }) {
   return (
-    <footer className="border-t border-[#E8DEC9] bg-[#FEFAF3] text-stone-800 transition-colors">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-16 pb-12">
+    <footer
+      className={`relative overflow-hidden border-t border-[#E8DEC9] bg-[#FEFAF3] text-stone-800 transition-colors ${
+        withCommunityCta
+          ? "min-h-screen lg:h-screen flex flex-col justify-between"
+          : ""
+      }`}
+    >
+      {/* ========================================================================= */}
+      {/* ANIMASI GRADIENT WAVE MENYATU DI SELURUH FOOTER (React Bits OGL - sRGB)   */}
+      {/* ========================================================================= */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden select-none opacity-58"
+      >
+        <GradientWaves
+          horizonColor="#EF4444"
+          waveColor="#10B981"
+          crestColor="#3B82F6"
+          speed={0.35}
+          amplitude={2.7}
+          waveScale={0.55}
+          waveRatio={0.9}
+          swell={32}
+          turbulence={18}
+          tilt={1.12}
+          zoom={1.0}
+          height={5.2}
+          fogDepth={16}
+          detail="medium"
+          brightness={1.15}
+          opacity={0.95}
+          mouseInteraction={true}
+          parallaxStrength={0.45}
+          grain={true}
+          grainIntensity={0.03}
+        />
+        {/* Soft fade-out di atas kanvas agar gelombang menyatu mulus ke landing page */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, #FEFAF3 0%, rgba(254, 250, 243, 0.3) 18%, transparent 55%)",
+          }}
+        />
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 1. PICFLOW COMMUNITY CALL-TO-ACTION (Satu Window Frame dengan Footer)      */}
+      {/* ========================================================================= */}
+      {withCommunityCta && (
+        <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center px-4 sm:px-6 pt-12 sm:pt-16 pb-6 sm:pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6 }}
+            className="mx-auto flex max-w-3xl flex-col items-center text-center"
+          >
+            {/* Badge 3 Titik RGB Spektrum */}
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-4 py-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-stone-700 shadow-2xs backdrop-blur-xs">
+              <span className="flex items-center gap-1.5" aria-hidden="true">
+                <i className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
+                <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
+                <i className="h-1.5 w-1.5 rounded-full bg-[#3B82F6]" />
+              </span>
+              JOIN PICFLOW COMMUNITY
+            </span>
+
+            <h3
+              className="mt-4 sm:mt-5 text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900"
+              style={{ lineHeight: 1.15 }}
+            >
+              Elevate your photography to the highest visual standard
+            </h3>
+
+            <p className="mt-3 sm:mt-4 max-w-xl text-xs sm:text-sm leading-relaxed text-stone-600 sm:text-base">
+              Join now to experience compression-free showcase, true sRGB color calibration,
+              and optical camera EXIF inspection.
+            </p>
+
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5">
+              <Link
+                href="/login"
+                className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-stone-800 transition-all hover:bg-white hover:border-stone-400 active:scale-95 shadow-2xs"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
+              >
+                Get Started Free
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. FOOTER NAVIGATION & COPYRIGHT (Anchored di Bagian Bawah Window)         */}
+      {/* ========================================================================= */}
+      <div
+        className={`relative z-10 mx-auto w-full max-w-6xl px-4 sm:px-6 ${
+          withCommunityCta
+            ? "border-t border-[#E8DEC9]/70 pt-8 sm:pt-10 pb-8 sm:pb-10"
+            : "pt-16 pb-12"
+        }`}
+      >
         {/* ========================================================================= */}
         {/* MULTI-COLUMN NAVIGATION (Standar Industri & Platform Kreatif)             */}
         {/* ========================================================================= */}

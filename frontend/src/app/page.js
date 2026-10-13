@@ -143,7 +143,7 @@ export default function RootGuestHomePage() {
           )}
         </main>
 
-        <Footer />
+        <Footer withCommunityCta={true} />
       </div>
     </>
   );

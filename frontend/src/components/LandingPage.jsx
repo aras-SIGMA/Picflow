@@ -9,18 +9,184 @@
 //    - Spektrum sRGB (#EF4444, #10B981, #3B82F6, #475569)
 //    - Tombol & kapsul pill rounded-full
 //    - Tipografi editorial tegas & JetBrains Mono untuk metadata
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import {
   Aperture,
   ArrowRight,
   Camera,
+  CheckCircle2,
   FileImage,
   Layers,
+  Pin,
   Quote,
   Sparkles,
+  Star,
 } from "lucide-react";
+import {
+  SiBlackmagicdesign,
+  SiFujifilm,
+  SiLeica,
+  SiNikon,
+  SiPanasonic,
+  SiSony,
+} from "react-icons/si";
+import LogoLoop from "@/components/ui/LogoLoop";
+
+// Ekosistem logo instrumen kamera profesional & software editing kurasi (Konsistensi Bentuk & Ukuran)
+const PROFESSIONAL_ECOSYSTEM_LOGOS = [
+  {
+    title: "Sony",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiSony size={40} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "Canon",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <svg
+          className="h-5 w-auto fill-stone-400 hover:fill-stone-800 transition-colors overflow-visible"
+          viewBox="0 0 84 20"
+        >
+          <text
+            x="42"
+            y="16"
+            textAnchor="middle"
+            fontFamily="system-ui, -apple-system, sans-serif"
+            fontSize="18"
+            fontWeight="700"
+            letterSpacing="2"
+          >
+            CANON
+          </text>
+        </svg>
+      </div>
+    ),
+  },
+  {
+    title: "Nikon",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiNikon size={34} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "Fujifilm",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiFujifilm size={42} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "Leica",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiLeica size={32} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "Hasselblad",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <svg
+          className="h-4.5 w-auto fill-stone-400 hover:fill-stone-800 transition-colors overflow-visible"
+          viewBox="0 0 115 20"
+        >
+          <text
+            x="57.5"
+            y="15"
+            textAnchor="middle"
+            fontFamily="Georgia, 'Times New Roman', serif"
+            fontSize="13.5"
+            letterSpacing="2.5"
+          >
+            HASSELBLAD
+          </text>
+        </svg>
+      </div>
+    ),
+  },
+  {
+    title: "Adobe Lightroom",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
+          Lr
+        </span>
+      </div>
+    ),
+  },
+  {
+    title: "Adobe Photoshop",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
+          Ps
+        </span>
+      </div>
+    ),
+  },
+  {
+    title: "Capture One",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
+          C1
+        </span>
+      </div>
+    ),
+  },
+  {
+    title: "Panasonic Lumix",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiPanasonic size={34} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "Blackmagic Design",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <SiBlackmagicdesign size={28} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      </div>
+    ),
+  },
+  {
+    title: "DaVinci Resolve",
+    node: (
+      <div className="flex h-8 items-center justify-center px-1">
+        <svg
+          className="h-6 w-6 stroke-stone-400 fill-none hover:stroke-stone-800 transition-colors"
+          viewBox="0 0 24 24"
+          strokeWidth="1.75"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3v6" />
+          <path d="M19.79 7.5l-5.2 3" />
+          <path d="M19.79 16.5l-5.2-3" />
+          <path d="M12 21v-6" />
+          <path d="M4.21 16.5l5.2-3" />
+          <path d="M4.21 7.5l5.2 3" />
+        </svg>
+      </div>
+    ),
+  },
+];
 
 export default function LandingPage({ children }) {
   // State interaktif pada kartu Bento
@@ -32,16 +198,72 @@ export default function LandingPage({ children }) {
     konsep: true,
   });
 
+  // Cursor tracking untuk spotlight reveal grid di Hero Section
+  const heroMouseX = useMotionValue(0);
+  const heroMouseY = useMotionValue(0);
+  const heroOpacity = useMotionValue(0);
+  // Transisi masuk & keluar halus via opasitas tanpa jeda posisi
+  const smoothHeroOpacity = useSpring(heroOpacity, { stiffness: 320, damping: 28 });
+
+  const handleHeroMouseEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Snap koordinat seketika tepat di titik masuk kursor (tanpa glide dari 0,0 atau offscreen)
+    heroMouseX.set(e.clientX - rect.left);
+    heroMouseY.set(e.clientY - rect.top);
+    heroOpacity.set(1);
+  };
+
+  const handleHeroMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Real-time direct update 1:1 tanpa lag mengejar kursor
+    heroMouseX.set(e.clientX - rect.left);
+    heroMouseY.set(e.clientY - rect.top);
+    if (heroOpacity.get() === 0) {
+      heroOpacity.set(1);
+    }
+  };
+
+  const handleHeroMouseLeave = () => {
+    // Redupkan halus di tempat kursor keluar tanpa memindahkan koordinat
+    heroOpacity.set(0);
+  };
+
+  // Ref dan scroll transform untuk horizontal scroll section Ulasan & Feedback Notepad
+  const notepadSectionRef = useRef(null);
+  const { scrollYProgress: rawScrollY } = useScroll({
+    target: notepadSectionRef,
+    offset: ["start start", "end end"],
+  });
+
+  // Spring physics dengan bobot dan inersia tinggi (mass: 1.4, damping: 32)
+  // agar seluruh pergerakan komponen di Community Feedback terasa lebih berbobot, berat, dan stabil
+  const notepadScrollY = useSpring(rawScrollY, {
+    stiffness: 70,
+    damping: 32,
+    mass: 1.4,
+    restDelta: 0.0005,
+  });
+
+  // Track kartu ulasan bergeser mulus hingga card ke-6 (Julian Morales) dengan gap proporsional ke jendela
+  const notepadCardsX = useTransform(notepadScrollY, [0, 1], ["0%", "-66%"]);
+  // Teks latar belakang bergeser sehingga kata "PicFlow?" terlihat utuh dengan gap proporsional
+  const bgTextX = useTransform(notepadScrollY, [0, 1], ["0%", "-54%"]);
+
   return (
     <div className="flex flex-col bg-[#FEFAF3] text-stone-900 selection:bg-blue-600 selection:text-white">
       {/* ========================================================================= */}
       {/* 1. HERO SECTION (Referensi: Gridlines + Dual CTA + 4 Floating Orbits)    */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden border-b border-[#E8DEC9] pt-12 pb-20 sm:pt-20 sm:pb-32">
-        {/* Latar Gridlines halus sesuai inspirasi referensi */}
+      <section
+        onMouseEnter={handleHeroMouseEnter}
+        onMouseMove={handleHeroMouseMove}
+        onMouseLeave={handleHeroMouseLeave}
+        className="relative overflow-hidden border-b border-[#E8DEC9] pt-12 pb-20 sm:pt-20 sm:pb-32"
+      >
+        {/* Base Gridlines Samar (Ambient Dasar - Opacity 10% Sangat Halus) */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-40"
+          className="pointer-events-none absolute inset-0 opacity-10"
           style={{
             backgroundImage:
               "linear-gradient(to right, #E8DEC9 1px, transparent 1px), linear-gradient(to bottom, #E8DEC9 1px, transparent 1px)",
@@ -49,22 +271,107 @@ export default function LandingPage({ children }) {
           }}
         />
 
-        {/* Ambient radial glow di pusat hero */}
-        <div
+        {/* Cursor Tracking Grid Reveal (Ultra-Diffuse Atmospheric Mask Tanpa Batas Lingkaran Kaku) */}
+        <motion.div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-[480px] w-[640px] rounded-full bg-blue-500/5 blur-[120px]"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            opacity: smoothHeroOpacity,
+            backgroundImage:
+              "linear-gradient(to right, #DFD4C2 1px, transparent 1px), linear-gradient(to bottom, #DFD4C2 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            WebkitMaskImage: useMotionTemplate`radial-gradient(280px circle at ${heroMouseX}px ${heroMouseY}px, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.24) 35%, rgba(0,0,0,0.08) 65%, rgba(0,0,0,0.01) 85%, transparent 100%)`,
+            maskImage: useMotionTemplate`radial-gradient(280px circle at ${heroMouseX}px ${heroMouseY}px, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.24) 35%, rgba(0,0,0,0.08) 65%, rgba(0,0,0,0.01) 85%, transparent 100%)`,
+          }}
         />
+
+        {/* Cursor Optical Light Beam (Kabut Cahaya Sangat Pudar & Organik) */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            opacity: smoothHeroOpacity,
+            background: useMotionTemplate`radial-gradient(300px circle at ${heroMouseX}px ${heroMouseY}px, rgba(239, 68, 68, 0.04) 0%, rgba(16, 185, 129, 0.025) 35%, rgba(59, 130, 246, 0.03) 65%, transparent 100%)`,
+          }}
+        />
+
+        {/* Ambient radial glow di hero (Spektrum Segitiga sRGB Seimbang: Red, Green, Blue) */}
+        {/* 1. Red Channel Orb (Kiri Atas) */}
+        <motion.div
+          aria-hidden="true"
+          animate={{
+            scale: [1, 1.22, 1],
+            opacity: [0.35, 0.65, 0.35],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 7.5,
+            ease: "easeInOut",
+          }}
+          className="pointer-events-none absolute left-[22%] top-[22%] -translate-x-1/2 -translate-y-1/2 h-[420px] w-[520px] rounded-full bg-rose-500/12 blur-[130px]"
+        />
+        {/* 2. Blue Channel Orb (Kanan Atas) */}
+        <motion.div
+          aria-hidden="true"
+          animate={{
+            scale: [1.15, 0.95, 1.15],
+            opacity: [0.25, 0.5, 0.25],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 9,
+            ease: "easeInOut",
+          }}
+          className="pointer-events-none absolute left-[78%] top-[26%] -translate-x-1/2 -translate-y-1/2 h-[440px] w-[560px] rounded-full bg-blue-500/10 blur-[130px]"
+        />
+        {/* 3. Green Channel Orb (Tengah Bawah) */}
+        <motion.div
+          aria-hidden="true"
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.2, 0.45, 0.2],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 8.5,
+            ease: "easeInOut",
+          }}
+          className="pointer-events-none absolute left-[50%] top-[45%] -translate-x-1/2 -translate-y-1/2 h-[380px] w-[480px] rounded-full bg-emerald-500/8 blur-[120px]"
+        />
+
+        {/* Viewfinder Reticle Framing Accents (Sentuhan Kamera Profesional & Tally Light Merah) */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-4 inset-y-6 sm:inset-x-8 sm:inset-y-10 max-w-6xl mx-auto hidden md:block">
+          <div className="absolute top-0 left-0 h-4 w-4 border-t-2 border-l-2 border-stone-400/40" />
+          <div className="absolute top-0 right-0 h-4 w-4 border-t-2 border-r-2 border-stone-400/40" />
+          <div className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-stone-400/40" />
+          <div className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-stone-400/40" />
+          <div className="absolute top-1 left-6 font-mono text-[9px] uppercase tracking-widest text-stone-500 flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-600" />
+            </span>
+            <span className="font-bold text-red-600">REC</span> · FRAME: 3:2 · sRGB 100%
+          </div>
+          <div className="absolute top-1 right-6 font-mono text-[9px] uppercase tracking-widest text-stone-400/70">
+            EXIF: AUTO-PARSE
+          </div>
+        </div>
 
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
           {/* 4 Floating Circular Cards / Creator Orbits (Meniru 4 Avatar dengan Panah di Referensi) */}
-          {/* --- Orbit 1: Kiri Atas (Sony α7 IV - Red Accent) --- */}
+          {/* --- Orbit 1: Kiri Atas (Sony α7 IV - Red Accent Diperkuat) --- */}
           <motion.div
             initial={{ opacity: 0, scale: 0.75, x: -30 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="hidden lg:flex absolute -left-2 top-8 z-20 items-center gap-3"
           >
-            <div className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md">
+            <motion.div
+              animate={{ y: [-4, 6, -4], rotate: [-0.8, 0.8, -0.8] }}
+              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut" }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+            >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10 text-red-600 ring-2 ring-[#EF4444]">
                 <Camera size={14} />
               </span>
@@ -72,10 +379,12 @@ export default function LandingPage({ children }) {
                 <p className="font-bold text-stone-900">Nadia S.</p>
                 <p className="font-mono text-[10px] text-stone-500">Sony α7 IV · 35mm</p>
               </div>
-            </div>
-            {/* Panah vektor halus mengarah ke teks utama */}
-            <svg
-              className="h-6 w-10 text-stone-400 rotate-12"
+            </motion.div>
+            {/* Panah vektor halus mengarah ke teks utama (Aksen Merah) */}
+            <motion.svg
+              animate={{ opacity: [0.55, 0.95, 0.55], y: [-2, 2, -2] }}
+              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.2 }}
+              className="h-6 w-10 text-red-400/70 rotate-12"
               fill="none"
               viewBox="0 0 40 24"
               stroke="currentColor"
@@ -92,7 +401,7 @@ export default function LandingPage({ children }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
+            </motion.svg>
           </motion.div>
 
           {/* --- Orbit 2: Kanan Atas (Leica M11 - Green Accent) --- */}
@@ -103,7 +412,9 @@ export default function LandingPage({ children }) {
             className="hidden lg:flex absolute -right-2 top-8 z-20 items-center gap-3"
           >
             {/* Panah vektor mengarah ke teks */}
-            <svg
+            <motion.svg
+              animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
+              transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut", delay: 0.4 }}
               className="h-6 w-10 text-stone-400 -rotate-12"
               fill="none"
               viewBox="0 0 40 24"
@@ -121,8 +432,13 @@ export default function LandingPage({ children }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
-            <div className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md">
+            </motion.svg>
+            <motion.div
+              animate={{ y: [4, -5, 4], rotate: [0.8, -0.8, 0.8] }}
+              transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut" }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+            >
               <div className="text-right text-[11px] leading-tight">
                 <p className="font-bold text-stone-900">Bima Arya</p>
                 <p className="font-mono text-[10px] text-stone-500">Leica M11 · 50mm f/0.95</p>
@@ -130,7 +446,7 @@ export default function LandingPage({ children }) {
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 ring-2 ring-[#10B981]">
                 <Aperture size={14} />
               </span>
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* --- Orbit 3: Kiri Bawah (Fujifilm X-T5 - Blue Accent) --- */}
@@ -140,7 +456,12 @@ export default function LandingPage({ children }) {
             transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="hidden lg:flex absolute left-8 bottom-4 z-20 items-center gap-3"
           >
-            <div className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md">
+            <motion.div
+              animate={{ y: [-5, 5, -5], rotate: [-1, 0.5, -1] }}
+              transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.6 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+            >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 ring-2 ring-[#3B82F6]">
                 <Sparkles size={14} />
               </span>
@@ -148,8 +469,10 @@ export default function LandingPage({ children }) {
                 <p className="font-bold text-stone-900">Farah L.</p>
                 <p className="font-mono text-[10px] text-stone-500">Fuji X-T5 · Sim Classic</p>
               </div>
-            </div>
-            <svg
+            </motion.div>
+            <motion.svg
+              animate={{ opacity: [0.45, 0.85, 0.45], y: [-2, 2, -2] }}
+              transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.8 }}
               className="h-6 w-10 text-stone-400 -rotate-45"
               fill="none"
               viewBox="0 0 40 24"
@@ -167,7 +490,7 @@ export default function LandingPage({ children }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
+            </motion.svg>
           </motion.div>
 
           {/* --- Orbit 4: Kanan Bawah (Canon EOS R5 - Slate Accent) --- */}
@@ -177,7 +500,9 @@ export default function LandingPage({ children }) {
             transition={{ duration: 0.7, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
             className="hidden lg:flex absolute right-12 bottom-4 z-20 items-center gap-3"
           >
-            <svg
+            <motion.svg
+              animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
+              transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 1 }}
               className="h-6 w-10 text-stone-400 rotate-45"
               fill="none"
               viewBox="0 0 40 24"
@@ -195,8 +520,13 @@ export default function LandingPage({ children }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
-            <div className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md">
+            </motion.svg>
+            <motion.div
+              animate={{ y: [5, -4, 5], rotate: [0.8, -0.8, 0.8] }}
+              transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 0.3 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+            >
               <div className="text-right text-[11px] leading-tight">
                 <p className="font-bold text-stone-900">Dimas K.</p>
                 <p className="font-mono text-[10px] text-stone-500">Canon R5 · 85mm f/1.2</p>
@@ -204,23 +534,27 @@ export default function LandingPage({ children }) {
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-slate-500/10 text-slate-700 ring-2 ring-[#475569]">
                 <Layers size={14} />
               </span>
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Konten Sentral Hero */}
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-            {/* Pill Badge Atas */}
+            {/* Pill Badge Atas (Spektrum 3 Titik RGB Aktif) */}
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] px-4 py-1.5 text-xs font-semibold text-stone-700 shadow-2xs"
+              className="inline-flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] px-4 py-1.5 text-xs font-semibold text-stone-700 shadow-2xs"
             >
-              <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#EF4444] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-[#10B981]" />
+                <span className="h-2 w-2 rounded-full bg-[#3B82F6]" />
+              </span>
               COMMUNITY &amp; sRGB OPTICAL STANDARD
             </motion.div>
 
-            {/* Headline Display (Sesuai Referensi: Kata Kunci digarisbawahi tebal) */}
+            {/* Headline Display (Spektrum Tri-Highlight RGB Lengkap: Red -> Green -> Blue) */}
             <motion.h1
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
@@ -229,22 +563,45 @@ export default function LandingPage({ children }) {
               style={{ lineHeight: 1.12 }}
             >
               One platform to{" "}
+              {/* R: Red Highlight */}
               <span className="relative inline-block text-stone-900">
                 <span className="relative z-10">showcase works</span>
-                <span
+                <motion.span
                   aria-hidden="true"
-                  className="absolute bottom-1.5 left-0 -z-0 h-3 w-full rounded-xs bg-[#10B981]/25"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ originX: 0 }}
+                  className="absolute bottom-1.5 left-0 -z-0 h-3 w-full rounded-xs bg-[#EF4444]/25 block"
                 />
               </span>
               ,{" "}
+              {/* G: Green Highlight */}
               <span className="relative inline-block text-stone-900">
                 <span className="relative z-10">analyze EXIF</span>
-                <span
+                <motion.span
                   aria-hidden="true"
-                  className="absolute bottom-1.5 left-0 -z-0 h-3 w-full rounded-xs bg-[#3B82F6]/25"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ originX: 0 }}
+                  className="absolute bottom-1.5 left-0 -z-0 h-3 w-full rounded-xs bg-[#10B981]/25 block"
                 />
               </span>
-              , and elevate photography.
+              , and{" "}
+              {/* B: Blue Highlight */}
+              <span className="relative inline-block text-stone-900">
+                <span className="relative z-10">elevate photography</span>
+                <motion.span
+                  aria-hidden="true"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ originX: 0 }}
+                  className="absolute bottom-1.5 left-0 -z-0 h-3 w-full rounded-xs bg-[#3B82F6]/25 block"
+                />
+              </span>
+              .
             </motion.h1>
 
             {/* Sub-headline / Deskripsi */}
@@ -258,7 +615,7 @@ export default function LandingPage({ children }) {
               optical camera metadata instantly, and empowers constructive professional discourse.
             </motion.p>
 
-            {/* Dual CTA Buttons (Pill buttons sesuai referensi) */}
+            {/* Dual CTA Buttons (Pill buttons sesuai referensi dengan shimmer highlight) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -267,10 +624,16 @@ export default function LandingPage({ children }) {
             >
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-[#10B981] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-[#059669] hover:shadow-lg active:scale-95"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#10B981] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-[#059669] hover:shadow-lg active:scale-95"
               >
-                Get Started Free
-                <ArrowRight size={16} />
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started Free
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
+                />
               </Link>
               <Link
                 href="#galeri"
@@ -284,29 +647,34 @@ export default function LandingPage({ children }) {
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. SOCIAL PROOF / BRAND CAMERA ECOSYSTEM BAR                              */}
+      {/* 2. SOCIAL PROOF / BRAND CAMERA & EDITING SOFTWARE ECOSYSTEM BAR            */}
       {/* ========================================================================= */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
+        viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.6 }}
-        className="border-b border-[#E8DEC9] bg-[#F5EFE6]/60 py-6 sm:py-8"
+        className="border-b border-[#E8DEC9] bg-[#F5EFE6]/50 py-6 sm:py-8 overflow-hidden"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-stone-500">
-              Captured with professional instruments:
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm font-bold tracking-widest text-stone-400 uppercase">
-              <span className="transition-colors hover:text-stone-800 cursor-default">SONY α</span>
-              <span className="transition-colors hover:text-stone-800 cursor-default">CANON EOS</span>
-              <span className="transition-colors hover:text-stone-800 cursor-default">NIKON Z</span>
-              <span className="transition-colors hover:text-stone-800 cursor-default">FUJIFILM</span>
-              <span className="transition-colors hover:text-stone-800 cursor-default">LEICA</span>
-              <span className="transition-colors hover:text-stone-800 cursor-default">HASSELBLAD</span>
-            </div>
-          </div>
+          <p className="text-center font-mono text-[11px] sm:text-xs font-normal tracking-widest text-stone-500 uppercase mb-5">
+            calibrated for profesional
+          </p>
+        </div>
+
+        <div className="relative w-full">
+          <LogoLoop
+            logos={PROFESSIONAL_ECOSYSTEM_LOGOS}
+            speed={48}
+            direction="left"
+            logoHeight={34}
+            gap={60}
+            hoverSpeed={15}
+            scaleOnHover
+            fadeOut
+            fadeOutColor="#F5EFE6"
+            ariaLabel="Professional camera and software ecosystem"
+          />
         </div>
       </motion.section>
 
@@ -692,39 +1060,202 @@ export default function LandingPage({ children }) {
       </motion.section>
 
       {/* ========================================================================= */}
-      {/* 5. EDITORIAL QUOTE (Kutipan Kurator Sesuai Referensi Visual)               */}
+      {/* 5. ULASAN & FEEDBACK (Horizontal Pinning Full-Screen Scroll - Referensi Image) */}
       {/* ========================================================================= */}
-      <motion.section
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.6 }}
-        className="border-t border-[#E8DEC9] bg-[#F5EFE6]/40 py-16 sm:py-24"
+      <section
+        ref={notepadSectionRef}
+        className="relative h-[520vh] border-t border-[#E8DEC9] bg-[#FEFAF3]"
       >
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#10B981]/15 text-[#10B981]">
-            <Quote size={24} />
+        <div className="sticky top-0 flex h-screen w-full flex-col justify-between overflow-hidden pt-20 sm:pt-24 pb-8 sm:pb-10">
+          {/* Latar Belakang Teks Tipografi: "What they say about PicFlow?" */}
+          <motion.div
+            style={{ x: bgTextX }}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center select-none overflow-visible"
+          >
+            <span className="whitespace-nowrap font-black uppercase tracking-tight text-[#E8DEC9]/50 sm:text-[#E8DEC9]/70 text-[10vw] sm:text-[11.5vw] leading-none select-none pl-6 sm:pl-16 pr-12 sm:pr-20 lg:pr-28 mr-6 sm:mr-12">
+              What they say about PicFlow?
+            </span>
+          </motion.div>
+
+          {/* Header Seksi Ulasan & Feedback */}
+          <div className="relative z-10 mx-auto w-full max-w-6xl px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] px-3.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider text-stone-700 shadow-2xs">
+                  <Quote size={11} className="fill-current text-[#10B981]" />
+                  COMMUNITY REVIEWS &amp; FEEDBACK
+                </span>
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl lg:text-4xl">
+                  Words from Our Creative Community
+                </h2>
+              </div>
+              <p className="font-mono text-xs text-stone-500 uppercase tracking-wider flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+                Scroll down to traverse reviews &rarr;
+              </p>
+            </div>
           </div>
 
-          <blockquote className="mt-6 text-xl font-bold leading-relaxed text-stone-900 sm:text-2xl sm:leading-relaxed">
-            &ldquo;PicFlow preserves sRGB color fidelity and optical sharpness routinely destroyed
-            by conventional platforms. It is the authentic sanctuary for photographers who
-            respect every pixel.&rdquo;
-          </blockquote>
+          {/* Track Horizontal Cards dengan Jarak Lega (Tidak Menumpuk & Berhenti Selaras di Card Terakhir) */}
+          <div className="relative z-10 w-full overflow-visible py-8 my-auto">
+            <motion.div
+              style={{ x: notepadCardsX }}
+              className="flex items-center gap-32 sm:gap-48 lg:gap-64 pl-12 sm:pl-20 lg:pl-32 pr-8 sm:pr-14 lg:pr-20 w-max"
+            >
+              {[
+                {
+                  id: "01",
+                  author: "Raditya Pratama",
+                  role: "LEAD CURATOR",
+                  roleColor: "text-amber-500",
+                  avatar: "RP",
+                  offset: "-translate-y-8 sm:-translate-y-12",
+                  floatDuration: 4.2,
+                  floatDelay: 0,
+                  floatY: -14,
+                  tilt: -2.2,
+                  quote:
+                    "PicFlow preserves true sRGB color calibration and dynamic range that conventional platforms destroy. What we capture in RAW is 100% what renders on screen.",
+                },
+                {
+                  id: "02",
+                  author: "Joy Widi Wibowo",
+                  role: "IT & ARCHITECTURE LEAD",
+                  roleColor: "text-amber-500",
+                  avatar: "JW",
+                  offset: "translate-y-14 sm:translate-y-20",
+                  floatDuration: 5.2,
+                  floatDelay: 0.9,
+                  floatY: -16,
+                  tilt: 2.8,
+                  quote:
+                    "The system logic and data flow are remarkably clean. Seamless EXIF metadata parsing and live real-time sync handle demanding photo workloads effortlessly.",
+                },
+                {
+                  id: "03",
+                  author: "Ahmad Faishal Majdii",
+                  role: "CORE FELLOW & PRODUCER",
+                  roleColor: "text-amber-500",
+                  avatar: "AF",
+                  offset: "-translate-y-16 sm:-translate-y-24",
+                  floatDuration: 4.6,
+                  floatDelay: 1.5,
+                  floatY: -13,
+                  tilt: -1.8,
+                  quote:
+                    "Database architecture and front-to-back integration run seamlessly. The UI/UX is truly world-class, responsive, and calibrated across every display.",
+                },
+                {
+                  id: "04",
+                  author: "Rezky Setiansyah",
+                  role: "STREET & SECURITY FELLOW",
+                  roleColor: "text-amber-500",
+                  avatar: "RS",
+                  offset: "translate-y-10 sm:translate-y-14",
+                  floatDuration: 5.5,
+                  floatDelay: 0.4,
+                  floatY: -15,
+                  tilt: 3.2,
+                  quote:
+                    "The 4-pillar critique system filtered out generic noise. Rock-solid stability, zero compression artifacts, and constructive feedback from real peers.",
+                },
+                {
+                  id: "05",
+                  author: "Sofia Chen",
+                  role: "ASTROPHOTOGRAPHER",
+                  roleColor: "text-[#10B981]",
+                  avatar: "SC",
+                  offset: "-translate-y-10 sm:-translate-y-16",
+                  floatDuration: 4.8,
+                  floatDelay: 1.2,
+                  floatY: -14,
+                  tilt: -2.5,
+                  quote:
+                    "Lossless RAW retention and high-resolution delivery are rock solid. Even deep-sky astro shots with subtle 16-bit gradations stay completely noise-artifact free.",
+                },
+                {
+                  id: "06",
+                  author: "Julian Morales",
+                  role: "EDITORIAL VISUAL DIRECTOR",
+                  roleColor: "text-blue-600",
+                  avatar: "JM",
+                  offset: "translate-y-12 sm:translate-y-18",
+                  floatDuration: 5.3,
+                  floatDelay: 0.7,
+                  floatY: -16,
+                  tilt: 2.4,
+                  quote:
+                    "Sub-250ms latency turns photo reviews into live gallery conversations. The optical fidelity and community depth are unmatched in modern web tools.",
+                },
+              ].map((item) => (
+                <div key={item.id} className={`shrink-0 ${item.offset}`}>
+                  <motion.div
+                    animate={{
+                      y: [0, item.floatY, 0],
+                      rotate: [item.tilt, item.tilt + 0.8, item.tilt - 0.6, item.tilt],
+                    }}
+                    whileHover={{
+                      scale: 1.02,
+                      rotate: 0,
+                      transition: { duration: 0.3 },
+                    }}
+                    transition={{
+                      duration: item.floatDuration,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: item.floatDelay,
+                    }}
+                    className="group relative flex w-[300px] sm:w-[350px] lg:w-[380px] flex-col justify-between rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FEFAF3]/95 backdrop-blur-xs p-5 sm:p-6 shadow-[0_18px_38px_-12px_rgba(60,40,20,0.1)] hover:shadow-[0_26px_50px_-10px_rgba(60,40,20,0.18)] hover:border-stone-400 transition-shadow duration-300"
+                  >
+                    {/* Ikon Kutipan (Rounded Squircle Sesuai Referensi) */}
+                    <div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8DEC9] bg-[#F5EFE6] text-stone-400">
+                        <Quote size={15} className="fill-stone-400 text-stone-400" />
+                      </div>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-2">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white">
-                RP
-              </span>
-              <span className="font-bold text-stone-900 text-sm">Raditya Pratama</span>
+                      {/* Teks Ulasan Kutipan */}
+                      <p className="mt-4 text-xs sm:text-sm font-medium leading-relaxed text-stone-800">
+                        &ldquo;{item.quote}&rdquo;
+                      </p>
+                    </div>
+
+                    {/* Identitas User: Avatar + Nama + Role Warna (Sesuai Referensi) */}
+                    <div className="mt-5 flex items-center gap-3 border-t border-[#E8DEC9]/60 pt-4">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DCD0BE] bg-[#F5EFE6] text-[11px] font-bold text-stone-800 shadow-2xs shrink-0">
+                        {item.avatar}
+                      </div>
+                      <div className="leading-tight">
+                        <p className="font-bold text-stone-900 text-xs sm:text-sm">
+                          {item.author}
+                        </p>
+                        <p className={`mt-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${item.roleColor}`}>
+                          {item.role}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Footer Seksi: Indikator Progres Scroll */}
+          <div className="relative z-10 mx-auto w-full max-w-md px-6">
+            <div className="h-1 w-full rounded-full bg-[#E8DEC9] overflow-hidden">
+              <motion.div
+                style={{ scaleX: notepadScrollY, transformOrigin: "left" }}
+                className="h-full bg-stone-900"
+              />
             </div>
-            <p className="text-xs text-stone-500 font-mono">
-              Lead Curator · Light &amp; Shade Photography Guild
-            </p>
+            <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-stone-500 uppercase tracking-wider">
+              <span>Feedback 01</span>
+              <span className="text-stone-400">Horizontal Scroll Pinned</span>
+              <span>Feedback 06</span>
+            </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* ========================================================================= */}
       {/* 6. STATISTIK TIGA KOLOM (Sesuai Referensi Visual)                          */}
@@ -770,90 +1301,6 @@ export default function LandingPage({ children }) {
       {/* 7. KONTEN GALERI & EKSPLORASI (Anak Komponen dari Page)                   */}
       {/* ========================================================================= */}
       {children}
-
-      {/* ========================================================================= */}
-      {/* 8. BOTTOM CALL-TO-ACTION BANNER (Warm Cream + Gradasi Spektrum Mesh & Wave)*/}
-      {/* ========================================================================= */}
-      <motion.section
-        initial={{ opacity: 0, y: 32 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.7 }}
-        className="mx-auto w-full max-w-5xl px-4 sm:px-6 pt-16 pb-24 sm:pt-20 sm:pb-32"
-      >
-        <div className="relative overflow-hidden rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/70 px-6 py-14 sm:px-12 sm:py-20 text-center shadow-xs">
-          {/* Efek 3 warna dasar gradasi blur halus (Merah #EF4444, Hijau #10B981, Biru #3B82F6) */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-16 -left-12 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#EF4444]/15 blur-[100px]"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/4 -right-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#10B981]/15 blur-[100px]"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-16 left-1/3 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#3B82F6]/18 blur-[100px]"
-          />
-
-          {/* Kurva gelombang spektrum organik di latar belakang */}
-          <svg
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
-            viewBox="0 0 1000 600"
-            fill="none"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M-100,200 C200,100 400,350 700,220 C900,130 1100,260 1200,200 L1200,700 L-100,700 Z"
-              fill="url(#fluid-spectrum-cta)"
-            />
-            <defs>
-              <linearGradient id="fluid-spectrum-cta" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#EF4444" stopOpacity="0.12" />
-                <stop offset="50%" stopColor="#10B981" stopOpacity="0.10" />
-                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.14" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-3.5 py-1 text-[11px] font-mono font-semibold uppercase tracking-wider text-stone-700 shadow-2xs">
-              <span className="flex items-center gap-1" aria-hidden="true">
-                <i className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
-                <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-                <i className="h-1.5 w-1.5 rounded-full bg-[#3B82F6]" />
-              </span>
-              JOIN PICFLOW COMMUNITY
-            </span>
-
-            <h3 className="mt-4 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl lg:text-4xl" style={{ lineHeight: 1.2 }}>
-              Elevate your photography to the highest visual standard
-            </h3>
-
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-stone-600 sm:text-base">
-              Join now to experience compression-free showcase, true sRGB color calibration,
-              and optical camera EXIF inspection.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
-              <Link
-                href="/login"
-                className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-6 py-2.5 text-xs sm:text-sm font-semibold text-stone-800 transition-all hover:bg-white hover:border-stone-400 active:scale-95 shadow-2xs"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-7 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
-              >
-                Get Started Free
-                <ArrowRight size={15} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.section>
     </div>
   );
 }
