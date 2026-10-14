@@ -31,158 +31,163 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import {
-  SiBlackmagicdesign,
-  SiFujifilm,
-  SiLeica,
-  SiNikon,
-  SiPanasonic,
-  SiSony,
-} from "react-icons/si";
 import LogoLoop from "@/components/ui/LogoLoop";
 
-// Ekosistem logo instrumen kamera profesional & software editing kurasi (Konsistensi Bentuk & Ukuran)
+// Ekosistem logo instrumen kamera profesional & software editing kurasi (Warna Asli Transparan - Grayscale Idle & Pop On Hover)
 const PROFESSIONAL_ECOSYSTEM_LOGOS = [
   {
     title: "Sony",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiSony size={40} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/sony.png"
+          alt="Sony"
+          className="h-3 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Canon",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <svg
-          className="h-5 w-auto fill-stone-400 hover:fill-stone-800 transition-colors overflow-visible"
-          viewBox="0 0 84 20"
-        >
-          <text
-            x="42"
-            y="16"
-            textAnchor="middle"
-            fontFamily="system-ui, -apple-system, sans-serif"
-            fontSize="18"
-            fontWeight="700"
-            letterSpacing="2"
-          >
-            CANON
-          </text>
-        </svg>
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/canon.png"
+          alt="Canon"
+          className="h-3.5 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Nikon",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiNikon size={34} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/nikon.png"
+          alt="Nikon"
+          className="h-4.5 w-4.5 rounded object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Fujifilm",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiFujifilm size={42} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/fujifilm.png"
+          alt="Fujifilm"
+          className="h-3.5 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Leica",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiLeica size={32} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/leica.png"
+          alt="Leica"
+          className="h-4.5 w-4.5 object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Hasselblad",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <svg
-          className="h-4.5 w-auto fill-stone-400 hover:fill-stone-800 transition-colors overflow-visible"
-          viewBox="0 0 115 20"
-        >
-          <text
-            x="57.5"
-            y="15"
-            textAnchor="middle"
-            fontFamily="Georgia, 'Times New Roman', serif"
-            fontSize="13.5"
-            letterSpacing="2.5"
-          >
-            HASSELBLAD
-          </text>
-        </svg>
-      </div>
-    ),
-  },
-  {
-    title: "Adobe Lightroom",
-    node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
-          Lr
-        </span>
-      </div>
-    ),
-  },
-  {
-    title: "Adobe Photoshop",
-    node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
-          Ps
-        </span>
-      </div>
-    ),
-  },
-  {
-    title: "Capture One",
-    node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-stone-400/80 text-[11px] font-mono font-bold text-stone-500 hover:border-stone-800 hover:text-stone-900 transition-colors">
-          C1
-        </span>
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/hasselblad.png"
+          alt="Hasselblad"
+          className="h-3 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
     title: "Panasonic Lumix",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiPanasonic size={34} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/panasonic.png"
+          alt="Panasonic"
+          className="h-3 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
-    title: "Blackmagic Design",
+    title: "Sigma",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <SiBlackmagicdesign size={28} className="text-stone-400 hover:text-stone-800 transition-colors" />
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/sigma.png"
+          alt="Sigma"
+          className="h-3.5 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
   {
-    title: "DaVinci Resolve",
+    title: "DJI",
     node: (
-      <div className="flex h-8 items-center justify-center px-1">
-        <svg
-          className="h-6 w-6 stroke-stone-400 fill-none hover:stroke-stone-800 transition-colors"
-          viewBox="0 0 24 24"
-          strokeWidth="1.75"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 3v6" />
-          <path d="M19.79 7.5l-5.2 3" />
-          <path d="M19.79 16.5l-5.2-3" />
-          <path d="M12 21v-6" />
-          <path d="M4.21 16.5l5.2-3" />
-          <path d="M4.21 7.5l5.2 3" />
-        </svg>
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/dji.png"
+          alt="DJI"
+          className="h-4 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Godox",
+    node: (
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/godox.png"
+          alt="Godox"
+          className="h-3.5 w-auto object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Adobe Photoshop",
+    node: (
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/photoshop.png"
+          alt="Adobe Photoshop"
+          className="h-4.5 w-4.5 rounded object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Adobe Lightroom",
+    node: (
+      <div className="group flex h-5 items-center justify-center px-1 cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/contributor/lightroom.png"
+          alt="Adobe Lightroom"
+          className="h-4.5 w-4.5 rounded object-contain grayscale opacity-40 transition-all duration-300 ease-out group-hover:grayscale-0 group-hover:opacity-100 pointer-events-auto select-none"
+        />
       </div>
     ),
   },
@@ -665,11 +670,11 @@ export default function LandingPage({ children }) {
         <div className="relative w-full">
           <LogoLoop
             logos={PROFESSIONAL_ECOSYSTEM_LOGOS}
-            speed={48}
+            speed={40}
             direction="left"
-            logoHeight={34}
-            gap={60}
-            hoverSpeed={15}
+            logoHeight={22}
+            gap={48}
+            hoverSpeed={12}
             scaleOnHover
             fadeOut
             fadeOutColor="#F5EFE6"
