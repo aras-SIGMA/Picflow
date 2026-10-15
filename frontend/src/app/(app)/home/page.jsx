@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Aperture,
   ArrowRight,
@@ -29,7 +29,7 @@ import { fileUrl, getToken, listPhotos, listCategories, deletePhoto } from "@/li
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { subscribeRealtime } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
-import Lightbox from "@/components/Lightbox";
+import InlineCommentSection from "@/components/InlineCommentSection";
 import LikeButton from "@/components/LikeButton";
 import FollowButton from "@/components/FollowButton";
 import Modal from "@/components/ui/Modal";
@@ -65,10 +65,25 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
 
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [expandedComments, setExpandedComments] = useState({});
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [activeMenuPhotoId, setActiveMenuPhotoId] = useState(null);
+
+  const toggleComments = (photoId) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [photoId]: !prev[photoId],
+    }));
+  };
+
+  const handleCommentCountChange = (photoId, newCount) => {
+    setPhotos((prev) =>
+      prev.map((p) =>
+        p.id_photo === photoId ? { ...p, comments_count: newCount } : p
+      )
+    );
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -645,17 +660,14 @@ export default function HomePage() {
                             onClick={(e) => e.stopPropagation()}
                             className="absolute right-0 top-8 z-30 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedPhoto(photo);
-                                setActiveMenuPhotoId(null);
-                              }}
+                            <Link
+                              href={`/photos/${photo.id_photo}`}
+                              onClick={() => setActiveMenuPhotoId(null)}
                               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-stone-700 hover:bg-gray-50"
                             >
                               <ExternalLink size={13} />
-                              Open in Lightbox
-                            </button>
+                              View Details & Critique
+                            </Link>
                             <button
                               type="button"
                               onClick={() => {
@@ -697,9 +709,11 @@ export default function HomePage() {
 
                     {/* Judul, Deskripsi & Metadata EXIF */}
                     <div className="px-4 pb-3">
-                      <h2 className="text-sm font-bold text-stone-900">
-                        {photo.title}
-                      </h2>
+                      <Link href={`/photos/${photo.id_photo}`} className="group/title block">
+                        <h2 className="text-sm font-bold text-stone-900 group-hover/title:text-blue-600 transition-colors">
+                          {photo.title}
+                        </h2>
+                      </Link>
                       {photo.description && (
                         <p className="mt-1 text-xs leading-relaxed text-stone-700">
                           {photo.description}
@@ -734,9 +748,9 @@ export default function HomePage() {
 
                     {/* Frame Foto */}
                     <div className="px-4 pb-3">
-                      <div
-                        onClick={() => setSelectedPhoto(photo)}
-                        className="group/img relative cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                      <Link
+                        href={`/photos/${photo.id_photo}`}
+                        className="group/img relative block overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
                       >
                         <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full">
                           {photoSrc ? (
@@ -757,13 +771,13 @@ export default function HomePage() {
 
                         <div className="pointer-events-none absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/img:opacity-100">
                           <span className="text-[11px] font-semibold text-white">
-                            Click to open full inspection & critiques
+                            Inspect high-res photograph & critiques
                           </span>
                           <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
                             HD
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     </div>
 
                     {/* Aksi Postingan (Likes, Comments, Critique, Share) */}
@@ -779,23 +793,30 @@ export default function HomePage() {
 
                         <button
                           type="button"
-                          onClick={() => setSelectedPhoto(photo)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600"
+                          onClick={() => toggleComments(photo.id_photo)}
+                          aria-label="Toggle comments"
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                            expandedComments[photo.id_photo]
+                              ? "border-blue-300 bg-blue-50 text-blue-700"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
                         >
-                          <MessageSquare size={14} className="text-gray-400" />
+                          <MessageSquare
+                            size={14}
+                            className={expandedComments[photo.id_photo] ? "text-blue-600" : "text-gray-400"}
+                          />
                           <span className="tabular-nums font-semibold">
                             {photo.comments_count || 0}
                           </span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPhoto(photo)}
+                        <Link
+                          href={`/photos/${photo.id_photo}?tab=critique`}
                           className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
                         >
                           <Star size={13} className="text-amber-600 fill-amber-500" />
                           <span>Critique</span>
-                        </button>
+                        </Link>
                       </div>
 
                       <button
@@ -807,6 +828,24 @@ export default function HomePage() {
                         <Share2 size={16} />
                       </button>
                     </div>
+
+                    {/* Inline Extendable Comments (Twitter Style) */}
+                    <AnimatePresence>
+                      {expandedComments[photo.id_photo] && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.22, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <InlineCommentSection
+                            photoId={photo.id_photo}
+                            onCountChange={(count) => handleCommentCountChange(photo.id_photo, count)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </article>
                 );
               })}
@@ -832,9 +871,9 @@ export default function HomePage() {
                 <div className="mt-3 space-y-3">
                   {critiqueQueue.map((photo) => (
                     <div key={photo.id_photo} className="flex items-center gap-2.5">
-                      <div
-                        onClick={() => setSelectedPhoto(photo)}
-                        className="relative h-11 w-11 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                      <Link
+                        href={`/photos/${photo.id_photo}?tab=critique`}
+                        className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 hover:opacity-90 transition-opacity"
                       >
                         {photo.thumbnail_url || photo.image_url ? (
                           <Image
@@ -846,24 +885,26 @@ export default function HomePage() {
                             className="object-cover"
                           />
                         ) : null}
-                      </div>
+                      </Link>
 
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-bold text-stone-900">
+                        <Link
+                          href={`/photos/${photo.id_photo}?tab=critique`}
+                          className="truncate text-xs font-bold text-stone-900 hover:text-blue-600 block transition-colors"
+                        >
                           {photo.title}
-                        </p>
+                        </Link>
                         <p className="truncate text-[11px] text-stone-500">
                           by @{photo.creator?.username || "creator"}
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPhoto(photo)}
+                      <Link
+                        href={`/photos/${photo.id_photo}?tab=critique`}
                         className="rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
                       >
                         Review
-                      </button>
+                      </Link>
                     </div>
                   ))}
 
@@ -950,15 +991,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Lightbox Modal (Semua Fitur EXIF & Kritik Tetap Lengkap) */}
-      <AnimatePresence>
-        {selectedPhoto && (
-          <Lightbox
-            photo={photos.find((p) => p.id_photo === selectedPhoto.id_photo) || selectedPhoto}
-            onClose={() => setSelectedPhoto(null)}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Modal Konfirmasi Hapus */}
       <Modal

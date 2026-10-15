@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
@@ -34,13 +34,16 @@ import { useToast } from "@/components/ui/Toast";
 export default function PhotoDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
 
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [socialTab, setSocialTab] = useState("critique"); // "critique" | "comments"
+  const tabParam = searchParams?.get("tab");
+  const [tabOverride, setTabOverride] = useState(null);
+  const socialTab = tabOverride ?? (tabParam === "comments" ? "comments" : "critique");
 
   useEffect(() => {
     if (!id) return;
@@ -263,7 +266,7 @@ export default function PhotoDetailPage() {
               <div className="flex gap-2 border-b border-line pb-2">
                 <button
                   type="button"
-                  onClick={() => setSocialTab("critique")}
+                  onClick={() => setTabOverride("critique")}
                   className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
                     socialTab === "critique"
                       ? "bg-accent/20 text-accent font-semibold"
@@ -275,7 +278,7 @@ export default function PhotoDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSocialTab("comments")}
+                  onClick={() => setTabOverride("comments")}
                   className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
                     socialTab === "comments"
                       ? "bg-accent/20 text-accent font-semibold"
