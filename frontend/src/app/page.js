@@ -100,7 +100,7 @@ export default function RootGuestHomePage() {
       </AnimatePresence>
 
       {/* Konten Landing Page Guest */}
-      <div className="flex min-h-screen flex-col bg-[#FEFAF3] text-stone-900 selection:bg-blue-600 selection:text-white">
+      <div className="flex min-h-screen flex-col bg-[#FFFDF6] text-stone-900 selection:bg-blue-600 selection:text-white">
         <Navbar />
 
         <main className="flex flex-1 flex-col">

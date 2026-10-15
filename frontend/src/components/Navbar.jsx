@@ -66,7 +66,7 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: EASE }}
       className={`sticky top-0 z-40 transition-colors duration-500 ${
         scrolled
-          ? "border-b border-[#E8DEC9] bg-[#FEFAF3]/90 backdrop-blur-md"
+          ? "border-b border-[#E8DEC9] bg-[#FFFDF6]/90 backdrop-blur-md"
           : "border-b border-transparent bg-transparent"
       }`}
     >
@@ -87,7 +87,7 @@ export default function Navbar() {
             ))}
             <button
               onClick={logout}
-              className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-4 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900 hover:bg-white"
+              className="rounded-full border border-[#DCD0BE] bg-[#FFFDF6] px-4 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900 hover:bg-white"
             >
               Logout
             </button>
@@ -127,7 +127,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className="border-b border-[#E8DEC9] bg-[#FEFAF3]/98 backdrop-blur-md sm:hidden"
+            className="border-b border-[#E8DEC9] bg-[#FFFDF6]/98 backdrop-blur-md sm:hidden"
           >
             <div className="flex flex-col gap-1 px-4 py-3">
               {LINKS.map((l) => (

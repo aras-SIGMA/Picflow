@@ -6,7 +6,7 @@
    Jangan hardcode warna di luar token ini.
    ============================================================ */
 @theme {
-  --color-canvas: #FEFAF3; /* --bg: kanvas warm cream editorial */
+  --color-canvas: #FFFDF6; /* --bg: kanvas warm cream editorial */
   --color-elevated: #F8F3E8; /* --bg-elevated: elevated warm card */
   --color-surface: #F5EFE6; /* --surface: subtle warm strip */
   --color-line: #E8DEC9; /* --border: border krem hangat natural */
