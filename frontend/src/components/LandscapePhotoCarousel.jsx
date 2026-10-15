@@ -158,7 +158,7 @@ function LandscapeCard({ photo, onOpen }) {
   return (
     <figure
       onClick={onOpen}
-      className="group relative h-[240px] w-[360px] sm:h-[280px] sm:w-[440px] shrink-0 cursor-pointer overflow-hidden rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FEFAF3] shadow-xs transition-all duration-300 hover:border-blue-600/50 hover:shadow-lg"
+      className="group relative h-[240px] w-[360px] sm:h-[280px] sm:w-[440px] shrink-0 cursor-pointer overflow-hidden rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6] shadow-xs transition-all duration-300 hover:border-blue-600/50 hover:shadow-lg"
     >
       {/* Gambar Format Landscape 16:10 */}
       <Image
@@ -176,7 +176,7 @@ function LandscapeCard({ photo, onOpen }) {
 
       {/* Badge Kategori Kiri Atas */}
       <div className="absolute left-3.5 top-3.5 z-10">
-        <span className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1 text-[11px] font-bold text-stone-800 shadow-2xs backdrop-blur-md">
+        <span className="rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1 text-[11px] font-bold text-stone-800 shadow-2xs backdrop-blur-md">
           {photo.category_name}
         </span>
       </div>
@@ -189,8 +189,8 @@ function LandscapeCard({ photo, onOpen }) {
         </span>
       </div>
 
-      {/* Kapsul Info Minimalis di Bagian Bawah (#FEFAF3 Warm Cream) */}
-      <figcaption className="absolute inset-x-3.5 bottom-3.5 z-10 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3]/95 p-3.5 shadow-md backdrop-blur-md transition-transform duration-300 group-hover:-translate-y-0.5">
+      {/* Kapsul Info Minimalis di Bagian Bawah (#FFFDF6 Warm Cream) */}
+      <figcaption className="absolute inset-x-3.5 bottom-3.5 z-10 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6]/95 p-3.5 shadow-md backdrop-blur-md transition-transform duration-300 group-hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-xs sm:text-sm font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
             {photo.title}
@@ -211,11 +211,11 @@ function LandscapeCard({ photo, onOpen }) {
 
           {/* Parameter Aperture & Shutter Speed */}
           <div className="flex items-center gap-1.5 font-mono text-[10px] text-stone-700">
-            <span className="flex items-center gap-1 rounded-md border border-[#E2D7C5] bg-[#FEFAF3] px-1.5 py-0.5">
+            <span className="flex items-center gap-1 rounded-md border border-[#E2D7C5] bg-[#FFFDF6] px-1.5 py-0.5">
               <Camera size={10} className="text-blue-600" />
               {photo.aperture}
             </span>
-            <span className="hidden sm:inline-block rounded-md border border-[#E2D7C5] bg-[#FEFAF3] px-1.5 py-0.5">
+            <span className="hidden sm:inline-block rounded-md border border-[#E2D7C5] bg-[#FFFDF6] px-1.5 py-0.5">
               {photo.shutter_speed}
             </span>
           </div>

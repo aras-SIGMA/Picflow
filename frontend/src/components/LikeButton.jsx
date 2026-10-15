@@ -17,6 +17,7 @@ export default function LikeButton({
   size = "md",
   showCount = true,
   className = "",
+  variant = "default",
   onLikeChange,
 }) {
   const [prevInitialLiked, setPrevInitialLiked] = useState(initialLiked);
@@ -25,6 +26,8 @@ export default function LikeButton({
   const [count, setCount] = useState(Number(initialCount) || 0);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
+
+  const isWhite = variant === "white";
 
   if (initialLiked !== prevInitialLiked) {
     setPrevInitialLiked(initialLiked);
@@ -96,32 +99,40 @@ export default function LikeButton({
       onClick={handleClick}
       aria-label={liked ? "Unlike photo" : "Like photo"}
       aria-pressed={liked}
-      className={`group/like inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-        liked
-          ? "border-red-500/30 bg-red-500/10 text-red-400"
-          : "border-line bg-[var(--surface)] text-muted hover:border-white/30 hover:text-ink"
-      } border ${className}`}
+      className={`group/like inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border ${
+        isWhite
+          ? "border-gray-200 bg-white text-gray-600"
+          : liked
+            ? "border-red-500/30 bg-red-500/10 text-red-400 transition-colors"
+            : "border-line bg-[var(--surface)] text-muted transition-colors"
+      } ${className}`}
     >
       <motion.span
         key={String(liked)}
-        initial={{ scale: 0.8 }}
+        initial={isWhite ? false : { scale: 0.8 }}
         animate={{ scale: 1 }}
-        whileTap={{ scale: 1.3 }}
+        whileTap={isWhite ? undefined : { scale: 1.3 }}
         transition={{ type: "spring", stiffness: 500, damping: 15 }}
         className="flex items-center justify-center"
       >
         <Heart
           size={iconSize}
-          className={`transition-colors ${
+          className={
             liked
               ? "fill-red-500 text-red-500"
-              : "text-muted group-hover/like:text-red-400"
-          }`}
+              : isWhite
+                ? "text-gray-400"
+                : "text-muted"
+          }
         />
       </motion.span>
 
       {showCount && (
-        <span className="tabular-nums font-semibold tracking-tight">
+        <span
+          className={`tabular-nums font-semibold tracking-tight ${
+            isWhite && liked ? "text-red-500" : ""
+          }`}
+        >
           {count}
         </span>
       )}

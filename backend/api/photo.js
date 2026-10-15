@@ -179,8 +179,6 @@ const commentSchema = z.object({
     .max(1000, "Comment cannot exceed 1000 characters"),
 });
 
-const CRITIQUE_PREFIX = "__PICFLOW_CRITIQUE__:";
-
 const critiqueSchema = z.object({
   rating_composition: z.coerce
     .number()
@@ -520,9 +518,7 @@ router.get("/:id/comments", optionalToken, async (req, res, next) => {
 
     if (error) return next(new Error(error.message));
 
-    const comments = (data || [])
-      .filter((c) => !c.content?.startsWith(CRITIQUE_PREFIX))
-      .map((c) => ({
+    const comments = (data || []).map((c) => ({
         id_comment: c.id,
         id_photo: c.photo_id,
         id_user: c.user_id,
@@ -680,7 +676,6 @@ router.get("/:id/critiques", optionalToken, async (req, res, next) => {
   try {
     const photoId = req.params.id;
 
-    // 1. Coba dari tabel critiques
     const { data, error } = await supabase
       .from("critiques")
       .select(
@@ -689,91 +684,37 @@ router.get("/:id/critiques", optionalToken, async (req, res, next) => {
       .eq("photo_id", photoId)
       .order("created_at", { ascending: false });
 
-    let critiques = [];
-    if (error) {
-      // Jika tabel critiques belum ada di Supabase (PGRST205), fallback ke comments
-      if (error.code === "PGRST205") {
-        const { data: cData, error: cErr } = await supabase
-          .from("comments")
-          .select(
-            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
-          )
-          .eq("photo_id", photoId)
-          .order("created_at", { ascending: false });
+    if (error) return next(new Error(error.message));
 
-        if (cErr) return next(new Error(cErr.message));
-
-        critiques = (cData || [])
-          .filter((c) => c.content?.startsWith(CRITIQUE_PREFIX))
-          .map((c) => {
-            let parsed = {};
-            try {
-              parsed = JSON.parse(c.content.slice(CRITIQUE_PREFIX.length));
-            } catch (_) {}
-            const rating_comp = parsed.rating_composition || 3;
-            const rating_light = parsed.rating_lighting || 3;
-            const rating_col = parsed.rating_color || 3;
-            const rating_conc = parsed.rating_concept || 3;
-            const overall = +(
-              (rating_comp + rating_light + rating_col + rating_conc) /
-              4
-            ).toFixed(1);
-
-            return {
-              id_critique: c.id,
-              id_photo: c.photo_id,
-              id_user: c.user_id,
-              rating_composition: rating_comp,
-              rating_lighting: rating_light,
-              rating_color: rating_col,
-              rating_concept: rating_conc,
-              overall_score: overall,
-              strengths: parsed.strengths || "",
-              improvements: parsed.improvements || "",
-              created_at: c.created_at,
-              updated_at: c.updated_at,
-              user: {
-                id_user: c.profiles?.id,
-                username: c.profiles?.username,
-                avatar_url: c.profiles?.avatar_url,
-              },
-              is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
-            };
-          });
-      } else {
-        return next(new Error(error.message));
-      }
-    } else {
-      critiques = (data || []).map((c) => {
-        const overall = +(
-          (c.rating_composition +
-            c.rating_lighting +
-            c.rating_color +
-            c.rating_concept) /
-          4
-        ).toFixed(1);
-        return {
-          id_critique: c.id,
-          id_photo: c.photo_id,
-          id_user: c.user_id,
-          rating_composition: c.rating_composition,
-          rating_lighting: c.rating_lighting,
-          rating_color: c.rating_color,
-          rating_concept: c.rating_concept,
-          overall_score: overall,
-          strengths: c.strengths,
-          improvements: c.improvements,
-          created_at: c.created_at,
-          updated_at: c.updated_at,
-          user: {
-            id_user: c.profiles?.id,
-            username: c.profiles?.username,
-            avatar_url: c.profiles?.avatar_url,
-          },
-          is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
-        };
-      });
-    }
+    const critiques = (data || []).map((c) => {
+      const overall = +(
+        (c.rating_composition +
+          c.rating_lighting +
+          c.rating_color +
+          c.rating_concept) /
+        4
+      ).toFixed(1);
+      return {
+        id_critique: c.id,
+        id_photo: c.photo_id,
+        id_user: c.user_id,
+        rating_composition: c.rating_composition,
+        rating_lighting: c.rating_lighting,
+        rating_color: c.rating_color,
+        rating_concept: c.rating_concept,
+        overall_score: overall,
+        strengths: c.strengths,
+        improvements: c.improvements,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        user: {
+          id_user: c.profiles?.id,
+          username: c.profiles?.username,
+          avatar_url: c.profiles?.avatar_url,
+        },
+        is_owner: Boolean(req.user?.id && c.user_id === req.user.id),
+      };
+    });
 
     const stats = calculateCritiqueStats(critiques);
 
@@ -828,9 +769,6 @@ router.post("/:id/critiques", verifyToken, async (req, res, next) => {
       improvements,
     } = validation.data;
 
-    let createdCritique = null;
-
-    // 1. Coba insert ke tabel critiques
     const { data: insData, error: insErr } = await supabase
       .from("critiques")
       .insert({
@@ -848,95 +786,36 @@ router.post("/:id/critiques", verifyToken, async (req, res, next) => {
       )
       .single();
 
-    if (insErr) {
-      if (insErr.code === "PGRST205") {
-        // Fallback simpan ke comments
-        const fallbackContent =
-          CRITIQUE_PREFIX +
-          JSON.stringify({
-            rating_composition,
-            rating_lighting,
-            rating_color,
-            rating_concept,
-            strengths,
-            improvements,
-          });
+    if (insErr) return next(new Error(insErr.message));
 
-        const { data: fData, error: fErr } = await supabase
-          .from("comments")
-          .insert({
-            photo_id: photoId,
-            user_id: req.user.id,
-            content: fallbackContent,
-          })
-          .select(
-            "id, user_id, photo_id, content, created_at, updated_at, profiles(id, username, avatar_url)"
-          )
-          .single();
+    const overall = +(
+      (insData.rating_composition +
+        insData.rating_lighting +
+        insData.rating_color +
+        insData.rating_concept) /
+      4
+    ).toFixed(1);
 
-        if (fErr) return next(new Error(fErr.message));
-
-        const overall = +(
-          (rating_composition +
-            rating_lighting +
-            rating_color +
-            rating_concept) /
-          4
-        ).toFixed(1);
-
-        createdCritique = {
-          id_critique: fData.id,
-          id_photo: fData.photo_id,
-          id_user: fData.user_id,
-          rating_composition,
-          rating_lighting,
-          rating_color,
-          rating_concept,
-          overall_score: overall,
-          strengths,
-          improvements,
-          created_at: fData.created_at,
-          updated_at: fData.updated_at,
-          user: {
-            id_user: fData.profiles?.id,
-            username: fData.profiles?.username,
-            avatar_url: fData.profiles?.avatar_url,
-          },
-          is_owner: true,
-        };
-      } else {
-        return next(new Error(insErr.message));
-      }
-    } else {
-      const overall = +(
-        (insData.rating_composition +
-          insData.rating_lighting +
-          insData.rating_color +
-          insData.rating_concept) /
-        4
-      ).toFixed(1);
-
-      createdCritique = {
-        id_critique: insData.id,
-        id_photo: insData.photo_id,
-        id_user: insData.user_id,
-        rating_composition: insData.rating_composition,
-        rating_lighting: insData.rating_lighting,
-        rating_color: insData.rating_color,
-        rating_concept: insData.rating_concept,
-        overall_score: overall,
-        strengths: insData.strengths,
-        improvements: insData.improvements,
-        created_at: insData.created_at,
-        updated_at: insData.updated_at,
-        user: {
-          id_user: insData.profiles?.id,
-          username: insData.profiles?.username,
-          avatar_url: insData.profiles?.avatar_url,
-        },
-        is_owner: true,
-      };
-    }
+    const createdCritique = {
+      id_critique: insData.id,
+      id_photo: insData.photo_id,
+      id_user: insData.user_id,
+      rating_composition: insData.rating_composition,
+      rating_lighting: insData.rating_lighting,
+      rating_color: insData.rating_color,
+      rating_concept: insData.rating_concept,
+      overall_score: overall,
+      strengths: insData.strengths,
+      improvements: insData.improvements,
+      created_at: insData.created_at,
+      updated_at: insData.updated_at,
+      user: {
+        id_user: insData.profiles?.id,
+        username: insData.profiles?.username,
+        avatar_url: insData.profiles?.avatar_url,
+      },
+      is_owner: true,
+    };
 
     // Broadcast penambahan kritik real-time
     broadcastEvent("critique:added", {
@@ -958,7 +837,6 @@ router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) 
   try {
     const { id: photoId, critiqueId } = req.params;
 
-    // 1. Cek di tabel critiques jika ada
     const { data: critique, error: cErr } = await supabase
       .from("critiques")
       .select("id, user_id, photo_id, photos(user_id)")
@@ -966,52 +844,25 @@ router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) 
       .eq("photo_id", photoId)
       .maybeSingle();
 
-    if (cErr && cErr.code !== "PGRST205") return next(new Error(cErr.message));
-
-    if (critique) {
-      const isAuthor = critique.user_id === req.user.id;
-      const isPhotoOwner = critique.photos?.user_id === req.user.id;
-      if (!isAuthor && !isPhotoOwner) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to delete this critique" });
-      }
-
-      const { error: delErr } = await supabase
-        .from("critiques")
-        .delete()
-        .eq("id", critiqueId);
-
-      if (delErr) return next(new Error(delErr.message));
-    } else {
-      // 2. Cek di fallback comments
-      const { data: fbComment, error: fbErr } = await supabase
-        .from("comments")
-        .select("id, user_id, photo_id, content, photos(user_id)")
-        .eq("id", critiqueId)
-        .eq("photo_id", photoId)
-        .maybeSingle();
-
-      if (fbErr) return next(new Error(fbErr.message));
-      if (!fbComment || !fbComment.content?.startsWith(CRITIQUE_PREFIX)) {
-        return res.status(404).json({ message: "Critique not found" });
-      }
-
-      const isAuthor = fbComment.user_id === req.user.id;
-      const isPhotoOwner = fbComment.photos?.user_id === req.user.id;
-      if (!isAuthor && !isPhotoOwner) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to delete this critique" });
-      }
-
-      const { error: delErr } = await supabase
-        .from("comments")
-        .delete()
-        .eq("id", critiqueId);
-
-      if (delErr) return next(new Error(delErr.message));
+    if (cErr) return next(new Error(cErr.message));
+    if (!critique) {
+      return res.status(404).json({ message: "Critique not found" });
     }
+
+    const isAuthor = critique.user_id === req.user.id;
+    const isPhotoOwner = critique.photos?.user_id === req.user.id;
+    if (!isAuthor && !isPhotoOwner) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this critique" });
+    }
+
+    const { error: delErr } = await supabase
+      .from("critiques")
+      .delete()
+      .eq("id", critiqueId);
+
+    if (delErr) return next(new Error(delErr.message));
 
     broadcastEvent("critique:deleted", {
       photo_id: photoId,

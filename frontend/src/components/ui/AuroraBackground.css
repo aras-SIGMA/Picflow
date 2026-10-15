@@ -1,0 +1,148 @@
+/* src/components/ui/AuroraBackground.css */
+/* Animasi Aurora Borealis Spektrum sRGB pada Kanvas Terang Warm Cream #FEFAF3 */
+
+@keyframes aurora-wave-1 {
+  0%, 100% {
+    transform: translate3d(0%, 0%, 0) scale(1) rotate(0deg);
+    opacity: 0.65;
+  }
+  33% {
+    transform: translate3d(8%, -6%, 0) scale(1.15) rotate(10deg);
+    opacity: 0.85;
+  }
+  66% {
+    transform: translate3d(-6%, 10%, 0) scale(0.92) rotate(-6deg);
+    opacity: 0.6;
+  }
+}
+
+@keyframes aurora-wave-2 {
+  0%, 100% {
+    transform: translate3d(0%, 0%, 0) scale(1) rotate(0deg);
+    opacity: 0.55;
+  }
+  33% {
+    transform: translate3d(-10%, 8%, 0) scale(1.18) rotate(-12deg);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate3d(10%, -8%, 0) scale(0.9) rotate(8deg);
+    opacity: 0.5;
+  }
+}
+
+@keyframes aurora-wave-3 {
+  0%, 100% {
+    transform: translate3d(0%, 0%, 0) scale(1) rotate(0deg);
+    opacity: 0.45;
+  }
+  33% {
+    transform: translate3d(-8%, -10%, 0) scale(1.12) rotate(14deg);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translate3d(12%, 6%, 0) scale(0.95) rotate(-10deg);
+    opacity: 0.48;
+  }
+}
+
+@keyframes aurora-curtain-shift {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(-2deg) scale(1.02);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: rotate(3deg) scale(1.08);
+  }
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(-2deg) scale(1.02);
+  }
+}
+
+.aurora-root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: #FEFAF3;
+}
+
+.aurora-beam {
+  position: absolute;
+  width: 140%;
+  height: 140%;
+  top: -20%;
+  left: -20%;
+  filter: blur(95px);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* 1. sRGB Blue Beam (Biru Elektrik & Royal) */
+.aurora-beam--blue {
+  background: radial-gradient(
+    ellipse 65% 55% at 25% 35%,
+    rgba(59, 130, 246, 0.42) 0%,
+    rgba(37, 99, 235, 0.25) 38%,
+    rgba(219, 234, 254, 0.15) 60%,
+    transparent 72%
+  );
+  animation: aurora-wave-1 18s ease-in-out infinite;
+}
+
+/* 2. sRGB Green Beam (Hijau Zamrud & Mint) */
+.aurora-beam--green {
+  background: radial-gradient(
+    ellipse 60% 50% at 75% 65%,
+    rgba(16, 185, 129, 0.38) 0%,
+    rgba(52, 211, 153, 0.22) 36%,
+    rgba(209, 250, 229, 0.12) 58%,
+    transparent 70%
+  );
+  animation: aurora-wave-2 22s ease-in-out infinite;
+}
+
+/* 3. sRGB Red & Warm Coral Beam (Merah Spektrum & Oranye) */
+.aurora-beam--coral {
+  background: radial-gradient(
+    ellipse 55% 45% at 50% 20%,
+    rgba(239, 68, 68, 0.32) 0%,
+    rgba(249, 115, 22, 0.20) 32%,
+    rgba(254, 226, 226, 0.10) 55%,
+    transparent 68%
+  );
+  animation: aurora-wave-3 25s ease-in-out infinite;
+}
+
+/* 4. Fluid Spectral Curtain (Pita Gelombang Bergerak Halus dengan Mode Multiply) */
+.aurora-curtain-strip {
+  position: absolute;
+  inset: -15%;
+  background: repeating-linear-gradient(
+    125deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.12) 18%,
+    rgba(16, 185, 129, 0.15) 34%,
+    rgba(249, 115, 22, 0.10) 50%,
+    rgba(239, 68, 68, 0.12) 66%,
+    transparent 82%
+  );
+  background-size: 260% 260%;
+  filter: blur(75px);
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+  animation: aurora-curtain-shift 28s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* 5. Micro Photographic Grid Texture (Subtle Stone-Cream Points) */
+.aurora-grid-texture {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#DCD0BE 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.45;
+  pointer-events: none;
+}

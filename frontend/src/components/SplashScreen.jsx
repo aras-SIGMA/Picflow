@@ -2,7 +2,7 @@
 
 // src/components/SplashScreen.jsx
 // Splash Screen sinematik pembuka PicFlow:
-// - Kanvas warm cream #FEFAF3
+// - Kanvas warm cream #FFFDF6
 // - Animasi aperture lensa 4 blade sRGB yang membuka secara presisi
 // - Wordmark "PicFlow" dengan micro dots kalibrasi R-G-B
 // - Transisi keluar mulus (fade out & scale up)
@@ -41,7 +41,7 @@ export default function SplashScreen({ onFinish }) {
       onAnimationComplete={() => {
         // Callback opsional
       }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FEFAF3] text-stone-900 select-none overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFFDF6] text-stone-900 select-none overflow-hidden"
     >
       {/* Glow radial halus di latar belakang */}
       <div

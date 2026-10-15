@@ -1,83 +1,82 @@
 "use client";
 
-// src/app/home/page.jsx
-// HOME: hero editorial + kutipan + baris kategori (thumbnail) + galeri
-// masonry + lightbox + floating info card.
-// Logika TIDAK berubah: proteksi token, listPhotos + listCategories,
-// filter kategori, deletePhoto. Tambahan murni UI: search, skeleton,
-// empty/error state, dan konfirmasi hapus via modal custom.
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-} from "framer-motion";
-import { ArrowRight, Camera, Compass, ImagePlus, RefreshCcw, Search, Users } from "lucide-react";
+  Aperture,
+  ArrowRight,
+  Camera,
+  Compass,
+  Copy,
+  ExternalLink,
+  ImagePlus,
+  Layers,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Share2,
+  Sparkles,
+  Star,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { fileUrl, getToken, listPhotos, listCategories, deletePhoto } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { subscribeRealtime } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
-import PhotoCard from "@/components/PhotoCard";
-import MasonryGrid from "@/components/MasonryGrid";
 import Lightbox from "@/components/Lightbox";
+import LikeButton from "@/components/LikeButton";
+import FollowButton from "@/components/FollowButton";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import PillBadge from "@/components/ui/PillBadge";
 import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
-import {
-  PageTransition,
-  Reveal,
-  RevealGroup,
-  SpotlightCard,
-  WordReveal,
-} from "@/components/ui/Motion";
-import { EASE, fadeUp } from "@/components/ui/motion";
+import { PageTransition } from "@/components/ui/Motion";
+
+function formatRelativeTime(dateString) {
+  if (!dateString) return "Recently";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const reduced = useReducedMotion();
 
-  const [feedTab, setFeedTab] = useState("explore"); // "explore" | "following"
+  const [feedTab, setFeedTab] = useState("explore");
   const [photos, setPhotos] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filter, setFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("latest");
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [peek, setPeek] = useState(null);
+
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [activeMenuPhotoId, setActiveMenuPhotoId] = useState(null);
 
-  // Parallax tipis glow hero mengikuti kursor (transform saja, mati saat
-  // prefers-reduced-motion).
-  const glowX = useMotionValue(0);
-  const glowY = useMotionValue(0);
-  const gx = useSpring(glowX, { stiffness: 50, damping: 20 });
-  const gy = useSpring(glowY, { stiffness: 50, damping: 20 });
-
-  function onHeroMove(e) {
-    if (reduced) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    glowX.set(((e.clientX - r.left) / r.width - 0.5) * 40);
-    glowY.set(((e.clientY - r.top) / r.height - 0.5) * 24);
-  }
-
-  // LOAD: ambil feed foto sesuai tab (explore / following) + categories
   useEffect(() => {
     if (loading) return;
     if (!getToken()) {
       router.replace("/");
       return;
     }
+
     async function load() {
       setFetching(true);
       setError("");
@@ -98,7 +97,6 @@ export default function HomePage() {
     load();
   }, [loading, router, feedTab]);
 
-  // Real-time synchronization event listener
   useEffect(() => {
     const unsubscribe = subscribeRealtime(({ event, payload }) => {
       if (event === "photo:liked") {
@@ -115,15 +113,7 @@ export default function HomePage() {
               : p
           )
         );
-      } else if (event === "comment:added") {
-        setPhotos((prev) =>
-          prev.map((p) =>
-            String(p.id_photo) === String(payload.photo_id)
-              ? { ...p, comments_count: payload.comments_count }
-              : p
-          )
-        );
-      } else if (event === "comment:deleted") {
+      } else if (event === "comment:added" || event === "comment:deleted") {
         setPhotos((prev) =>
           prev.map((p) =>
             String(p.id_photo) === String(payload.photo_id)
@@ -141,7 +131,14 @@ export default function HomePage() {
     return unsubscribe;
   }, [feedTab, user?.id_user]);
 
-  // DELETE: hapus foto lalu buang dari state (logika lama, modal custom).
+  useEffect(() => {
+    function handleClickOutside() {
+      setActiveMenuPhotoId(null);
+    }
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
+
   async function handleDeleteConfirmed() {
     if (!pendingDelete) return;
     setDeleting(true);
@@ -157,60 +154,101 @@ export default function HomePage() {
     }
   }
 
-  // Thumbnail kategori = foto terbaru di kategori itu (dihitung dari data
-  // yang sudah ada — tidak ada endpoint baru yang dikarang).
-  const categoryCards = useMemo(
-    () =>
-      categories.map((c) => {
-        const inCategory = photos.filter(
-          (p) => String(p.id_category) === String(c.id_category),
-        );
-        return { ...c, count: inCategory.length, cover: inCategory[0]?.image_url || null };
-      }),
-    [categories, photos],
-  );
-
-  const shown = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return photos.filter((p) => {
-      const matchCategory = filter === "all" || String(p.id_category) === filter;
-      const matchSearch =
-        !q ||
-        p.title?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q);
-      return matchCategory && matchSearch;
-    });
-  }, [photos, filter, search]);
-
-  async function retry() {
-    setError("");
-    setFetching(true);
-    try {
-      const [pRes, cRes] = await Promise.all([
-        listPhotos({ feed: feedTab }),
-        listCategories(),
-      ]);
-      setPhotos(pRes.data || []);
-      setCategories(cRes.data || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setFetching(false);
+  function handleShare(photo) {
+    const url = typeof window !== "undefined"
+      ? `${window.location.origin}/photos/${photo.id_photo}`
+      : "";
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      toast.success("Photo link copied to clipboard.");
+    } else {
+      toast.info(`Link: ${url}`);
     }
   }
 
-  // ====== SKELETON LOADING (bentuk masonry) ======
+  const categoryStats = useMemo(() => {
+    const map = {};
+    photos.forEach((p) => {
+      const id = String(p.id_category);
+      map[id] = (map[id] || 0) + 1;
+    });
+    return map;
+  }, [photos]);
+
+  const communityCreators = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    photos.forEach((p) => {
+      if (p.creator && !seen.has(p.creator.id_user)) {
+        seen.add(p.creator.id_user);
+        list.push({
+          id_user: p.creator.id_user,
+          username: p.creator.username,
+          avatar_url: p.creator.avatar_url,
+          sample_title: p.title,
+          is_self: Boolean(user?.id_user && String(user.id_user) === String(p.creator.id_user)),
+        });
+      }
+    });
+    return list;
+  }, [photos, user]);
+
+  const critiqueQueue = useMemo(() => {
+    return photos
+      .filter((p) => p.creator?.id_user !== user?.id_user)
+      .slice(0, 3);
+  }, [photos, user]);
+
+  const shownPhotos = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    let result = photos.filter((p) => {
+      const matchCat =
+        selectedCategory === "all" || String(p.id_category) === selectedCategory;
+      const matchSearch =
+        !q ||
+        p.title?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.creator?.username?.toLowerCase().includes(q) ||
+        p.camera_make?.toLowerCase().includes(q) ||
+        p.camera_model?.toLowerCase().includes(q) ||
+        p.lens?.toLowerCase().includes(q);
+
+      return matchCat && matchSearch;
+    });
+
+    if (sortBy === "popular") {
+      result = [...result].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+    } else if (sortBy === "discussed") {
+      result = [...result].sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0));
+    } else {
+      result = [...result].sort(
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+      );
+    }
+
+    return result;
+  }, [photos, selectedCategory, search, sortBy]);
+
   if (loading || fetching) {
     return (
       <PageTransition>
-        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-16">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="mt-5 h-14 w-3/4 max-w-xl" />
-          <Skeleton className="mt-3 h-14 w-1/2 max-w-sm" />
-          <div className="mt-12 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-            {[320, 224, 272, 192, 288, 240, 336, 208].map((h, i) => (
-              <Skeleton key={i} className="mb-4 break-inside-avoid" style={{ height: h }} />
-            ))}
+        <div className="mx-auto flex w-full max-w-7xl gap-6 px-4 py-8">
+          <div className="hidden w-60 shrink-0 lg:block space-y-4">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          </div>
+          <div className="flex-1 space-y-6">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-28 w-full rounded-2xl" />
+            <div className="space-y-6">
+              <Skeleton className="h-96 w-full rounded-2xl" />
+              <Skeleton className="h-96 w-full rounded-2xl" />
+            </div>
+          </div>
+          <div className="hidden w-72 shrink-0 xl:block space-y-4">
+            <Skeleton className="h-44 w-full rounded-2xl" />
+            <Skeleton className="h-64 w-full rounded-2xl" />
           </div>
         </div>
       </PageTransition>
@@ -219,319 +257,720 @@ export default function HomePage() {
 
   return (
     <PageTransition>
-      {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden" onMouseMove={onHeroMove}>
-        <motion.div aria-hidden="true" className="hero-glow" style={{ x: gx, y: gy }} />
-        <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-20 sm:pt-28">
-          <PillBadge>Your private vault</PillBadge>
-          <WordReveal
-            as="h1"
-            text="Your best shots, kept beautifully."
-            accentWord="beautifully"
-            className="display-1 mt-6 max-w-3xl"
-          />
-          <Reveal delay={0.35}>
-            <p className="mt-5 max-w-md text-sm leading-relaxed text-muted">
-              Store, organize, and showcase your photographic works in a calm, private sanctuary.
-            </p>
-          </Reveal>
-          <Reveal delay={0.45}>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/addphoto" magnetic>
-                <ImagePlus size={16} />
-                Add Photo
-              </Button>
-              <Button href="#galeri" variant="ghost">
-                Browse
-                <ArrowRight size={16} />
-              </Button>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
+        <div className="flex items-start gap-6">
+          {/* ======================================================== */}
+          {/* LEFT COLUMN: Profil, Navigasi Feed & Kategori Fotografi   */}
+          {/* ======================================================== */}
+          <aside className="sticky top-20 hidden w-60 shrink-0 self-start lg:block">
+            <div className="space-y-4">
+              {/* Profil Card */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-sm font-bold text-white shadow-xs">
+                    {user?.avatar_url ? (
+                      <Image
+                        src={user.avatar_url}
+                        alt={user.username || "Avatar"}
+                        width={44}
+                        height={44}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (user?.username || "P").charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-stone-900">
+                      {user?.username || "Photographer"}
+                    </p>
+                    <p className="truncate text-xs text-stone-500">
+                      {user?.email || "PicFlow Member"}
+                    </p>
+                  </div>
+                </div>
 
-      {/* ============ KUTIPAN ============ */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-14">
-        <Reveal>
-          <blockquote className="max-w-2xl">
-            <span
-              aria-hidden="true"
-              className="block text-3xl leading-none text-[var(--accent-2)]"
-            >
-              &ldquo;
-            </span>
-            <p className="mt-2 text-lg leading-relaxed text-muted sm:text-xl">
-              Photography is the art of choosing what deserves to be remembered. PicFlow keeps
-              that choice pristine.
-            </p>
-            <footer className="mt-4 text-xs text-faint">
-              PicFlow Team — Curator&apos;s Note
-            </footer>
-          </blockquote>
-        </Reveal>
-      </section>
+                <div className="mt-3.5 pt-3 border-t border-gray-200 flex items-center justify-between text-xs text-stone-600">
+                  <span>My Vault</span>
+                  <Link
+                    href="/account"
+                    className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-700"
+                  >
+                    View Account
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
 
-      {/* ============ KATEGORI (kartu thumbnail + caption) ============ */}
-      {categoryCards.length > 0 && (
-        <section className="mx-auto w-full max-w-6xl px-4 pb-6">
-          <RevealGroup className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {categoryCards.map((c) => (
-              <motion.div key={c.id_category} variants={fadeUp}>
-                <SpotlightCard className="w-36 shrink-0 rounded-[var(--radius-md)]">
+              {/* Feed Mode Navigation */}
+              <nav aria-label="Main Feed Navigation" className="rounded-2xl border border-gray-200 bg-white p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="space-y-1">
                   <button
                     type="button"
                     onClick={() => {
-                      setFilter(String(c.id_category));
-                      document
-                        .getElementById("galeri")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      setFeedTab("explore");
+                      setSelectedCategory("all");
                     }}
-                    className="block w-full text-left"
-                  >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#F5EFE6]">
-                      {c.cover ? (
-                        <Image
-                          src={fileUrl(c.cover)}
-                          loader={isCloudinaryUrl(fileUrl(c.cover)) ? cloudinaryLoader : undefined}
-                          alt={`Category ${c.name}`}
-                          fill
-                          sizes="144px"
-                          className="object-cover transition-transform duration-700 group-hover/spot:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <Camera size={22} className="text-stone-400" />
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-2 truncate text-xs font-semibold text-stone-900">{c.name}</p>
-                    <p className="text-[11px] text-stone-500">{c.count} photos</p>
-                  </button>
-                </SpotlightCard>
-              </motion.div>
-            ))}
-          </RevealGroup>
-        </section>
-      )}
-
-      {/* ============ GALERI ============ */}
-      <section id="galeri" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-8">
-        {error ? (
-          <div className="flex flex-col items-center gap-4 rounded-[var(--radius-md)] border border-line py-16 text-center">
-            <p className="text-sm text-danger">{error}</p>
-            <Button variant="ghost" onClick={retry}>
-              <RefreshCcw size={14} />
-              Try again
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Feed Switcher (Explore vs Following) */}
-            <Reveal>
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#E8DEC9] pb-4">
-                <div className="flex items-center gap-1.5 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] p-1">
-                  <button
-                    type="button"
-                    onClick={() => setFeedTab("explore")}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-                      feedTab === "explore"
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                      feedTab === "explore" && selectedCategory === "all"
                         ? "bg-blue-600 text-white shadow-xs"
-                        : "text-stone-600 hover:text-stone-900"
+                        : "text-stone-700 hover:bg-gray-50 hover:text-stone-900"
                     }`}
                   >
-                    <Compass size={14} />
-                    Explore Community
+                    <Compass size={16} />
+                    <span>Explore Community</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setFeedTab("following")}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                       feedTab === "following"
                         ? "bg-blue-600 text-white shadow-xs"
-                        : "text-stone-600 hover:text-stone-900"
+                        : "text-stone-700 hover:bg-gray-50 hover:text-stone-900"
                     }`}
                   >
-                    <Users size={14} />
-                    Following
+                    <Users size={16} />
+                    <span>Following Feed</span>
                   </button>
-                </div>
-                <span className="text-xs text-stone-500">
-                  {feedTab === "explore"
-                    ? "Public feed of all photographer works"
-                    : "Works from creators you follow"}
-                </span>
-              </div>
-            </Reveal>
 
-            {/* Search + filter chips */}
-            <Reveal>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative w-full max-w-xs">
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone-400"
-                  />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search photos..."
-                    aria-label="Search photos"
-                    className="w-full rounded-full border border-[#DCD0BE] bg-[#FEFAF3] py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 focus:outline-none"
-                  />
+                  <Link
+                    href="/addphoto"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-gray-50 hover:text-stone-900 transition-colors"
+                  >
+                    <ImagePlus size={16} className="text-blue-600" />
+                    <span>Upload New Shot</span>
+                  </Link>
+
+                  <Link
+                    href="/account"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-gray-50 hover:text-stone-900 transition-colors"
+                  >
+                    <Camera size={16} />
+                    <span>My Portfolios</span>
+                  </Link>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {[{ id_category: "all", name: "All" }, ...categories].map((c) => {
-                    const active = String(c.id_category) === filter;
+              </nav>
+
+              {/* Photography Categories (Reference: "Groups") */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between px-2 pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                    Genres & Categories
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                    {categories.length}
+                  </span>
+                </div>
+
+                <div className="mt-1 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("all")}
+                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                      selectedCategory === "all"
+                        ? "bg-stone-900 text-white font-semibold shadow-xs"
+                        : "text-stone-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Layers size={13} className={selectedCategory === "all" ? "text-blue-400" : "text-stone-400"} />
+                      All Genres
+                    </span>
+                    <span className="text-[11px] opacity-75">{photos.length}</span>
+                  </button>
+
+                  {categories.map((c) => {
+                    const count = categoryStats[String(c.id_category)] || 0;
+                    const isSelected = selectedCategory === String(c.id_category);
                     return (
                       <button
                         key={c.id_category}
                         type="button"
-                        onClick={() => setFilter(String(c.id_category))}
-                        aria-pressed={active}
-                        className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
-                          active
-                            ? "border-blue-600 bg-blue-600 text-white font-semibold shadow-xs"
-                            : "border-[#DCD0BE] bg-[#FEFAF3] text-stone-700 hover:border-stone-400 hover:bg-white"
+                        onClick={() => setSelectedCategory(String(c.id_category))}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                          isSelected
+                            ? "bg-blue-600 text-white font-semibold shadow-xs"
+                            : "text-stone-700 hover:bg-gray-50"
                         }`}
                       >
-                        {c.name}
+                        <span className="truncate">{c.name}</span>
+                        <span className={`text-[10px] tabular-nums ${isSelected ? "text-blue-100" : "text-stone-400"}`}>
+                          {count}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-            </Reveal>
+            </div>
+          </aside>
 
-            <p className="mt-6 text-xs text-faint">
-              {shown.length} photos ·{" "}
-              {filter === "all"
-                ? "all categories"
-                : categories.find((c) => String(c.id_category) === filter)?.name}
-            </p>
+          {/* ======================================================== */}
+          {/* CENTER COLUMN: Top Quick Action, Feed Controls & Cards    */}
+          {/* ======================================================== */}
+          <main className="min-w-0 flex-1 max-w-2xl mx-auto w-full space-y-5">
+            {/* "Share a Shot" Card (Reference: Prompt Bar) */}
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                  {user?.avatar_url ? (
+                    <Image
+                      src={user.avatar_url}
+                      alt={user.username || "Me"}
+                      width={40}
+                      height={40}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    (user?.username || "U").charAt(0).toUpperCase()
+                  )}
+                </div>
 
-            {/* Empty state ilustratif */}
-            {shown.length === 0 ? (
-              feedTab === "following" ? (
-                <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[#DCD0BE] bg-[#F5EFE6]/50 py-20 text-center">
-                  <div className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] p-4 text-stone-500">
-                    <Users size={24} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-stone-900">No works in Following tab yet</p>
-                    <p className="mt-1 max-w-md text-sm text-stone-600">
-                      You are not following any creators yet or they haven&apos;t posted new works. Browse Explore to discover inspiring creators!
-                    </p>
-                  </div>
+                <Link
+                  href="/addphoto"
+                  className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 transition-colors hover:border-gray-300 hover:bg-white hover:text-gray-700"
+                >
+                  Share a new photograph or request community critique...
+                </Link>
+              </div>
+
+              <div className="mt-3.5 pt-3 border-t border-gray-200 flex items-center justify-between gap-2">
+                <Link
+                  href="/addphoto"
+                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Camera size={15} className="text-blue-600" />
+                  <span>Upload Photo</span>
+                </Link>
+
+                <Link
+                  href="/addphoto"
+                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Aperture size={15} className="text-emerald-600" />
+                  <span>EXIF Details</span>
+                </Link>
+
+                <Link
+                  href="/addphoto"
+                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Star size={15} className="text-amber-600" />
+                  <span>Request Critique</span>
+                </Link>
+              </div>
+            </section>
+
+            {/* Card Search Bar & Sort Filter */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              {/* Search Capsule */}
+              <div className="relative flex-1">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search shots, gear, creators..."
+                  className="w-full rounded-full border border-gray-200 bg-white py-2 pl-9 pr-8 text-xs text-gray-500 placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 focus:outline-none"
+                />
+                {search && (
                   <button
                     type="button"
-                    onClick={() => setFeedTab("explore")}
-                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
+                    onClick={() => setSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:text-gray-600"
                   >
-                    <Compass size={15} />
-                    Browse Explore
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              {/* Sort Selector */}
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <span className="text-[11px] font-semibold text-gray-400">Sort by:</span>
+                <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy("latest")}
+                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                      sortBy === "latest"
+                        ? "bg-stone-900 text-white shadow-xs"
+                        : "text-gray-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Latest
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortBy("popular")}
+                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                      sortBy === "popular"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-gray-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Popular
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortBy("discussed")}
+                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                      sortBy === "discussed"
+                        ? "bg-stone-900 text-white shadow-xs"
+                        : "text-gray-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Discussed
                   </button>
                 </div>
-              ) : (
-                <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[#DCD0BE] bg-[#F5EFE6]/50 py-20 text-center">
-                  <div className="rounded-full border border-[#DCD0BE] bg-[#FEFAF3] p-4 text-stone-500">
-                    <ImagePlus size={24} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-stone-900">
-                      {photos.length === 0
-                        ? "No photos yet"
-                        : "No matching photos found"}
-                    </p>
-                    <p className="mt-1 text-sm text-stone-600">
-                      {photos.length === 0
-                        ? "Upload your first work to fill this vault."
-                        : "Try different keywords or categories."}
-                    </p>
-                  </div>
-                  <Link
-                    href="/addphoto"
-                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-xs"
-                  >
-                    <ImagePlus size={15} />
-                    Add Photo
-                  </Link>
-                </div>
-              )
-            ) : (
-              <MasonryGrid className="mt-6">
-                {shown.map((p) => (
-                  <PhotoCard
-                    key={p.id_photo}
-                    photo={p}
-                    layoutId="home-photo"
-                    onOpen={setSelected}
-                    onPeek={setPeek}
-                    onDelete={setPendingDelete}
-                    showActions={p.is_owner}
-                  />
-                ))}
-              </MasonryGrid>
+              </div>
+            </div>
+
+            {/* Error Banner */}
+            {error && (
+              <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+                <span>{error}</span>
+                <button
+                  type="button"
+                  onClick={() => listPhotos({ feed: feedTab }).then((r) => setPhotos(r.data || []))}
+                  className="font-bold underline"
+                >
+                  Retry
+                </button>
+              </div>
             )}
-          </>
-        )}
-      </section>
 
-      {/* ============ FLOATING INFO CARD ============ */}
-      <AnimatePresence>
-        {peek && !selected && shown.length > 0 && (
-          <motion.aside
-            key="peek"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.3, ease: EASE }}
-            className="fixed bottom-6 right-6 z-30 hidden w-64 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-4 shadow-lg lg:block"
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">
-              Now Viewing
-            </p>
-            <p className="mt-1 truncate text-sm font-bold text-stone-900">
-              {peek.title}
-            </p>
-            <p className="truncate text-xs text-stone-600">
-              {peek.category_name || `#${peek.id_category}`}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSelected(peek);
-                setPeek(null);
-              }}
-              className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 underline underline-offset-2 transition-opacity hover:opacity-80"
-            >
-              View details
-              <ArrowRight size={12} />
-            </button>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+            {/* Empty State */}
+            {shownPhotos.length === 0 && !error && (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 py-16 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-stone-500 shadow-sm">
+                  <Camera size={22} />
+                </div>
+                <p className="mt-3 text-sm font-bold text-stone-900">
+                  {feedTab === "following"
+                    ? "No works from following yet"
+                    : "No photographs found"}
+                </p>
+                <p className="mt-1 max-w-sm text-xs text-stone-600">
+                  {feedTab === "following"
+                    ? "Follow more creators to curate your personal photography stream."
+                    : "Try adjusting keywords or selecting a different genre."}
+                </p>
+                <Link
+                  href="/addphoto"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
+                >
+                  <ImagePlus size={14} />
+                  Add First Photograph
+                </Link>
+              </div>
+            )}
 
-      {/* ============ LIGHTBOX & MODAL HAPUS ============ */}
+            {/* Feed Cards List (Reference Post Structure) */}
+            <div className="space-y-6">
+              {shownPhotos.map((photo) => {
+                const isOwner = Boolean(user?.id_user && photo.id_user === user.id_user);
+                const isMenuOpen = activeMenuPhotoId === photo.id_photo;
+                const photoSrc = photo.medium_url || fileUrl(photo.image_url);
+
+                return (
+                  <article
+                    key={photo.id_photo}
+                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:shadow-[0_24px_50px_rgba(0,0,0,0.12),0_6px_16px_rgba(0,0,0,0.04)]"
+                  >
+                    {/* Header Post */}
+                    <div className="flex items-center justify-between p-4 pb-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar */}
+                        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                          {photo.creator?.avatar_url ? (
+                            <Image
+                              src={photo.creator.avatar_url}
+                              alt={photo.creator.username || "Creator"}
+                              width={40}
+                              height={40}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            (photo.creator?.username || "A").charAt(0).toUpperCase()
+                          )}
+                        </div>
+
+                        {/* Metainfo */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-xs font-bold text-stone-900">
+                              {photo.creator?.username || "Anonymous Artist"}
+                            </span>
+                            <span className="text-[10px] text-gray-400">·</span>
+                            <span className="text-[11px] text-gray-500">
+                              {formatRelativeTime(photo.created_at)}
+                            </span>
+                          </div>
+
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
+                            {photo.category_name && (
+                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+                                {photo.category_name}
+                              </span>
+                            )}
+                            {photo.camera_model && (
+                              <span className="truncate text-[10px] text-gray-500">
+                                {photo.camera_make ? `${photo.camera_make} ` : ""}
+                                {photo.camera_model}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu 3-Dots */}
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuPhotoId(isMenuOpen ? null : photo.id_photo);
+                          }}
+                          aria-label="Photo options"
+                          className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-stone-900"
+                        >
+                          <MoreHorizontal size={17} />
+                        </button>
+
+                        {isMenuOpen && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-8 z-30 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPhoto(photo);
+                                setActiveMenuPhotoId(null);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-stone-700 hover:bg-gray-50"
+                            >
+                              <ExternalLink size={13} />
+                              Open in Lightbox
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleShare(photo);
+                                setActiveMenuPhotoId(null);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-stone-700 hover:bg-gray-50"
+                            >
+                              <Copy size={13} />
+                              Copy Link
+                            </button>
+                            {isOwner && (
+                              <>
+                                <div className="my-1 border-t border-gray-200" />
+                                <Link
+                                  href={`/addphoto?id=${photo.id_photo}`}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-stone-700 hover:bg-gray-50"
+                                >
+                                  <Pencil size={13} />
+                                  Edit Details
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPendingDelete(photo);
+                                    setActiveMenuPhotoId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 size={13} />
+                                  Delete Photo
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Judul, Deskripsi & Metadata EXIF */}
+                    <div className="px-4 pb-3">
+                      <h2 className="text-sm font-bold text-stone-900">
+                        {photo.title}
+                      </h2>
+                      {photo.description && (
+                        <p className="mt-1 text-xs leading-relaxed text-stone-700">
+                          {photo.description}
+                        </p>
+                      )}
+
+                      {(photo.focal_length || photo.aperture || photo.shutter_speed || photo.iso) && (
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                          {photo.focal_length && (
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                              {photo.focal_length}
+                            </span>
+                          )}
+                          {photo.aperture && (
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                              {photo.aperture}
+                            </span>
+                          )}
+                          {photo.shutter_speed && (
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                              {photo.shutter_speed}
+                            </span>
+                          )}
+                          {photo.iso && (
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                              ISO {photo.iso}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Frame Foto */}
+                    <div className="px-4 pb-3">
+                      <div
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="group/img relative cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                      >
+                        <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full">
+                          {photoSrc ? (
+                            <Image
+                              src={photoSrc}
+                              loader={isCloudinaryUrl(photoSrc) ? cloudinaryLoader : undefined}
+                              alt={photo.title || "Photo"}
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 680px, 640px"
+                              className="object-cover transition-transform duration-700 group-hover/img:scale-[1.02]"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-xs text-stone-400">
+                              No image available
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/img:opacity-100">
+                          <span className="text-[11px] font-semibold text-white">
+                            Click to open full inspection & critiques
+                          </span>
+                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                            HD
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Aksi Postingan (Likes, Comments, Critique, Share) */}
+                    <div className="flex items-center justify-between border-t border-gray-200 px-4 py-2.5">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <LikeButton
+                          photoId={photo.id_photo}
+                          initialLiked={photo.is_liked}
+                          initialCount={photo.likes_count}
+                          size="sm"
+                          variant="white"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPhoto(photo)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600"
+                        >
+                          <MessageSquare size={14} className="text-gray-400" />
+                          <span className="tabular-nums font-semibold">
+                            {photo.comments_count || 0}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPhoto(photo)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                        >
+                          <Star size={13} className="text-amber-600 fill-amber-500" />
+                          <span>Critique</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleShare(photo)}
+                        aria-label="Share photo"
+                        className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-stone-900 transition-colors"
+                      >
+                        <Share2 size={16} />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </main>
+
+          {/* ======================================================== */}
+          {/* RIGHT COLUMN: Critique Queue & Komunitas Fotografer       */}
+          {/* ======================================================== */}
+          <aside className="sticky top-20 hidden w-72 shrink-0 self-start xl:block">
+            <div className="space-y-4">
+              {/* Card 1: Critique Requests (Reference: "Friends Requests (03)") */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <span className="text-xs font-bold text-stone-900">
+                    Peer Critique Requests
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                    {critiqueQueue.length} Pending
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-3">
+                  {critiqueQueue.map((photo) => (
+                    <div key={photo.id_photo} className="flex items-center gap-2.5">
+                      <div
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="relative h-11 w-11 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                      >
+                        {photo.thumbnail_url || photo.image_url ? (
+                          <Image
+                            src={photo.thumbnail_url || photo.image_url}
+                            loader={isCloudinaryUrl(photo.thumbnail_url || photo.image_url) ? cloudinaryLoader : undefined}
+                            alt={photo.title}
+                            fill
+                            sizes="44px"
+                            className="object-cover"
+                          />
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-stone-900">
+                          {photo.title}
+                        </p>
+                        <p className="truncate text-[11px] text-stone-500">
+                          by @{photo.creator?.username || "creator"}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
+                      >
+                        Review
+                      </button>
+                    </div>
+                  ))}
+
+                  {critiqueQueue.length === 0 && (
+                    <p className="py-2 text-center text-xs text-stone-500">
+                      All shots reviewed! Submit yours.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 2: Community Creators (Reference: "Friends" List) */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <span className="text-xs font-bold text-stone-900">
+                    Featured Creators
+                  </span>
+                  <span className="text-[10px] text-stone-500 font-semibold">
+                    {communityCreators.length} Active
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-2.5">
+                  {communityCreators.slice(0, 6).map((creator) => (
+                    <div
+                      key={creator.id_user}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                          {creator.avatar_url ? (
+                            <Image
+                              src={creator.avatar_url}
+                              alt={creator.username}
+                              width={32}
+                              height={32}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            creator.username.charAt(0).toUpperCase()
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-bold text-stone-900">
+                            {creator.username}
+                          </p>
+                          <p className="truncate text-[10px] text-stone-500">
+                            {creator.is_self ? "You" : "Photographer"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!creator.is_self && (
+                        <FollowButton
+                          creatorId={creator.id_user}
+                          size="sm"
+                          className="text-[11px] px-2.5 py-0.5"
+                        />
+                      )}
+                    </div>
+                  ))}
+
+                  {communityCreators.length === 0 && (
+                    <p className="py-2 text-center text-xs text-stone-500">
+                      No creators active yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 3: PicFlow 4 Pilar Etika Kritik */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 text-xs text-stone-600 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+                <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-blue-600" />
+                  PicFlow Critique Ethos
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-stone-600">
+                  Reviews are evaluated on 4 professional pillars: Composition, Lighting, Color Harmony, and Concept.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* Lightbox Modal (Semua Fitur EXIF & Kritik Tetap Lengkap) */}
       <AnimatePresence>
-        {selected && (
+        {selectedPhoto && (
           <Lightbox
-            photo={photos.find((p) => p.id_photo === selected.id_photo) || selected}
-            layoutId="home-photo"
-            onClose={() => setSelected(null)}
+            photo={photos.find((p) => p.id_photo === selectedPhoto.id_photo) || selectedPhoto}
+            onClose={() => setSelectedPhoto(null)}
           />
         )}
       </AnimatePresence>
 
+      {/* Modal Konfirmasi Hapus */}
       <Modal
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
         labelledBy="delete-title"
       >
         <h2 id="delete-title" className="display-2 text-lg!">
-          Delete this photo?
+          Delete this photograph?
         </h2>
-        <p className="mt-2 text-sm text-muted">
-          &ldquo;{pendingDelete?.title}&rdquo; will be permanently deleted along with its file.
+        <p className="mt-2 text-sm text-stone-600">
+          &ldquo;{pendingDelete?.title}&rdquo; will be permanently deleted along with its files.
         </p>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>

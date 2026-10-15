@@ -142,7 +142,7 @@ export default function PhotoMarqueeSlider() {
         </div>
       </div>
 
-      {/* ============ FOOTER ARTBOARD EDITORIAL (TEMA TERANG #FEFAF3) ============ */}
+      {/* ============ FOOTER ARTBOARD EDITORIAL (TEMA TERANG #FFFDF6) ============ */}
       <div className="relative z-20 border-t border-[#E8DEC9] pt-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div className="max-w-md">
@@ -160,7 +160,7 @@ export default function PhotoMarqueeSlider() {
 
           {/* Micro dots sRGB */}
           <div
-            className="flex items-center gap-1.5 self-start sm:self-auto rounded-full border border-[#DFD3BE] bg-[#FEFAF3] px-3 py-1 text-[11px] text-stone-600"
+            className="flex items-center gap-1.5 self-start sm:self-auto rounded-full border border-[#DFD3BE] bg-[#FFFDF6] px-3 py-1 text-[11px] text-stone-600"
             title="Calibrated to the sRGB color standard"
           >
             <span className="flex items-center gap-1" aria-hidden="true">
@@ -183,7 +183,7 @@ function PortraitPhotoCard({ photo }) {
   const isCloudinary = isCloudinaryUrl(photo.image_url);
 
   return (
-    <figure className="group relative h-[420px] w-[270px] lg:h-[460px] lg:w-[290px] flex-shrink-0 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#E8DEC9] bg-[#FEFAF3]">
+    <figure className="group relative h-[420px] w-[270px] lg:h-[460px] lg:w-[290px] flex-shrink-0 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#E8DEC9] bg-[#FFFDF6]">
       {/* Gambar Foto Portrait Penuh & Jernih Tanpa Shadow Gelap */}
       <Image
         src={photo.image_url}
@@ -196,13 +196,13 @@ function PortraitPhotoCard({ photo }) {
 
       {/* Badge Kategori di Pojok Kiri Atas */}
       <div className="absolute left-3 top-3 z-10">
-        <span className="rounded-full border border-[#E2D7C5] bg-[#FEFAF3]/90 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-stone-800 backdrop-blur-md">
+        <span className="rounded-full border border-[#E2D7C5] bg-[#FFFDF6]/90 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-stone-800 backdrop-blur-md">
           {photo.category_name}
         </span>
       </div>
 
-      {/* Info Karya di Bawah Kartu: Kapsul Terang Minimalis #FEFAF3 */}
-      <figcaption className="absolute inset-x-3 bottom-3 z-10 rounded-2xl border border-[#E2D7C5] bg-[#FEFAF3]/95 p-3 backdrop-blur-md">
+      {/* Info Karya di Bawah Kartu: Kapsul Terang Minimalis #FFFDF6 */}
+      <figcaption className="absolute inset-x-3 bottom-3 z-10 rounded-2xl border border-[#E2D7C5] bg-[#FFFDF6]/95 p-3 backdrop-blur-md">
         <p className="truncate text-xs font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
           {photo.title}
         </p>
@@ -217,7 +217,7 @@ function PortraitPhotoCard({ photo }) {
           </span>
 
           {/* Metadata EXIF Aperture */}
-          <span className="flex items-center gap-1 rounded-md border border-[#E2D7C5] bg-[#FEFAF3] px-1.5 py-0.5 font-mono text-[10px] text-stone-700">
+          <span className="flex items-center gap-1 rounded-md border border-[#E2D7C5] bg-[#FFFDF6] px-1.5 py-0.5 font-mono text-[10px] text-stone-700">
             <Camera size={10} className="text-blue-600" />
             {photo.aperture}
           </span>

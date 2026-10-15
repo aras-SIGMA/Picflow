@@ -5,7 +5,7 @@
 // 1. Struktur tata letak referensi (Hero grid + 4 floating avatars, Social proof,
 //    Bento features 3 kartu, Dark showcase format ecosystem, Editorial quote, Stats, CTA banner)
 // 2. Token visual resmi PicFlow (.md/DESIGN/design.md):
-//    - Kanvas Warm Cream #FEFAF3 & border #E8DEC9 / #DCD0BE
+//    - Kanvas Warm Cream #FFFDF6 & border #E8DEC9 / #DCD0BE
 //    - Spektrum sRGB (#EF4444, #10B981, #3B82F6, #475569)
 //    - Tombol & kapsul pill rounded-full
 //    - Tipografi editorial tegas & JetBrains Mono untuk metadata
@@ -255,7 +255,7 @@ export default function LandingPage({ children }) {
   const bgTextX = useTransform(notepadScrollY, [0, 1], ["0%", "-54%"]);
 
   return (
-    <div className="flex flex-col bg-[#FEFAF3] text-stone-900 selection:bg-blue-600 selection:text-white">
+    <div className="flex flex-col bg-[#FFFDF6] text-stone-900 selection:bg-blue-600 selection:text-white">
       {/* ========================================================================= */}
       {/* 1. HERO SECTION (Referensi: Gridlines + Dual CTA + 4 Floating Orbits)    */}
       {/* ========================================================================= */}
@@ -375,7 +375,7 @@ export default function LandingPage({ children }) {
               animate={{ y: [-4, 6, -4], rotate: [-0.8, 0.8, -0.8] }}
               transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut" }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
             >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10 text-red-600 ring-2 ring-[#EF4444]">
                 <Camera size={14} />
@@ -442,7 +442,7 @@ export default function LandingPage({ children }) {
               animate={{ y: [4, -5, 4], rotate: [0.8, -0.8, 0.8] }}
               transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut" }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
             >
               <div className="text-right text-[11px] leading-tight">
                 <p className="font-bold text-stone-900">Bima Arya</p>
@@ -465,7 +465,7 @@ export default function LandingPage({ children }) {
               animate={{ y: [-5, 5, -5], rotate: [-1, 0.5, -1] }}
               transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.6 }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
             >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 ring-2 ring-[#3B82F6]">
                 <Sparkles size={14} />
@@ -530,7 +530,7 @@ export default function LandingPage({ children }) {
               animate={{ y: [5, -4, 5], rotate: [0.8, -0.8, 0.8] }}
               transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 0.3 }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FEFAF3]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
             >
               <div className="text-right text-[11px] leading-tight">
                 <p className="font-bold text-stone-900">Dimas K.</p>
@@ -642,7 +642,7 @@ export default function LandingPage({ children }) {
               </Link>
               <Link
                 href="#galeri"
-                className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-6 py-3 text-sm font-semibold text-stone-800 transition-all hover:bg-white hover:border-stone-400 active:scale-95 shadow-2xs"
+                className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FFFDF6] px-6 py-3 text-sm font-semibold text-stone-800 transition-all hover:bg-white hover:border-stone-400 active:scale-95 shadow-2xs"
               >
                 Explore Gallery
               </Link>
@@ -742,7 +742,7 @@ export default function LandingPage({ children }) {
               </div>
 
               {/* Mockup Visual Kanan (Meniru Bar Chart Grafis di Referensi) */}
-              <div className="w-full max-w-md rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-5 shadow-sm">
+              <div className="w-full max-w-md rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-5 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold text-stone-900">
@@ -833,7 +833,7 @@ export default function LandingPage({ children }) {
               </div>
 
               {/* Mockup Toggle List (Meniru UI Notification Toggles di Referensi) */}
-              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-4 shadow-sm space-y-3">
+              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-2 text-xs font-bold text-stone-800">
                   <span>Evaluation Metrics</span>
                   <span className="text-stone-400 font-mono text-[10px]">STATUS</span>
@@ -918,7 +918,7 @@ export default function LandingPage({ children }) {
               </div>
 
               {/* Mockup Feed Aktivitas (Meniru UI Task Management di Referensi) */}
-              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3] p-4 shadow-sm space-y-3">
+              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-2 text-xs font-bold text-stone-800">
                   <span>Recent Activity</span>
                   <span className="text-emerald-700 font-mono text-[10px] bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -1009,7 +1009,7 @@ export default function LandingPage({ children }) {
             </defs>
           </svg>
 
-          <span className="relative z-10 inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FEFAF3] px-3.5 py-1 text-[11px] font-mono font-semibold uppercase tracking-wider text-stone-700 shadow-2xs">
+          <span className="relative z-10 inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#FFFDF6] px-3.5 py-1 text-[11px] font-mono font-semibold uppercase tracking-wider text-stone-700 shadow-2xs">
             <span className="flex items-center gap-1" aria-hidden="true">
               <i className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
               <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
@@ -1045,7 +1045,7 @@ export default function LandingPage({ children }) {
             ].map((fmt) => (
               <div
                 key={fmt.code}
-                className="flex items-center gap-2.5 rounded-2xl border border-[#DCD0BE] bg-[#FEFAF3]/90 px-4 py-2.5 shadow-2xs hover:bg-white hover:border-stone-400 hover:shadow-xs transition-all cursor-default backdrop-blur-sm"
+                className="flex items-center gap-2.5 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6]/90 px-4 py-2.5 shadow-2xs hover:bg-white hover:border-stone-400 hover:shadow-xs transition-all cursor-default backdrop-blur-sm"
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${fmt.color} font-mono text-[11px] font-bold`}
@@ -1069,7 +1069,7 @@ export default function LandingPage({ children }) {
       {/* ========================================================================= */}
       <section
         ref={notepadSectionRef}
-        className="relative h-[520vh] border-t border-[#E8DEC9] bg-[#FEFAF3]"
+        className="relative h-[520vh] border-t border-[#E8DEC9] bg-[#FFFDF6]"
       >
         <div className="sticky top-0 flex h-screen w-full flex-col justify-between overflow-hidden pt-20 sm:pt-24 pb-8 sm:pb-10">
           {/* Latar Belakang Teks Tipografi: "What they say about PicFlow?" */}
@@ -1211,7 +1211,7 @@ export default function LandingPage({ children }) {
                       ease: "easeInOut",
                       delay: item.floatDelay,
                     }}
-                    className="group relative flex w-[300px] sm:w-[350px] lg:w-[380px] flex-col justify-between rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FEFAF3]/95 backdrop-blur-xs p-5 sm:p-6 shadow-[0_18px_38px_-12px_rgba(60,40,20,0.1)] hover:shadow-[0_26px_50px_-10px_rgba(60,40,20,0.18)] hover:border-stone-400 transition-shadow duration-300"
+                    className="group relative flex w-[300px] sm:w-[350px] lg:w-[380px] flex-col justify-between rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6]/95 backdrop-blur-xs p-5 sm:p-6 shadow-[0_18px_38px_-12px_rgba(60,40,20,0.1)] hover:shadow-[0_26px_50px_-10px_rgba(60,40,20,0.18)] hover:border-stone-400 transition-shadow duration-300"
                   >
                     {/* Ikon Kutipan (Rounded Squircle Sesuai Referensi) */}
                     <div>
@@ -1270,7 +1270,7 @@ export default function LandingPage({ children }) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6 }}
-        className="border-t border-b border-[#E8DEC9] bg-[#FEFAF3] py-14 sm:py-20"
+        className="border-t border-b border-[#E8DEC9] bg-[#FFFDF6] py-14 sm:py-20"
       >
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
