@@ -597,20 +597,19 @@ router.post("/:id/comments", verifyToken, async (req, res, next) => {
         username: inserted.profiles?.username,
         avatar_url: inserted.profiles?.avatar_url,
       },
-      is_owner: true,
     };
 
     // Broadcast penambahan komentar real-time
     broadcastEvent("comment:added", {
       photo_id: photoId,
-      comment: commentPayload,
+      comment: { ...commentPayload, is_owner: false },
       comments_count: commentsCount,
     });
 
     res.status(201).json({
       message: "Comment added",
       data: {
-        comment: commentPayload,
+        comment: { ...commentPayload, is_owner: true },
         comments_count: commentsCount,
       },
     });
@@ -814,18 +813,17 @@ router.post("/:id/critiques", verifyToken, async (req, res, next) => {
         username: insData.profiles?.username,
         avatar_url: insData.profiles?.avatar_url,
       },
-      is_owner: true,
     };
 
     // Broadcast penambahan kritik real-time
     broadcastEvent("critique:added", {
       photo_id: photoId,
-      critique: createdCritique,
+      critique: { ...createdCritique, is_owner: false },
     });
 
     res.status(201).json({
       message: "Critique submitted successfully",
-      data: createdCritique,
+      data: { ...createdCritique, is_owner: true },
     });
   } catch (error) {
     next(error);

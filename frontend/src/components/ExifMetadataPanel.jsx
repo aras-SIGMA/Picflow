@@ -3,6 +3,7 @@
 // src/components/ExifMetadataPanel.jsx
 // Panel metadata teknis EXIF kamera: Camera, Lens, Focal Length, Aperture,
 // Shutter Speed, ISO, dan Timestamp pemotretan.
+// Konsisten dengan standar desain .md/DESIGN/design.md
 import {
   Aperture,
   Camera,
@@ -48,90 +49,90 @@ export default function ExifMetadataPanel({ photo, className = "" }) {
 
   return (
     <div
-      className={`rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-4 ${className}`}
+      className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-card ${className}`}
     >
-      <div className="mb-3 flex items-center justify-between border-b border-line/60 pb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+      <div className="mb-3.5 flex items-center justify-between border-b border-gray-100 pb-2.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
           EXIF Camera Metadata
         </span>
-        <span className="text-[10px] text-muted">
-          {hasAnyExif ? "Automatic Extraction" : "No camera tags found (N/A)"}
+        <span className="text-[10px] font-medium text-stone-400">
+          {hasAnyExif ? "Auto Extracted" : "No camera tags found (N/A)"}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
         {/* Camera */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Camera size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Camera size={12} className="shrink-0 text-blue-600" />
             <span>Camera</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink" title={cameraName}>
+          <p className="mt-1 truncate text-xs font-bold text-stone-900" title={cameraName}>
             {cameraName}
           </p>
         </div>
 
         {/* Lens */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Disc size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Disc size={12} className="shrink-0 text-blue-600" />
             <span>Lens</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink" title={lensName}>
+          <p className="mt-1 truncate text-xs font-bold text-stone-900" title={lensName}>
             {lensName}
           </p>
         </div>
 
         {/* Focal Length */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Focus size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Focus size={12} className="shrink-0 text-blue-600" />
             <span>Focal</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink">
+          <p className="mt-1 truncate text-xs font-bold text-stone-900">
             {focalLength}
           </p>
         </div>
 
         {/* Aperture */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Aperture size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Aperture size={12} className="shrink-0 text-blue-600" />
             <span>Aperture</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink">
+          <p className="mt-1 truncate text-xs font-bold text-stone-900">
             {aperture}
           </p>
         </div>
 
         {/* Shutter Speed */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Timer size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Timer size={12} className="shrink-0 text-blue-600" />
             <span>Shutter</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink">
+          <p className="mt-1 truncate text-xs font-bold text-stone-900">
             {shutterSpeed}
           </p>
         </div>
 
         {/* ISO */}
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-faint">
-            <Gauge size={12} className="shrink-0 text-accent" />
+          <div className="flex items-center gap-1.5 text-[11px] text-stone-400 font-medium">
+            <Gauge size={12} className="shrink-0 text-blue-600" />
             <span>ISO</span>
           </div>
-          <p className="mt-1 truncate text-xs font-medium text-ink">
+          <p className="mt-1 truncate text-xs font-bold text-stone-900">
             {isoValue}
           </p>
         </div>
       </div>
 
       {/* Timestamp */}
-      <div className="mt-3 flex items-center gap-1.5 border-t border-line/50 pt-2.5 text-[11px]">
-        <Clock size={12} className="shrink-0 text-accent2" />
-        <span className="text-faint">Shot taken:</span>
-        <span className="font-medium text-ink">{takenAtValue}</span>
+      <div className="mt-3.5 flex items-center gap-1.5 border-t border-gray-100 pt-2.5 text-[11px]">
+        <Clock size={12} className="shrink-0 text-stone-400" />
+        <span className="text-stone-400">Captured:</span>
+        <span className="font-semibold text-stone-700">{takenAtValue}</span>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,12 @@ function formatRelativeTime(dateString) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function createTempId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? `temp-${crypto.randomUUID()}`
+    : `temp-${Date.now()}`;
+}
+
 export default function InlineCommentSection({
   photoId,
   onCountChange,
@@ -42,6 +48,7 @@ export default function InlineCommentSection({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [content, setContent] = useState("");
+  const submittingRef = useRef(false);
   const inputRef = useRef(null);
 
   if (photoId !== prevPhotoId) {
@@ -80,16 +87,54 @@ export default function InlineCommentSection({
 
   usePhotoRealtime(photoId, {
     onCommentAdded: (payload) => {
+      if (!payload?.comment) return;
+      const newComment = payload.comment;
+
       setComments((prev) => {
-        if (prev.some((c) => String(c.id_comment) === String(payload.comment?.id_comment))) {
+        // 1. Sudah ada berdasarkan id_comment yang sama
+        if (prev.some((c) => String(c.id_comment) === String(newComment.id_comment))) {
           return prev;
         }
-        const updated = [...prev, payload.comment];
+
+        // 2. Gantikan item pending jika konten & user sama
+        const pendingIdx = prev.findIndex(
+          (c) =>
+            c.pending &&
+            c.content === newComment.content &&
+            String(c.id_user || c.user?.id_user) ===
+              String(newComment.id_user || newComment.user?.id_user)
+        );
+
+        if (pendingIdx !== -1) {
+          const next = [...prev];
+          next[pendingIdx] = {
+            ...newComment,
+            is_owner: Boolean(
+              user?.id_user &&
+                (newComment.id_user === user.id_user ||
+                  newComment.user?.id_user === user.id_user)
+            ),
+          };
+          return next;
+        }
+
+        const updated = [
+          ...prev,
+          {
+            ...newComment,
+            is_owner: Boolean(
+              user?.id_user &&
+                (newComment.id_user === user.id_user ||
+                  newComment.user?.id_user === user.id_user)
+            ),
+          },
+        ];
         onCountChange?.(payload.comments_count ?? updated.length);
         return updated;
       });
     },
     onCommentDeleted: (payload) => {
+      if (!payload?.comment_id) return;
       setComments((prev) => {
         const updated = prev.filter(
           (c) => String(c.id_comment) !== String(payload.comment_id)
@@ -102,10 +147,15 @@ export default function InlineCommentSection({
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const text = content.trim();
-    if (!text || submitting) return;
+    if (submittingRef.current) return;
 
-    const tempId = `temp-${Date.now()}`;
+    const text = content.trim();
+    if (!text) return;
+
+    submittingRef.current = true;
+    setSubmitting(true);
+
+    const tempId = createTempId();
     const optimisticComment = {
       id_comment: tempId,
       id_photo: photoId,
@@ -123,23 +173,30 @@ export default function InlineCommentSection({
 
     setContent("");
     setComments((prev) => [...prev, optimisticComment]);
-    onCountChange?.(comments.length + 1);
-    setSubmitting(true);
 
     try {
       const res = await addPhotoComment(photoId, text);
       if (res?.data?.comment) {
-        setComments((prev) =>
-          prev.map((c) => (c.id_comment === tempId ? res.data.comment : c))
-        );
+        const saved = res.data.comment;
+        setComments((prev) => {
+          const alreadyExists = prev.some(
+            (c) => String(c.id_comment) === String(saved.id_comment)
+          );
+          if (alreadyExists) {
+            return prev.filter((c) => c.id_comment !== tempId);
+          }
+          return prev.map((c) =>
+            c.id_comment === tempId ? { ...saved, is_owner: true } : c
+          );
+        });
         onCountChange?.(res.data.comments_count);
       }
     } catch (err) {
       setComments((prev) => prev.filter((c) => c.id_comment !== tempId));
-      onCountChange?.(comments.length);
       setContent(text);
       toast.error(err.message || "Failed to post comment.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -148,7 +205,6 @@ export default function InlineCommentSection({
     if (!commentId) return;
     const prevComments = [...comments];
     setComments((prev) => prev.filter((c) => c.id_comment !== commentId));
-    onCountChange?.(Math.max(0, comments.length - 1));
 
     try {
       const res = await deletePhotoComment(photoId, commentId);
@@ -158,10 +214,18 @@ export default function InlineCommentSection({
       toast.success("Comment deleted.");
     } catch (err) {
       setComments(prevComments);
-      onCountChange?.(prevComments.length);
       toast.error(err.message || "Failed to delete comment.");
     }
   }
+
+  const displayComments = useMemo(() => {
+    const seen = new Set();
+    return comments.filter((c) => {
+      if (!c?.id_comment || seen.has(c.id_comment)) return false;
+      seen.add(c.id_comment);
+      return true;
+    });
+  }, [comments]);
 
   return (
     <div className="border-t border-gray-100 bg-gray-50/60 p-4 transition-colors">
@@ -223,13 +287,13 @@ export default function InlineCommentSection({
             <Loader2 size={16} className="animate-spin text-blue-600 mr-2" />
             <span>Loading discussion...</span>
           </div>
-        ) : comments.length === 0 ? (
+        ) : displayComments.length === 0 ? (
           <p className="py-2 text-center text-xs text-stone-400 italic">
             No comments yet. Start the conversation!
           </p>
         ) : (
           <AnimatePresence initial={false}>
-            {comments.map((c) => {
+            {displayComments.map((c) => {
               const authorName = c.user?.username || "Creator";
               const authorAvatar = c.user?.avatar_url;
               const isOwner = Boolean(
@@ -299,9 +363,9 @@ export default function InlineCommentSection({
       </div>
 
       {/* Footer Link to Dedicated Page */}
-      {comments.length > 0 && (
+      {displayComments.length > 0 && (
         <div className="mt-3 flex items-center justify-between border-t border-gray-200/60 pt-2 text-[11px] text-stone-500">
-          <span>{comments.length} discussion {comments.length === 1 ? "entry" : "entries"}</span>
+          <span>{displayComments.length} discussion {displayComments.length === 1 ? "entry" : "entries"}</span>
           <Link
             href={`/photos/${photoId}`}
             className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"

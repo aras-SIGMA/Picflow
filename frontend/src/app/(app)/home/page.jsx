@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Aperture,
   ArrowRight,
   Camera,
   Compass,
@@ -447,32 +446,6 @@ export default function HomePage() {
                   className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 transition-colors hover:border-gray-300 hover:bg-white hover:text-gray-700"
                 >
                   Share a new photograph or request community critique...
-                </Link>
-              </div>
-
-              <div className="mt-3.5 pt-3 border-t border-gray-200 flex items-center justify-between gap-2">
-                <Link
-                  href="/addphoto"
-                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Camera size={15} className="text-blue-600" />
-                  <span>Upload Photo</span>
-                </Link>
-
-                <Link
-                  href="/addphoto"
-                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Aperture size={15} className="text-emerald-600" />
-                  <span>EXIF Details</span>
-                </Link>
-
-                <Link
-                  href="/addphoto"
-                  className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Star size={15} className="text-amber-600" />
-                  <span>Request Critique</span>
                 </Link>
               </div>
             </section>

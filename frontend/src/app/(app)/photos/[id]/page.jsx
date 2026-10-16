@@ -344,6 +344,10 @@ export default function PhotoDetailPage() {
                     <CommentSection
                       photoId={photo.id_photo}
                       initialCount={photo.comments_count}
+                      onCountChange={(cnt) =>
+                        setPhoto((p) => (p ? { ...p, comments_count: cnt } : p))
+                      }
+                      embedded
                     />
                   )}
                 </div>
