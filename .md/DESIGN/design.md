@@ -203,12 +203,18 @@ Panel ulasan teknis fotografi terstruktur:
 
 ## 7. Elevasi & Bayangan (Shadow System)
 
-| Token | CSS Box Shadow | Pemakaian |
-| --- | --- | --- |
-| `--shadow-card` | `0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)` | Kartu galeri foto & item feed. |
-| `--shadow-search` | `0 20px 40px -15px rgba(37,99,235,0.14), 0 0 0 1px rgba(226,232,240,0.9)` | Hero Search Capsule. |
-| `--shadow-floating`| `0 18px 36px -10px rgba(15,23,42,0.25)` | Floating Photo Circles di atas wave. |
-| `--shadow-dropdown`| `0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)` | Menu dropdown & modal overlay. |
+Sistem bayangan kartu (*floating card shadow*) distandarisasi secara terpusat melalui token CSS di `@theme` (`globals.css`). Nilai bayangan dirancang **tegas, berdefinisi tinggi, dan ber-blur pendek (tight)** dengan kontras opasitas yang cukup (`0.08` – `0.14`) agar elemen tampak nyata terangkat tanpa kabut bayangan yang melebar atau bertabrakan antar kartu.
+
+| Token | CSS Box Shadow | Blur | Karakter & Pemakaian |
+| --- | --- | --- | --- |
+| `--shadow-card` | `0 1px 3px 0 rgba(0,0,0,0.07), 0 3px 8px -1px rgba(0,0,0,0.08)` | **8px** & 3px | **Tegas & rapi**: Prompt bar & search bar borderless, kartu detail info, dan panel form. |
+| `--shadow-card-hover` | `0 2px 5px 0 rgba(0,0,0,0.08), 0 8px 16px -2px rgba(0,0,0,0.12)` | **16px** & 5px | State **hover** interaktif kartu galeri & feed. |
+| `--shadow-post` | `0 1px 3px 0 rgba(0,0,0,0.08), 0 4px 10px -1px rgba(0,0,0,0.10)` | **10px** & 3px | **Kartu post feed scroll (borderless)**: outline ambient 3px + elevasi 10px, kartu terdefinisi murni via bayangan. |
+| `--shadow-sidebar` | `0 8px 14px -3px rgba(0,0,0,0.12), 0 3px 6px -2px rgba(0,0,0,0.08)` | **14px** & 6px | **Kartu sticky floating (kiri & kanan)**: elevasi melayang tegas tanpa blur berlebih. |
+| `--shadow-preview` | `0 10px 18px -4px rgba(0,0,0,0.14), 0 4px 8px -2px rgba(0,0,0,0.06)` | **18px** & 8px | **Preview foto melayang** di halaman detail (`/photos/[id]`). |
+| `--shadow-overlay` | `0 12px 18px -4px rgba(0,0,0,0.14), 0 4px 6px -2px rgba(0,0,0,0.08)` | **18px** & 6px | Menu dropdown, popover 3-titik, dan modal dialog. |
+
+> **Aturan Implementasi**: Semua card wajib menggunakan utility class Tailwind yang sesuai (`shadow-card`, `shadow-post`, `shadow-sidebar`). Untuk kartu feed yang di-scroll (kolom tengah), **dilarang menambahkan border/outline luar** — kartu berdiri murni di atas bayangan yang ditegaskan. Nilai blur dijaga pendek (≤ 10–14px) agar tidak berkabut.
 
 ---
 

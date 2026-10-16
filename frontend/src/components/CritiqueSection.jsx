@@ -41,6 +41,7 @@ export default function CritiqueSection({
   photoId,
   photoOwnerId,
   className = "",
+  embedded = false,
 }) {
   const { user } = useAuth();
   const toast = useToast();
@@ -257,12 +258,14 @@ export default function CritiqueSection({
     }
   }
 
+  const cardClass = embedded
+    ? "flex flex-col"
+    : `flex flex-col rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 ${className}`;
+
   return (
-    <div
-      className={`flex flex-col rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 ${className}`}
-    >
+    <div className={cardClass}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3">
+      <div className={`flex items-center justify-between gap-2 pb-3 ${embedded ? "" : "border-b border-line/60"}`}>
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-accent" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
@@ -300,7 +303,7 @@ export default function CritiqueSection({
       </div>
 
       {/* Ringkasan Skor 4 Pilar */}
-      <div className="mt-3 rounded-[var(--radius-sm)] border border-line/50 bg-[var(--bg-elevated)]/60 p-3">
+      <div className={`mt-3 rounded-[var(--radius-sm)] border border-line/50 p-3 ${embedded ? "bg-gray-50" : "bg-[var(--bg-elevated)]/60"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xl font-bold text-ink">
@@ -475,7 +478,7 @@ export default function CritiqueSection({
       </AnimatePresence>
 
       {/* Daftar Kritik */}
-      <div className="my-3 flex max-h-72 flex-col gap-3 overflow-y-auto pr-1">
+      <div className={`my-3 flex flex-col gap-3 pr-1 ${embedded ? "" : "max-h-72 overflow-y-auto"}`}>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <ApertureLoader size={22} />

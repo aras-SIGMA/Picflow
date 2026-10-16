@@ -280,7 +280,7 @@ export default function HomePage() {
           <aside className="sticky top-20 hidden w-60 shrink-0 self-start lg:block">
             <div className="space-y-4">
               {/* Profil Card */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sidebar">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-sm font-bold text-white shadow-xs">
                     {user?.avatar_url ? (
@@ -318,7 +318,7 @@ export default function HomePage() {
               </div>
 
               {/* Feed Mode Navigation */}
-              <nav aria-label="Main Feed Navigation" className="rounded-2xl border border-gray-200 bg-white p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <nav aria-label="Main Feed Navigation" className="rounded-2xl border border-gray-200/80 bg-white p-2.5 shadow-sidebar">
                 <div className="space-y-1">
                   <button
                     type="button"
@@ -368,7 +368,7 @@ export default function HomePage() {
               </nav>
 
               {/* Photography Categories (Reference: "Groups") */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-3 shadow-sidebar">
                 <div className="flex items-center justify-between px-2 pb-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
                     Genres & Categories
@@ -426,7 +426,7 @@ export default function HomePage() {
           {/* ======================================================== */}
           <main className="min-w-0 flex-1 max-w-2xl mx-auto w-full space-y-5">
             {/* "Share a Shot" Card (Reference: Prompt Bar) */}
-            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+            <section className="rounded-2xl bg-white p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
                   {user?.avatar_url ? (
@@ -478,7 +478,7 @@ export default function HomePage() {
             </section>
 
             {/* Card Search Bar & Sort Filter */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="rounded-2xl bg-white p-3 shadow-card flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
               {/* Search Capsule */}
               <div className="relative flex-1">
                 <Search
@@ -593,7 +593,7 @@ export default function HomePage() {
                 return (
                   <article
                     key={photo.id_photo}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:shadow-[0_24px_50px_rgba(0,0,0,0.12),0_6px_16px_rgba(0,0,0,0.04)]"
+                    className="overflow-hidden rounded-2xl bg-white shadow-post transition-shadow duration-300 hover:shadow-card-hover"
                   >
                     {/* Header Post */}
                     <div className="flex items-center justify-between p-4 pb-3">
@@ -658,7 +658,7 @@ export default function HomePage() {
                         {isMenuOpen && (
                           <div
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-8 z-30 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+                            className="absolute right-0 top-8 z-30 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-overlay"
                           >
                             <Link
                               href={`/photos/${photo.id_photo}`}
@@ -858,7 +858,7 @@ export default function HomePage() {
           <aside className="sticky top-20 hidden w-72 shrink-0 self-start xl:block">
             <div className="space-y-4">
               {/* Card 1: Critique Requests (Reference: "Friends Requests (03)") */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sidebar">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                   <span className="text-xs font-bold text-stone-900">
                     Peer Critique Requests
@@ -917,7 +917,7 @@ export default function HomePage() {
               </div>
 
               {/* Card 2: Community Creators (Reference: "Friends" List) */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sidebar">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                   <span className="text-xs font-bold text-stone-900">
                     Featured Creators
@@ -977,7 +977,7 @@ export default function HomePage() {
               </div>
 
               {/* Card 3: PicFlow 4 Pilar Etika Kritik */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 text-xs text-stone-600 shadow-[0_12px_32px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-4 text-xs text-stone-600 shadow-sidebar">
                 <p className="font-bold text-stone-900 flex items-center gap-1.5">
                   <Sparkles size={14} className="text-blue-600" />
                   PicFlow Critique Ethos

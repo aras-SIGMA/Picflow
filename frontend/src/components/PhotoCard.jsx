@@ -38,7 +38,7 @@ export default function PhotoCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.55, ease: EASE }}
-      className="group mb-4 break-inside-avoid overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#FFFDF6] transition-all hover:border-[#DCD0BE]"
+      className="group mb-4 break-inside-avoid overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#FFFDF6] shadow-card transition-all hover:border-[#DCD0BE] hover:shadow-card-hover"
       onMouseEnter={() => onPeek?.(photo)}
     >
       <div className="relative">

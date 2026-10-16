@@ -24,6 +24,7 @@ export default function CommentSection({
   initialCount = 0,
   onCountChange,
   className = "",
+  embedded = false,
 }) {
   const { user } = useAuth();
   const toast = useToast();
@@ -152,9 +153,13 @@ export default function CommentSection({
     }
   }
 
+  const cardClass = embedded
+    ? "flex flex-col"
+    : `flex flex-col rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 ${className}`;
+
   return (
-    <div className={`flex flex-col rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 ${className}`}>
-      <div className="flex items-center justify-between border-b border-line/60 pb-3">
+    <div className={cardClass}>
+      <div className={`flex items-center justify-between gap-2 pb-3 ${embedded ? "" : "border-b border-line/60"}`}>
         <div className="flex items-center gap-2">
           <MessageSquare size={15} className="text-accent" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
@@ -169,7 +174,7 @@ export default function CommentSection({
       {/* List Komentar */}
       <div
         ref={listRef}
-        className="my-3 flex max-h-64 flex-col gap-3 overflow-y-auto pr-1"
+        className={`my-3 flex flex-col gap-3 pr-1 ${embedded ? "" : "max-h-64 overflow-y-auto"}`}
       >
         {loading ? (
           <div className="flex items-center justify-center py-8">

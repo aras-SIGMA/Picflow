@@ -377,7 +377,7 @@ export default function AccountPage() {
         <RevealGroup className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {stats.map((s) => (
             <motion.div key={s.label} variants={fadeUp}>
-              <SpotlightCard className="rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)] p-5">
+              <SpotlightCard className="rounded-[var(--radius-md)] border border-line bg-[var(--bg-elevated)] p-5 shadow-card">
                 <p className="text-xs uppercase tracking-wider text-faint">{s.label}</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight text-ink">
                   {s.text !== undefined ? <span>{s.text}</span> : <CountUp value={s.value} />}

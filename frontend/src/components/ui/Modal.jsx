@@ -78,7 +78,7 @@ export default function Modal({ open, onClose, children, labelledBy, wide = fals
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
             transition={{ duration: 0.4, ease: EASE }}
-            className={`relative w-full ${wide ? "max-w-4xl" : "max-w-md"} rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6] p-6 shadow-xl outline-none text-stone-900`}
+            className={`relative w-full ${wide ? "max-w-4xl" : "max-w-md"} rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6] p-6 shadow-overlay outline-none text-stone-900`}
           >
             <button
               onClick={onClose}
