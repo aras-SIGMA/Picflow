@@ -70,7 +70,7 @@ export default function Select({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.25, ease: EASE }}
-            className="absolute z-30 mt-2 max-h-64 w-full overflow-auto rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-1 shadow-xl shadow-black/40"
+            className="absolute z-30 mt-2 max-h-64 w-full overflow-auto rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-1 shadow-overlay"
           >
             {options.length === 0 && (
               <li className="px-3 py-2 text-sm text-faint">Tidak ada opsi</li>

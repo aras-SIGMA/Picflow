@@ -5,7 +5,7 @@
 import express from "express";
 import { z } from "zod";
 import fs from "fs/promises";
-import supabase from "../config/supabase.js";
+import supabase, { createAuthClient } from "../config/supabase.js";
 import cloudinary from "../config/cloudinary.js";
 import verifyToken from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
@@ -34,6 +34,7 @@ function serializeProfile(profile, email) {
     bio: profile.bio,
     // Frontend lama membaca profile_picture_url; sumbernya avatar_url.
     profile_picture_url: profile.avatar_url,
+    role: profile.role === "admin" ? "admin" : "user",
     created_at: profile.created_at,
   };
 }
@@ -68,15 +69,16 @@ router.post("/register", async (req, res, next) => {
       });
     }
 
-    // Login langsung supaya frontend dapat access token.
+    // Login langsung via isolated auth client supaya master supabase client tidak tercemar
+    const authClient = createAuthClient();
     const { data: session, error: signInError } =
-      await supabase.auth.signInWithPassword({ email, password });
+      await authClient.auth.signInWithPassword({ email, password });
 
     if (signInError) {
       // User dibuat, tapi login otomatis gagal: minta user login manual.
       return res.status(201).json({
         message: "Register successful, please login",
-        data: { id_user: data.user.id, username, email, token: null },
+        data: { id_user: data.user.id, username, email, role: "user", token: null },
       });
     }
 
@@ -86,6 +88,7 @@ router.post("/register", async (req, res, next) => {
         id_user: data.user.id,
         username,
         email,
+        role: "user",
         token: session.session.access_token,
         refresh_token: session.session.refresh_token,
       },
@@ -108,7 +111,8 @@ router.post("/login", async (req, res, next) => {
 
     const { email, password } = validation.data;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const authClient = createAuthClient();
+    const { data, error } = await authClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -120,7 +124,7 @@ router.post("/login", async (req, res, next) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, username")
+      .select("id, username, role")
       .eq("id", data.user.id)
       .maybeSingle();
 
@@ -130,6 +134,7 @@ router.post("/login", async (req, res, next) => {
         id_user: data.user.id,
         username: profile?.username || data.user.email,
         email: data.user.email,
+        role: profile?.role === "admin" ? "admin" : "user",
         token: data.session.access_token,
         refresh_token: data.session.refresh_token,
       },
@@ -216,7 +221,7 @@ router.get("/me", verifyToken, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, username, full_name, bio, avatar_url, created_at")
+      .select("id, username, full_name, bio, avatar_url, role, created_at")
       .eq("id", req.user.id)
       .maybeSingle();
 

@@ -90,7 +90,23 @@ PicFlow bertransformasi menjadi platform media sosial dan showcase fotografi kur
   - Tabulasi galeri karya pribadi dalam masonry grid adaptif dengan aksi cepat buka detail foto.
   - Dukungan autentikasi berbasis token JWT stateless dengan persistensi sesi pengguna via `AuthContext`.
 
+#### US-09: Role-Based Access Control (Admin & User)
+- **Story**: As a platform curator, I want elevated administrative privileges so that I can maintain the curated category taxonomy and moderate community content in-place without a separate dashboard.
+- **Acceptance Criteria**:
+  - Tabel `profiles` memiliki kolom `role TEXT NOT NULL DEFAULT 'user'` dengan constraint `CHECK (role IN ('user', 'admin'))`.
+  - Seluruh rute mutasi kategori (`POST`, `PUT`, `DELETE /api/categories`) dilindungi middleware `verifyToken` + `verifyAdmin`, dan menolak non-admin dengan `403 Forbidden`.
+  - Respons `POST /api/auth/login`, `GET /api/auth/me`, serta payload token menyertakan atribut `role: "admin" | "user"`.
+  - Nilai `role` selalu diambil ulang dari database `profiles` pada setiap verifikasi token; nilai `role` dari body request klien diabaikan total (anti privilege escalation).
+  - Regular user hanya dapat menghapus foto, komentar, dan kritik miliknya sendiri (atau komentar/kritik pada fotonya). Admin dapat menghapus konten milik siapa pun.
+  - Panel form "Categories" di `/account` hanya dirender untuk `user.role === "admin"`.
+  - Badge identitas `Admin` / `Curator` (aksen biru `#2563EB`) tampil pada profil admin di `/account` dan kartu kreator.
+  - Tombol moderasi (hapus) muncul kontekstual di samping konten milik user lain hanya untuk admin, dengan modal konfirmasi eksplisit.
+  - Penetapan admin awal dilakukan manual via SQL Supabase; tidak ada penugasan admin melalui UI.
+  - Setiap aksi moderasi admin tercatat di log server (`admin_id`, `target_resource_id`, `resource_type`, `timestamp`).
+
 ### Non-Goals
+- Tidak membuat dasbor analitik admin terpisah (`/admin`) di fase ini; moderasi bersifat kontekstual in-place.
+- Tidak menyediakan fitur *soft delete* / tempat sampah sementara; penghapusan bersifat permanen.
 - Tidak menyediakan editor gambar / filter manipulasi internal (crop, retouching manual, watermark generator) di fase ini.
 - Tidak menyediakan marketplace komersial lisensi foto atau payment gateway checkout di rilis MVP saat ini.
 - Tidak mendukung upload format video pendek atau audio.
@@ -139,6 +155,7 @@ PicFlow bertransformasi menjadi platform media sosial dan showcase fotografi kur
 
 ### Security & Privacy
 - **JWT & Stateless Auth**: Autentikasi stateless dengan token JWT berkeamanan tinggi yang disimpan aman pada sisi klien.
+- **RBAC (Role-Based Access Control)**: Dua peran platform (`user`, `admin`) tersimpan di kolom `profiles.role`. Otorisasi ditegakkan berlapis: middleware `verifyAdmin` untuk rute platform (kategori) dan aturan kepemilikan-konten (`owner OR admin`) pada rute moderasi foto, komentar, dan kritik. `role` tidak pernah dibaca dari input klien.
 - **Sanitasi File & MIME Verification**: Validasi ketat format `image/jpeg`, `image/png`, `image/webp`, `image/tiff` dengan batas maksimum 25MB per berkas.
 - **Proteksi EXIF Lokasi (GPS)**: Opsi default stripping koordinat lokasi sensitif demi menjaga privasi kreator.
 

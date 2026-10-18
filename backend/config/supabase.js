@@ -29,4 +29,13 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
+export function createAuthClient() {
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 export default supabase;

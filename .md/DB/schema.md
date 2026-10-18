@@ -58,6 +58,7 @@ Menyimpan profil publik kreator. Dibuat otomatis saat user mendaftar via Supabas
 | `bio` | `text` | NULL | NULL | Deskripsi singkat bio fotografer |
 | `avatar_url` | `text` | NULL | NULL | URL secure Cloudinary untuk foto profil |
 | `avatar_public_id` | `text` | NULL | NULL | Public ID Cloudinary untuk penghapusan/update aset lama |
+| `role` | `text` | NOT NULL | `'user'` | Peran platform: `user` atau `admin` (`CHECK role IN ('user','admin')`) |
 | `created_at` | `timestamptz` | NOT NULL | `now()` | Waktu profil terdaftar |
 | `updated_at` | `timestamptz` | NULL | `now()` | Waktu profil terakhir diperbarui |
 
@@ -70,9 +71,20 @@ CREATE TABLE public.profiles (
   bio TEXT,
   avatar_url TEXT,
   avatar_public_id TEXT,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE INDEX idx_profiles_role ON public.profiles(role);
+
+-- Migrasi untuk database yang sudah berjalan (idempoten):
+-- ALTER TABLE public.profiles
+--   ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'
+--   CHECK (role IN ('user', 'admin'));
+-- CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+-- Bootstrap admin pertama (manual via SQL Editor):
+-- UPDATE public.profiles SET role = 'admin' WHERE id = '<TARGET_USER_UUID>';
 
 -- Trigger pembuatan profil otomatis saat user register di auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -373,10 +385,11 @@ CREATE POLICY "Users delete own photos" ON public.photos
 CREATE POLICY "Users insert own critiques" ON public.critiques
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Critique authors or photo owners delete critique" ON public.critiques
+CREATE POLICY "Critique authors, photo owners, or admins delete critique" ON public.critiques
   FOR DELETE USING (
     auth.uid() = user_id OR
-    auth.uid() IN (SELECT user_id FROM public.photos WHERE id = critiques.photo_id)
+    auth.uid() IN (SELECT user_id FROM public.photos WHERE id = critiques.photo_id) OR
+    EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.role = 'admin')
   );
 
 CREATE POLICY "Users manage own likes" ON public.likes
@@ -384,6 +397,24 @@ CREATE POLICY "Users manage own likes" ON public.likes
 
 CREATE POLICY "Users manage own follows" ON public.follows
   FOR ALL USING (auth.uid() = follower_id);
+
+-- 4. Kategori: mutasi khusus admin
+CREATE POLICY "Admins insert categories" ON public.categories
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.role = 'admin')
+  );
+
+CREATE POLICY "Admins update categories" ON public.categories
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.role = 'admin')
+  );
+
+CREATE POLICY "Admins delete categories" ON public.categories
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.role = 'admin')
+  );
 ```
 
 > **Catatan Backend Service Key**: Backend Express.js menggunakan client admin Supabase dengan `SUPABASE_SECRET_KEY` (service role) yang secara default melewati RLS (*bypasses RLS*), namun kebijakan RLS di atas wajib diaktifkan guna melindungi database jika diakses langsung oleh client-side SDK Supabase.
+
+> **Catatan RBAC**: Peran platform disimpan di `profiles.role` (`user` | `admin`). Kebijakan RLS di atas sudah memberlakukan moderasi admin (hapus kritik & mutasi kategori). Middleware Express (`verifyAdmin`) tetap menjadi lapisan otorisasi utama karena service key melewati RLS; kolom `role` tidak pernah dibaca dari input klien, selalu di-query ulang dari `profiles` per request.

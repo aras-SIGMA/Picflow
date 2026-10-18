@@ -1,12 +1,15 @@
 // api/category.js
-// CRUD sederhana untuk tabel categories (Supabase PostgreSQL).
+// CRUD tabel categories (Supabase PostgreSQL).
+// GET publik; mutasi (POST/PUT/DELETE) khusus role admin.
 // Skema: id (serial), name (unique), slug (unique), created_at.
 
 import express from "express";
 import { z } from "zod";
 import supabase from "../config/supabase.js";
+import verifyToken, { verifyAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+const adminOnly = [verifyToken, verifyAdmin];
 
 const categorySchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -31,8 +34,8 @@ function serializeCategory(row) {
   };
 }
 
-// CREATE
-router.post("/", async (req, res, next) => {
+// CREATE (khusus admin)
+router.post("/", adminOnly, async (req, res, next) => {
   try {
     const validation = categorySchema.safeParse(req.body);
     if (!validation.success) {
@@ -106,8 +109,8 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-// UPDATE
-router.put("/:id", async (req, res, next) => {
+// UPDATE (khusus admin)
+router.put("/:id", adminOnly, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
@@ -143,8 +146,8 @@ router.put("/:id", async (req, res, next) => {
   }
 });
 
-// DELETE
-router.delete("/:id", async (req, res, next) => {
+// DELETE (khusus admin)
+router.delete("/:id", adminOnly, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 

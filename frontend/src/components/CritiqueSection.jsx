@@ -2,10 +2,11 @@
 
 // src/components/CritiqueSection.jsx
 // Panel Kritik & Saran Konstruktif Fotografi:
-// - Ringkasan 4 Pilar: Komposisi, Pencahayaan, Warna/Tone, Ide/Konsep (1-5)
+// - Desain bersih berpedoman ketat pada .md/DESIGN/design.md
+// - Ringkasan 4 Pilar: Komposisi, Pencahayaan, Warna/Tone, Ide/Konsep (skala 1-5)
 // - Form masukan terstruktur: Rating 4 pilar + Poin Kekuatan + Saran Pengembangan
-// - Feed ulasan real-time dengan optimistic update & sinkronisasi SSE/WebSocket
-import { useState, useEffect } from "react";
+// - Feed ulasan real-time dengan deduplikasi aman & sinkronisasi SSE
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,6 +19,7 @@ import {
   X,
   Send,
   SlidersHorizontal,
+  Loader2,
 } from "lucide-react";
 import {
   getPhotoCritiques,
@@ -28,7 +30,6 @@ import { usePhotoRealtime } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import ApertureLoader from "@/components/ui/ApertureLoader";
-import Button from "@/components/ui/Button";
 
 const PILLARS = [
   { key: "rating_composition", label: "Composition", hint: "Framing & Rule of Thirds" },
@@ -37,10 +38,17 @@ const PILLARS = [
   { key: "rating_concept", label: "Concept & Narrative", hint: "Storytelling & Visual Intent" },
 ];
 
+function createTempId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? `temp-${crypto.randomUUID()}`
+    : `temp-${Date.now()}`;
+}
+
 export default function CritiqueSection({
   photoId,
   photoOwnerId,
   className = "",
+  embedded = false,
 }) {
   const { user } = useAuth();
   const toast = useToast();
@@ -57,6 +65,7 @@ export default function CritiqueSection({
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   if (photoId !== prevPhotoId) {
     setPrevPhotoId(photoId);
@@ -105,19 +114,47 @@ export default function CritiqueSection({
   usePhotoRealtime(photoId, {
     onCritiqueAdded: (payload) => {
       if (!payload?.critique) return;
+      const newCritique = payload.critique;
+
       setCritiques((prev) => {
         if (
           prev.some(
-            (c) => String(c.id_critique) === String(payload.critique.id_critique)
+            (c) => String(c.id_critique) === String(newCritique.id_critique)
           )
         ) {
           return prev;
         }
-        const updated = [payload.critique, ...prev];
+
+        // Gantikan item pending jika user dan isi cocok
+        const pendingIdx = prev.findIndex(
+          (c) =>
+            c.pending &&
+            String(c.id_user) === String(newCritique.id_user) &&
+            c.strengths === newCritique.strengths
+        );
+
+        if (pendingIdx !== -1) {
+          const next = [...prev];
+          next[pendingIdx] = {
+            ...newCritique,
+            is_owner: Boolean(user?.id_user && newCritique.id_user === user.id_user),
+          };
+          recalcStats(next);
+          return next;
+        }
+
+        const updated = [
+          {
+            ...newCritique,
+            is_owner: Boolean(user?.id_user && newCritique.id_user === user.id_user),
+          },
+          ...prev,
+        ];
         recalcStats(updated);
         return updated;
       });
     },
+
     onCritiqueDeleted: (payload) => {
       if (!payload?.critique_id) return;
       setCritiques((prev) => {
@@ -173,15 +210,17 @@ export default function CritiqueSection({
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     if (!formData.strengths.trim() || !formData.improvements.trim()) {
       toast.error("Mohon isi poin kekuatan dan saran perbaikan.");
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
-    const tempId = `temp-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "optimistic"}`;
+
+    const tempId = createTempId();
     const overallScore = +(
       (formData.rating_composition +
         formData.rating_lighting +
@@ -205,7 +244,7 @@ export default function CritiqueSection({
       user: {
         id_user: user?.id_user || user?.id,
         username: user?.username || "You",
-        avatar_url: user?.profile_picture_url,
+        avatar_url: user?.profile_picture_url || user?.avatar_url,
       },
       is_owner: true,
       pending: true,
@@ -218,9 +257,18 @@ export default function CritiqueSection({
     try {
       const res = await addPhotoCritique(photoId, formData);
       if (res?.data) {
-        setCritiques((prev) =>
-          prev.map((c) => (c.id_critique === tempId ? res.data : c))
-        );
+        const saved = res.data;
+        setCritiques((prev) => {
+          const alreadyExists = prev.some(
+            (c) => String(c.id_critique) === String(saved.id_critique)
+          );
+          if (alreadyExists) {
+            return prev.filter((c) => c.id_critique !== tempId);
+          }
+          return prev.map((c) =>
+            c.id_critique === tempId ? { ...saved, is_owner: true } : c
+          );
+        });
         toast.success("Constructive critique submitted successfully!");
         setFormData({
           rating_composition: 4,
@@ -236,6 +284,7 @@ export default function CritiqueSection({
       recalcStats(critiques);
       toast.error(err.message || "Failed to submit critique.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -257,20 +306,32 @@ export default function CritiqueSection({
     }
   }
 
+  // Deduplikasi tampilan unik berdasarkan id_critique
+  const displayCritiques = useMemo(() => {
+    const seen = new Set();
+    return critiques.filter((c) => {
+      if (!c?.id_critique || seen.has(c.id_critique)) return false;
+      seen.add(c.id_critique);
+      return true;
+    });
+  }, [critiques]);
+
+  const containerClass = embedded
+    ? "flex flex-col"
+    : `flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-card ${className}`;
+
   return (
-    <div
-      className={`flex flex-col rounded-[var(--radius-md)] border border-line bg-[var(--surface)] p-4 ${className}`}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3">
+    <div className={containerClass}>
+      {/* Header Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-accent" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
+          <Sparkles size={16} className="text-blue-600" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-900">
             Constructive Critique &amp; Feedback
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] font-medium text-muted">
+          <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
             {stats.total_critiques} Reviews
           </span>
           {!isOwner && (
@@ -283,7 +344,7 @@ export default function CritiqueSection({
                 }
                 setIsFormOpen((prev) => !prev);
               }}
-              className="inline-flex items-center gap-1 rounded-full border border-line bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer"
             >
               {isFormOpen ? (
                 <>
@@ -300,65 +361,65 @@ export default function CritiqueSection({
       </div>
 
       {/* Ringkasan Skor 4 Pilar */}
-      <div className="mt-3 rounded-[var(--radius-sm)] border border-line/50 bg-[var(--bg-elevated)]/60 p-3">
+      <div className="mt-3.5 rounded-2xl border border-gray-200 bg-stone-50/70 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xl font-bold text-ink">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-2xl font-extrabold text-stone-900">
               {stats.overall_avg > 0 ? stats.overall_avg.toFixed(1) : "—"}
             </span>
             <div className="flex flex-col">
-              <span className="text-[11px] font-medium text-muted">
+              <span className="text-[11px] font-semibold text-stone-600">
                 Community Average Score
               </span>
-              <div className="flex items-center gap-0.5 text-accent">
+              <div className="flex items-center gap-0.5 text-amber-500">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    size={11}
+                    size={12}
                     className={
                       star <= Math.round(stats.overall_avg)
-                        ? "fill-current text-accent"
-                        : "text-line"
+                        ? "fill-current text-amber-500"
+                        : "text-gray-300"
                     }
                   />
                 ))}
               </div>
             </div>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-faint">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
             Scale 1 - 5
           </span>
         </div>
 
         {/* 4 Pilar Grid */}
-        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line/40 pt-2.5 sm:grid-cols-4">
+        <div className="mt-3.5 grid grid-cols-2 gap-2 border-t border-gray-200/60 pt-3 sm:grid-cols-4">
           <ScorePill
             label="Composition"
             value={stats.avg_composition}
-            color="text-accent"
+            color="text-blue-600"
           />
           <ScorePill
             label="Lighting"
             value={stats.avg_lighting}
-            color="text-amber-400"
+            color="text-amber-500"
           />
           <ScorePill
-            label="Color &amp; Tone"
+            label="Color & Tone"
             value={stats.avg_color}
-            color="text-emerald-400"
+            color="text-emerald-600"
           />
           <ScorePill
             label="Concept"
             value={stats.avg_concept}
-            color="text-sky-400"
+            color="text-sky-600"
           />
         </div>
       </div>
 
-      {/* Pesan jika pemilik foto melihat panel ini */}
+      {/* Catatan jika pemilik foto melihat panel ini */}
       {isOwner && (
-        <p className="mt-2 text-center text-[11px] text-faint">
-          Technical critiques from the community help evaluate your framing, color grading, and concept.
+        <p className="mt-2 text-center text-[11px] text-stone-500">
+          Technical critiques from fellow photographers evaluate your framing, color grading, and concept.
         </p>
       )}
 
@@ -370,28 +431,28 @@ export default function CritiqueSection({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleSubmit}
-            className="mt-3 overflow-hidden rounded-[var(--radius-sm)] border border-accent/40 bg-[var(--bg-elevated)] p-3.5"
+            className="mt-3.5 overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/30 p-4"
           >
-            <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-ink">
-              <SlidersHorizontal size={13} className="text-accent" />
-              <span>Constructive Critique Form</span>
+            <div className="flex items-center gap-1.5 pb-2.5 text-xs font-bold text-stone-900 border-b border-blue-100">
+              <SlidersHorizontal size={14} className="text-blue-600" />
+              <span>Submit 4-Pillar Constructive Critique</span>
             </div>
 
             {/* Input Slider / Rating 4 Pilar */}
-            <div className="grid grid-cols-1 gap-2.5 py-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2.5 py-3 sm:grid-cols-2">
               {PILLARS.map(({ key, label, hint }) => (
                 <div
                   key={key}
-                  className="rounded-[var(--radius-sm)] border border-line/60 bg-[var(--surface)] p-2"
+                  className="rounded-xl border border-gray-200 bg-white p-3 shadow-2xs"
                 >
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-ink">{label}</span>
-                    <span className="font-mono font-bold text-accent">
+                    <span className="font-bold text-stone-900">{label}</span>
+                    <span className="font-mono font-extrabold text-blue-600">
                       {formData[key]} / 5
                     </span>
                   </div>
-                  <p className="text-[10px] text-faint">{hint}</p>
-                  <div className="mt-1.5 flex items-center justify-between gap-1">
+                  <p className="text-[10px] text-stone-500 mt-0.5">{hint}</p>
+                  <div className="mt-2 flex items-center justify-between gap-1.5">
                     {[1, 2, 3, 4, 5].map((val) => (
                       <button
                         key={val}
@@ -399,10 +460,12 @@ export default function CritiqueSection({
                         onClick={() =>
                           setFormData((prev) => ({ ...prev, [key]: val }))
                         }
-                        className={`flex h-6 flex-1 items-center justify-center rounded text-xs font-mono font-semibold transition-all ${
-                          formData[key] >= val
-                            ? "bg-accent/20 text-accent border border-accent/50"
-                            : "bg-[var(--bg-elevated)] text-faint border border-line/50 hover:text-ink"
+                        className={`flex h-7 flex-1 items-center justify-center rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                          formData[key] === val
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : formData[key] > val
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-gray-100 text-stone-600 hover:bg-gray-200"
                         }`}
                       >
                         {val}
@@ -414,10 +477,10 @@ export default function CritiqueSection({
             </div>
 
             {/* Poin Kekuatan */}
-            <div className="mt-2.5">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                <ThumbsUp size={12} />
-                <span>Strengths (What stands out most in this work?)</span>
+            <div className="mt-1">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                <ThumbsUp size={13} />
+                <span>Strengths (What stands out technically &amp; artistically?)</span>
               </label>
               <textarea
                 value={formData.strengths}
@@ -426,17 +489,17 @@ export default function CritiqueSection({
                 }
                 rows={2}
                 maxLength={2000}
-                placeholder="e.g. Leading lines are impeccable and subject focus is pin-sharp..."
+                placeholder="e.g. Leading lines are impeccable and subject focus is pin-sharp with natural bokeh..."
                 required
-                className="mt-1 w-full rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-2 text-xs text-ink placeholder:text-faint focus:border-emerald-400 focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white p-3 text-xs text-stone-900 placeholder:text-gray-400 shadow-2xs focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/15"
               />
             </div>
 
             {/* Saran Pengembangan */}
-            <div className="mt-2">
-              <label className="flex items-center gap-1.5 text-xs font-medium text-sky-400">
-                <Lightbulb size={12} />
-                <span>Areas for Growth (What can be enhanced?)</span>
+            <div className="mt-2.5">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-blue-700">
+                <Lightbulb size={13} />
+                <span>Areas for Growth (What can be refined or improved?)</span>
               </label>
               <textarea
                 value={formData.improvements}
@@ -447,46 +510,50 @@ export default function CritiqueSection({
                 maxLength={2000}
                 placeholder="e.g. Highlight roll-off in the clouds is slightly clipped, consider recovering highlights in post..."
                 required
-                className="mt-1 w-full rounded-[var(--radius-sm)] border border-line bg-[var(--surface)] p-2 text-xs text-ink placeholder:text-faint focus:border-sky-400 focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white p-3 text-xs text-stone-900 placeholder:text-gray-400 shadow-2xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
               />
             </div>
 
-            <div className="mt-3 flex justify-end gap-2">
-              <Button
+            <div className="mt-3.5 flex justify-end gap-2">
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
                 onClick={() => setIsFormOpen(false)}
-                className="text-xs"
+                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
-                size="sm"
-                loading={submitting}
-                className="text-xs"
+                disabled={submitting}
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                <Send size={12} className="mr-1" /> Submit Critique
-              </Button>
+                {submitting ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Send size={13} />
+                )}
+                <span>Submit Critique</span>
+              </button>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
 
       {/* Daftar Kritik */}
-      <div className="my-3 flex max-h-72 flex-col gap-3 overflow-y-auto pr-1">
+      <div
+        className={`my-3.5 flex flex-col gap-3 ${embedded ? "" : "max-h-80 overflow-y-auto pr-1"}`}
+      >
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <ApertureLoader size={22} />
           </div>
-        ) : critiques.length === 0 ? (
-          <p className="py-6 text-center text-xs text-faint">
+        ) : displayCritiques.length === 0 ? (
+          <p className="py-6 text-center text-xs text-stone-400 italic">
             No technical reviews yet. Be the first photographer to provide constructive critique!
           </p>
         ) : (
           <AnimatePresence initial={false}>
-            {critiques.map((c) => {
+            {displayCritiques.map((c) => {
               const authorName = c.user?.username || "Critic";
               const authorAvatar = c.user?.avatar_url;
               const dateStr = c.created_at
@@ -495,78 +562,94 @@ export default function CritiqueSection({
                     month: "short",
                   })
                 : "";
+              const isCritiqueOwner = Boolean(
+                c.is_owner || (user?.id_user && c.id_user === user.id_user)
+              );
+              const isAdmin = user?.role === "admin";
+              const canDeleteCritique = isCritiqueOwner || isAdmin;
 
               return (
                 <motion.div
                   key={c.id_critique}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="rounded-[var(--radius-sm)] border border-line/60 bg-[var(--bg-elevated)]/50 p-3 transition-colors hover:border-line"
+                  className="rounded-2xl border border-gray-200 bg-gray-50/60 p-4 transition-colors hover:bg-gray-100/60"
                 >
                   {/* Header Item */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-[var(--surface)] text-[9px] font-bold text-ink">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-[10px] font-bold text-white shadow-2xs">
                         {authorAvatar ? (
                           <Image
                             src={authorAvatar}
                             alt={authorName}
                             fill
+                            sizes="28px"
                             className="object-cover"
                           />
                         ) : (
                           authorName.charAt(0).toUpperCase()
                         )}
                       </div>
-                      <span className="text-xs font-semibold text-ink">
+                      <span className="text-xs font-bold text-stone-900">
                         {authorName}
                       </span>
-                      <span className="text-[10px] text-faint">{dateStr}</span>
+                      <span className="text-[11px] text-stone-400">·</span>
+                      <span className="text-[11px] text-stone-400">{dateStr}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-bold text-accent">
-                        <Star size={9} className="fill-current" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-700">
+                        <Star size={10} className="fill-blue-600 text-blue-600" />
                         {Number(c.overall_score || 0).toFixed(1)}
                       </span>
-                      {c.is_owner && !c.pending && (
+                      {canDeleteCritique && !c.pending && (
                         <button
                           type="button"
                           onClick={() => handleDelete(c.id_critique)}
-                          aria-label="Delete critique"
-                          className="text-faint transition-colors hover:text-danger"
+                          aria-label={
+                            isCritiqueOwner ? "Delete critique" : "Delete critique as admin"
+                          }
+                          title={
+                            isCritiqueOwner ? "Delete critique" : "Moderate: delete as admin"
+                          }
+                          className={`transition-colors p-0.5 cursor-pointer ${
+                            isCritiqueOwner
+                              ? "text-stone-400 hover:text-red-600"
+                              : "text-blue-500 hover:text-red-600"
+                          }`}
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       )}
                     </div>
                   </div>
 
                   {/* Micro Breakdown 4 Pilar */}
-                  <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-[9px] text-muted">
-                    <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Comp: <strong className="text-ink">{c.rating_composition}</strong>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 font-mono text-[10px] text-stone-600">
+                    <span className="rounded-md bg-white px-2 py-0.5 border border-gray-200">
+                      Comp: <strong className="text-stone-900">{c.rating_composition}</strong>
                     </span>
-                    <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Light: <strong className="text-ink">{c.rating_lighting}</strong>
+                    <span className="rounded-md bg-white px-2 py-0.5 border border-gray-200">
+                      Light: <strong className="text-stone-900">{c.rating_lighting}</strong>
                     </span>
-                    <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Color: <strong className="text-ink">{c.rating_color}</strong>
+                    <span className="rounded-md bg-white px-2 py-0.5 border border-gray-200">
+                      Color: <strong className="text-stone-900">{c.rating_color}</strong>
                     </span>
-                    <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 border border-line/40">
-                      Concept: <strong className="text-ink">{c.rating_concept}</strong>
+                    <span className="rounded-md bg-white px-2 py-0.5 border border-gray-200">
+                      Concept: <strong className="text-stone-900">{c.rating_concept}</strong>
                     </span>
                   </div>
 
                   {/* Poin Kekuatan */}
                   {c.strengths && (
-                    <div className="mt-2.5 rounded bg-emerald-950/20 p-2 text-xs border border-emerald-900/30">
-                      <div className="flex items-center gap-1 font-semibold text-emerald-400 text-[10px]">
-                        <ThumbsUp size={10} />
+                    <div className="mt-3 rounded-xl bg-emerald-50/80 p-3 text-xs border border-emerald-200/80">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-800 text-[11px]">
+                        <ThumbsUp size={12} className="text-emerald-600" />
                         <span>Visual Strengths</span>
                       </div>
-                      <p className="mt-0.5 text-xs text-ink/90 leading-relaxed">
+                      <p className="mt-1 text-xs text-stone-800 leading-relaxed">
                         {c.strengths}
                       </p>
                     </div>
@@ -574,12 +657,12 @@ export default function CritiqueSection({
 
                   {/* Saran Perbaikan */}
                   {c.improvements && (
-                    <div className="mt-1.5 rounded bg-sky-950/20 p-2 text-xs border border-sky-900/30">
-                      <div className="flex items-center gap-1 font-semibold text-sky-400 text-[10px]">
-                        <Lightbulb size={10} />
+                    <div className="mt-2 rounded-xl bg-blue-50/80 p-3 text-xs border border-blue-200/80">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-800 text-[11px]">
+                        <Lightbulb size={12} className="text-blue-600" />
                         <span>Improvement Suggestions</span>
                       </div>
-                      <p className="mt-0.5 text-xs text-ink/90 leading-relaxed">
+                      <p className="mt-1 text-xs text-stone-800 leading-relaxed">
                         {c.improvements}
                       </p>
                     </div>
@@ -596,9 +679,9 @@ export default function CritiqueSection({
 
 function ScorePill({ label, value, color }) {
   return (
-    <div className="flex flex-col rounded bg-[var(--surface)] p-1.5 border border-line/40">
-      <span className="text-[10px] text-faint truncate">{label}</span>
-      <span className={`font-mono text-xs font-bold ${color}`}>
+    <div className="flex flex-col rounded-xl bg-white p-2.5 border border-gray-200 shadow-2xs">
+      <span className="text-[10px] font-semibold text-stone-500 truncate">{label}</span>
+      <span className={`font-mono text-sm font-extrabold ${color} mt-0.5`}>
         {value > 0 ? value.toFixed(1) : "—"}
       </span>
     </div>
