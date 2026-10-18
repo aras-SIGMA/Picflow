@@ -565,6 +565,8 @@ export default function CritiqueSection({
               const isCritiqueOwner = Boolean(
                 c.is_owner || (user?.id_user && c.id_user === user.id_user)
               );
+              const isAdmin = user?.role === "admin";
+              const canDeleteCritique = isCritiqueOwner || isAdmin;
 
               return (
                 <motion.div
@@ -602,12 +604,21 @@ export default function CritiqueSection({
                         <Star size={10} className="fill-blue-600 text-blue-600" />
                         {Number(c.overall_score || 0).toFixed(1)}
                       </span>
-                      {isCritiqueOwner && !c.pending && (
+                      {canDeleteCritique && !c.pending && (
                         <button
                           type="button"
                           onClick={() => handleDelete(c.id_critique)}
-                          aria-label="Delete critique"
-                          className="text-stone-400 transition-colors hover:text-red-600 p-0.5 cursor-pointer"
+                          aria-label={
+                            isCritiqueOwner ? "Delete critique" : "Delete critique as admin"
+                          }
+                          title={
+                            isCritiqueOwner ? "Delete critique" : "Moderate: delete as admin"
+                          }
+                          className={`transition-colors p-0.5 cursor-pointer ${
+                            isCritiqueOwner
+                              ? "text-stone-400 hover:text-red-600"
+                              : "text-blue-500 hover:text-red-600"
+                          }`}
                         >
                           <Trash2 size={13} />
                         </button>

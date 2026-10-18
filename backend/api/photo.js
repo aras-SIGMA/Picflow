@@ -633,10 +633,11 @@ router.delete("/:id/comments/:commentId", verifyToken, async (req, res, next) =>
     if (cErr) return next(new Error(cErr.message));
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    // Izin hapus: pembuat komentar atau pemilik foto
+    // Izin hapus: pembuat komentar, pemilik foto, atau admin.
     const isCommentAuthor = comment.user_id === req.user.id;
     const isPhotoOwner = comment.photos?.user_id === req.user.id;
-    if (!isCommentAuthor && !isPhotoOwner) {
+    const isAdmin = req.user.role === "admin";
+    if (!isCommentAuthor && !isPhotoOwner && !isAdmin) {
       return res.status(403).json({ message: "Not authorized to delete this comment" });
     }
 
@@ -646,6 +647,12 @@ router.delete("/:id/comments/:commentId", verifyToken, async (req, res, next) =>
       .eq("id", commentId);
 
     if (delErr) return next(new Error(delErr.message));
+
+    if (isAdmin && !isCommentAuthor) {
+      console.log(
+        `[moderation] admin=${req.user.id} deleted comment=${commentId} photo=${photoId}`
+      );
+    }
 
     const { count } = await supabase
       .from("comments")
@@ -849,7 +856,8 @@ router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) 
 
     const isAuthor = critique.user_id === req.user.id;
     const isPhotoOwner = critique.photos?.user_id === req.user.id;
-    if (!isAuthor && !isPhotoOwner) {
+    const isAdmin = req.user.role === "admin";
+    if (!isAuthor && !isPhotoOwner && !isAdmin) {
       return res
         .status(403)
         .json({ message: "Not authorized to delete this critique" });
@@ -861,6 +869,12 @@ router.delete("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) 
       .eq("id", critiqueId);
 
     if (delErr) return next(new Error(delErr.message));
+
+    if (isAdmin && !isAuthor) {
+      console.log(
+        `[moderation] admin=${req.user.id} deleted critique=${critiqueId} photo=${photoId}`
+      );
+    }
 
     broadcastEvent("critique:deleted", {
       photo_id: photoId,
@@ -973,17 +987,23 @@ router.put("/:id", verifyToken, upload.single("image"), async (req, res, next) =
 });
 
 // DELETE: hapus foto + aset Cloudinary-nya.
+// Pemilik foto atau admin (moderasi) yang boleh menghapus.
 router.delete("/:id", verifyToken, async (req, res, next) => {
   try {
     const { data: existing } = await supabase
       .from("photos")
-      .select("id, cloudinary_public_id")
+      .select("id, user_id, cloudinary_public_id")
       .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
       .maybeSingle();
 
     if (!existing) {
       return res.status(404).json({ message: "Photo not found" });
+    }
+
+    const isOwner = existing.user_id === req.user.id;
+    const isAdmin = req.user.role === "admin";
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Not authorized to delete this photo" });
     }
 
     const { error } = await supabase
@@ -998,6 +1018,19 @@ router.delete("/:id", verifyToken, async (req, res, next) => {
         .destroy(existing.cloudinary_public_id, { resource_type: "image" })
         .catch(() => {});
     }
+
+    if (!isOwner && isAdmin) {
+      console.log(
+        `[moderation] admin=${req.user.id} deleted photo=${existing.id} owner=${existing.user_id}`
+      );
+    }
+
+    // Broadcast agar feed klien lain menghapus kartu foto ini.
+    broadcastEvent("photo:deleted", {
+      photo_id: existing.id,
+      user_id: existing.user_id,
+      by_admin: !isOwner && isAdmin,
+    });
 
     res.json({ message: "Photo deleted" });
   } catch (error) {

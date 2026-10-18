@@ -299,6 +299,8 @@ export default function InlineCommentSection({
               const isOwner = Boolean(
                 c.is_owner || (user?.id_user && c.id_user === user.id_user)
               );
+              const isAdmin = user?.role === "admin";
+              const canDelete = isOwner || isAdmin;
 
               return (
                 <motion.div
@@ -339,12 +341,17 @@ export default function InlineCommentSection({
                         )}
                       </div>
 
-                      {isOwner && !c.pending && (
+                      {canDelete && !c.pending && (
                         <button
                           type="button"
                           onClick={() => handleDelete(c.id_comment)}
-                          aria-label="Delete comment"
-                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-0.5"
+                          aria-label={isOwner ? "Delete comment" : "Delete comment as admin"}
+                          title={isOwner ? "Delete comment" : "Moderate: delete as admin"}
+                          className={`opacity-0 group-hover:opacity-100 transition-opacity p-0.5 ${
+                            isOwner
+                              ? "text-gray-400 hover:text-red-500"
+                              : "text-blue-500 hover:text-red-500"
+                          }`}
                         >
                           <Trash2 size={12} />
                         </button>

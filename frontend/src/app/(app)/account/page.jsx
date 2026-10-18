@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderPlus, ImagePlus, LogOut, Trash2 } from "lucide-react";
+import { FolderPlus, ImagePlus, LogOut, ShieldCheck, Trash2 } from "lucide-react";
 import {
   getToken,
   getMe,
@@ -352,7 +352,15 @@ export default function AccountPage() {
               </form>
 
               <div className="min-w-0 flex-1">
-                <PillBadge>Your vault</PillBadge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <PillBadge>Your vault</PillBadge>
+                  {profile.role === "admin" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                      <ShieldCheck size={11} />
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <h1 className="mt-2 truncate text-xl font-semibold tracking-tight text-ink">
                   {profile.username}
                 </h1>
@@ -387,57 +395,64 @@ export default function AccountPage() {
           ))}
         </RevealGroup>
 
-        {/* ============ KATEGORI ============ */}
-        <Reveal>
-          <section className="mt-14">
-            <h2 className="display-2 text-xl!">Categories</h2>
-            <form onSubmit={handleAdd} className="mt-4 flex max-w-md gap-2">
-              <div className="relative flex-1">
-                <FolderPlus
-                  size={15}
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
-                />
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="New category name"
-                  aria-label="New category name"
-                  className="w-full rounded-full border border-line bg-[var(--bg-elevated)] py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
-                />
-              </div>
-              <Button type="submit" size="sm">
-                Add
-              </Button>
-            </form>
-            {categoryError && (
-              <p className="mt-2 text-sm text-danger" role="alert">
-                {categoryError}
-              </p>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {categories.map((c) => (
-                <span
-                  key={c.id_category}
-                  className="group inline-flex items-center gap-2 rounded-full border border-line bg-[var(--bg-elevated)] px-4 py-1.5 text-xs text-muted transition-colors hover:border-white/25 hover:text-ink"
-                >
-                  {c.name}
-                  <button
-                    onClick={() => handleDeleteCategory(c.id_category)}
-                    aria-label={`Delete category ${c.name}`}
-                    className="text-faint transition-colors hover:text-[var(--danger)]"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+        {/* ============ KATEGORI (Khusus Admin) ============ */}
+        {profile.role === "admin" && (
+          <Reveal>
+            <section className="mt-14">
+              <div className="flex items-center gap-2">
+                <h2 className="display-2 text-xl!">Categories</h2>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
+                  Admin Manage
                 </span>
-              ))}
-              {categories.length === 0 && (
-                <p className="text-sm text-faint">
-                  No categories yet — add one to start organizing.
+              </div>
+              <form onSubmit={handleAdd} className="mt-4 flex max-w-md gap-2">
+                <div className="relative flex-1">
+                  <FolderPlus
+                    size={15}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
+                  />
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="New category name"
+                    aria-label="New category name"
+                    className="w-full rounded-full border border-line bg-[var(--bg-elevated)] py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <Button type="submit" size="sm">
+                  Add
+                </Button>
+              </form>
+              {categoryError && (
+                <p className="mt-2 text-sm text-danger" role="alert">
+                  {categoryError}
                 </p>
               )}
-            </div>
-          </section>
-        </Reveal>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {categories.map((c) => (
+                  <span
+                    key={c.id_category}
+                    className="group inline-flex items-center gap-2 rounded-full border border-line bg-[var(--bg-elevated)] px-4 py-1.5 text-xs text-muted transition-colors hover:border-white/25 hover:text-ink"
+                  >
+                    {c.name}
+                    <button
+                      onClick={() => handleDeleteCategory(c.id_category)}
+                      aria-label={`Delete category ${c.name}`}
+                      className="text-faint transition-colors hover:text-[var(--danger)]"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </span>
+                ))}
+                {categories.length === 0 && (
+                  <p className="text-sm text-faint">
+                    No categories yet — add one to start organizing.
+                  </p>
+                )}
+              </div>
+            </section>
+          </Reveal>
+        )}
 
         {/* ============ MY PHOTOS ============ */}
         <section className="mt-14">

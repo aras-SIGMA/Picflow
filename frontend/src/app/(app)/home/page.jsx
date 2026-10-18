@@ -560,6 +560,8 @@ export default function HomePage() {
             <div className="space-y-6">
               {shownPhotos.map((photo) => {
                 const isOwner = Boolean(user?.id_user && photo.id_user === user.id_user);
+                const isAdmin = user?.role === "admin";
+                const canModerate = isAdmin && !isOwner;
                 const isMenuOpen = activeMenuPhotoId === photo.id_photo;
                 const photoSrc = photo.medium_url || fileUrl(photo.image_url);
 
@@ -672,6 +674,22 @@ export default function HomePage() {
                                 >
                                   <Trash2 size={13} />
                                   Delete Photo
+                                </button>
+                              </>
+                            )}
+                            {canModerate && (
+                              <>
+                                <div className="my-1 border-t border-gray-200" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPendingDelete(photo);
+                                    setActiveMenuPhotoId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 size={13} />
+                                  Moderate (Delete)
                                 </button>
                               </>
                             )}

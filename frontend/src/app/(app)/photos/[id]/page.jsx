@@ -24,8 +24,9 @@ import {
   Star,
   Tag,
   Timer,
+  Trash2,
 } from "lucide-react";
-import { fileUrl, getPhoto, getToken } from "@/lib/api";
+import { fileUrl, getPhoto, getToken, deletePhoto } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import ExifMetadataPanel from "@/components/ExifMetadataPanel";
 import LikeButton from "@/components/LikeButton";
@@ -34,8 +35,10 @@ import CritiqueSection from "@/components/CritiqueSection";
 import FollowButton from "@/components/FollowButton";
 import ApertureLoader from "@/components/ui/ApertureLoader";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import { PageTransition, Reveal } from "@/components/ui/Motion";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
 
 const SHADOW_FLOAT = "shadow-card";
 
@@ -44,14 +47,30 @@ export default function PhotoDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { user } = useAuth();
 
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const tabParam = searchParams?.get("tab");
   const [tabOverride, setTabOverride] = useState(null);
   const socialTab = tabOverride ?? (tabParam === "comments" ? "comments" : "critique");
+
+  async function handleDeletePhoto() {
+    if (!photo) return;
+    setDeleting(true);
+    try {
+      await deletePhoto(photo.id_photo);
+      toast.success("Photo deleted successfully.");
+      router.push("/home");
+    } catch (err) {
+      toast.error(err.message || "Failed to delete photo.");
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -182,6 +201,21 @@ export default function PhotoDetailPage() {
                 <Pencil size={13} />
                 Edit
               </Link>
+            )}
+            {(photo.is_owner || user?.role === "admin") && (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                title={photo.is_owner ? "Delete photo" : "Moderate: delete as admin"}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition-all ${
+                  photo.is_owner
+                    ? "border-gray-200 bg-white text-stone-700 hover:bg-red-50 hover:text-red-600"
+                    : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                }`}
+              >
+                <Trash2 size={13} />
+                {photo.is_owner ? "Delete" : "Moderate"}
+              </button>
             )}
           </div>
         </div>
@@ -403,6 +437,39 @@ export default function PhotoDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={confirmDelete}
+        onClose={() => (deleting ? null : setConfirmDelete(false))}
+        labelledBy="delete-photo-detail-title"
+      >
+        <div className="p-6">
+          <h2
+            id="delete-photo-detail-title"
+            className="text-lg font-bold tracking-tight text-ink"
+          >
+            {photo?.is_owner ? "Delete this photo?" : "Moderate: delete this photo?"}
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            {photo?.is_owner
+              ? "This action is permanent. The image asset and all its likes, comments, and critiques will be removed."
+              : "As an admin, you are about to permanently remove another user's work along with all its engagement data."}
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDeletePhoto} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete permanently"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </PageTransition>
   );
 }

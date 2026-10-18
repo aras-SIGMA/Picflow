@@ -38,7 +38,12 @@ export function AuthProvider({ children }) {
   async function login(payload) {
     const res = await apiLogin(payload);
     setToken(res.data.token);
-    setUser({ id_user: res.data.id_user, username: res.data.username, email: res.data.email });
+    setUser({
+      id_user: res.data.id_user,
+      username: res.data.username,
+      email: res.data.email,
+      role: res.data.role || "user",
+    });
     return res;
   }
 
@@ -46,7 +51,12 @@ export function AuthProvider({ children }) {
   async function register(payload) {
     const res = await apiRegister(payload);
     setToken(res.data.token);
-    setUser({ id_user: res.data.id_user, username: res.data.username, email: res.data.email });
+    setUser({
+      id_user: res.data.id_user,
+      username: res.data.username,
+      email: res.data.email,
+      role: res.data.role || "user",
+    });
     return res;
   }
 
