@@ -42,22 +42,47 @@ app.get("/api/realtime/stream", (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
 
-  res.write(`data: ${JSON.stringify({ event: "connected", timestamp: Date.now() })}\n\n`);
+  let closed = false;
+  let keepAliveInterval = null;
+  let unsubscribe = () => {};
 
-  const unsubscribe = subscribeLocalEvents(({ event, payload, timestamp }) => {
-    res.write(
+  function cleanup() {
+    if (closed) return;
+    closed = true;
+    if (keepAliveInterval) {
+      clearInterval(keepAliveInterval);
+      keepAliveInterval = null;
+    }
+    unsubscribe();
+  }
+
+  function safeWrite(chunk) {
+    if (closed || res.writableEnded || res.destroyed) {
+      cleanup();
+      return;
+    }
+    try {
+      res.write(chunk);
+    } catch {
+      cleanup();
+    }
+  }
+
+  safeWrite(`data: ${JSON.stringify({ event: "connected", timestamp: Date.now() })}\n\n`);
+
+  unsubscribe = subscribeLocalEvents(({ event, payload, timestamp }) => {
+    safeWrite(
       `event: ${event}\ndata: ${JSON.stringify({ ...payload, timestamp })}\n\n`
     );
   });
 
-  const keepAliveInterval = setInterval(() => {
-    res.write(": keepalive\n\n");
+  keepAliveInterval = setInterval(() => {
+    safeWrite(": keepalive\n\n");
   }, 25000);
 
-  req.on("close", () => {
-    clearInterval(keepAliveInterval);
-    unsubscribe();
-  });
+  req.on("close", cleanup);
+  req.on("error", cleanup);
+  res.on("error", cleanup);
 });
 
 // Endpoint test koneksi database Supabase

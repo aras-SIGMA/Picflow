@@ -366,7 +366,10 @@ router.get("/", optionalToken, async (req, res, next) => {
     }
 
     if (categoryId && categoryId !== "all") {
-      query = query.eq("category_id", Number(categoryId));
+      const parsedCatId = Number(categoryId);
+      if (Number.isInteger(parsedCatId) && parsedCatId > 0) {
+        query = query.eq("category_id", parsedCatId);
+      }
     }
 
     const { data, error } = await query;
@@ -473,8 +476,16 @@ router.post("/:id/like", verifyToken, async (req, res, next) => {
       const { error: insErr } = await supabase
         .from("likes")
         .insert({ photo_id: photoId, user_id: req.user.id });
-      if (insErr) return next(new Error(insErr.message));
-      isLiked = true;
+      if (insErr) {
+        if (insErr.code === "23505") {
+          // Idempotent: jika request paralel sudah menginsert, anggap berhasil disukai
+          isLiked = true;
+        } else {
+          return next(new Error(insErr.message));
+        }
+      } else {
+        isLiked = true;
+      }
     }
 
     // Hitung total like terkini
@@ -766,6 +777,22 @@ router.post("/:id/critiques", verifyToken, async (req, res, next) => {
       });
     }
 
+    // Cegah duplikasi: 1 pengguna hanya boleh memberikan 1 kritik per foto
+    const { data: existingCritique, error: existErr } = await supabase
+      .from("critiques")
+      .select("id")
+      .eq("photo_id", photoId)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    if (existErr) return next(new Error(existErr.message));
+    if (existingCritique) {
+      return res.status(409).json({
+        message: "Anda sudah memberikan kritik pada karya ini. Silakan sunting kritik Anda.",
+        id_critique: existingCritique.id,
+      });
+    }
+
     const {
       rating_composition,
       rating_lighting,
@@ -831,6 +858,109 @@ router.post("/:id/critiques", verifyToken, async (req, res, next) => {
     res.status(201).json({
       message: "Critique submitted successfully",
       data: { ...createdCritique, is_owner: true },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CRITIQUES: sunting kritik yang sudah ada (hanya oleh pembuatnya).
+router.put("/:id/critiques/:critiqueId", verifyToken, async (req, res, next) => {
+  try {
+    const validation = critiqueSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.issues.map((i) => i.message),
+      });
+    }
+
+    const { id: photoId, critiqueId } = req.params;
+
+    // Pastikan kritik ada dan milik user yang sedang login
+    const { data: existing, error: findErr } = await supabase
+      .from("critiques")
+      .select("id, user_id, photo_id")
+      .eq("id", critiqueId)
+      .eq("photo_id", photoId)
+      .maybeSingle();
+
+    if (findErr) return next(new Error(findErr.message));
+    if (!existing) {
+      return res.status(404).json({ message: "Critique not found" });
+    }
+
+    if (existing.user_id !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "Anda hanya dapat menyunting kritik milik Anda sendiri" });
+    }
+
+    const {
+      rating_composition,
+      rating_lighting,
+      rating_color,
+      rating_concept,
+      strengths,
+      improvements,
+    } = validation.data;
+
+    const { data: updatedData, error: updErr } = await supabase
+      .from("critiques")
+      .update({
+        rating_composition,
+        rating_lighting,
+        rating_color,
+        rating_concept,
+        strengths,
+        improvements,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", critiqueId)
+      .select(
+        "id, user_id, photo_id, rating_composition, rating_lighting, rating_color, rating_concept, strengths, improvements, created_at, updated_at, profiles(id, username, avatar_url)"
+      )
+      .single();
+
+    if (updErr) return next(new Error(updErr.message));
+
+    const overall = +(
+      (updatedData.rating_composition +
+        updatedData.rating_lighting +
+        updatedData.rating_color +
+        updatedData.rating_concept) /
+      4
+    ).toFixed(1);
+
+    const updatedCritique = {
+      id_critique: updatedData.id,
+      id_photo: updatedData.photo_id,
+      id_user: updatedData.user_id,
+      rating_composition: updatedData.rating_composition,
+      rating_lighting: updatedData.rating_lighting,
+      rating_color: updatedData.rating_color,
+      rating_concept: updatedData.rating_concept,
+      overall_score: overall,
+      strengths: updatedData.strengths,
+      improvements: updatedData.improvements,
+      created_at: updatedData.created_at,
+      updated_at: updatedData.updated_at,
+      user: {
+        id_user: updatedData.profiles?.id,
+        username: updatedData.profiles?.username,
+        avatar_url: updatedData.profiles?.avatar_url,
+      },
+    };
+
+    // Broadcast pembaharuan kritik real-time
+    broadcastEvent("critique:updated", {
+      photo_id: photoId,
+      critique: { ...updatedCritique, is_owner: false },
+    });
+
+    res.json({
+      message: "Critique updated successfully",
+      data: { ...updatedCritique, is_owner: true },
     });
   } catch (error) {
     next(error);
@@ -956,7 +1086,9 @@ router.put("/:id", verifyToken, upload.single("image"), async (req, res, next) =
       .from("photos")
       .update(updatePayload)
       .eq("id", req.params.id)
-      .select("*, categories(name)")
+      .select(
+        "*, categories(name), profiles(id, username, avatar_url), likes(count), comments(count)"
+      )
       .single();
 
     if (error) {
@@ -976,9 +1108,21 @@ router.put("/:id", verifyToken, upload.single("image"), async (req, res, next) =
         .catch(() => {});
     }
 
+    // Cek apakah user saat ini menyukai foto ini
+    const { data: userLike } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("photo_id", data.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
+
+    const isLiked = Boolean(userLike);
+    const serialized = serializePhoto(data, data.categories?.name, isLiked);
+    serialized.is_owner = true;
+
     res.json({
       message: "Photo updated",
-      data: serializePhoto(data, data.categories?.name),
+      data: serialized,
     });
   } catch (error) {
     await cleanupTemp(req.file);

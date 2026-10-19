@@ -309,13 +309,18 @@ CREATE TABLE public.critiques (
   strengths TEXT NOT NULL CHECK (char_length(strengths) BETWEEN 3 AND 2000),
   improvements TEXT NOT NULL CHECK (char_length(improvements) BETWEEN 3 AND 2000),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT uq_critiques_photo_user UNIQUE (photo_id, user_id)
 );
 
 CREATE INDEX idx_critiques_photo_id ON public.critiques(photo_id);
 CREATE INDEX idx_critiques_user_id ON public.critiques(user_id);
 CREATE INDEX idx_critiques_created_at ON public.critiques(created_at DESC);
 ```
+
+> **Catatan Validasi & Konkurensi**:
+> - Pasangan `(photo_id, user_id)` pada `critiques` bersifat unik (`1 pengguna = 1 ulasan`). Upaya review berulang ditolak backend dengan status `409 Conflict`, dan user diarahkan untuk memperbarui ulasan via `PUT /api/photos/:id/critiques/:critiqueId`.
+> - Pada interaksi `likes` dan `follows`, backend menangani error kode PostgreSQL `23505 (unique_violation)` secara idempoten guna mengantisipasi *rapid-click / network retry* tanpa memicu error 500 ke klien.
 
 ---
 

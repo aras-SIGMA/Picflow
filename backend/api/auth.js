@@ -54,6 +54,18 @@ router.post("/register", async (req, res, next) => {
 
     const { username, email, password } = validation.data;
 
+    // Cek apakah username sudah dipakai di profiles sebelum membuat auth user
+    const { data: existingProfile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (profileErr) return next(new Error(profileErr.message));
+    if (existingProfile) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
+
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,

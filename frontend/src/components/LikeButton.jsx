@@ -3,7 +3,7 @@
 // src/components/LikeButton.jsx
 // Tombol like dengan Optimistic UI update (<= 50ms), animasi spring framer-motion,
 // dan sinkronisasi real-time via usePhotoRealtime.
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { getToken, togglePhotoLike } from "@/lib/api";
@@ -25,6 +25,7 @@ export default function LikeButton({
   const [liked, setLiked] = useState(Boolean(initialLiked));
   const [count, setCount] = useState(Number(initialCount) || 0);
   const [loading, setLoading] = useState(false);
+  const lockRef = useRef(false);
   const toast = useToast();
 
   const isWhite = variant === "white";
@@ -49,12 +50,15 @@ export default function LikeButton({
   async function handleClick(e) {
     e.stopPropagation();
     e.preventDefault();
-    if (loading || !photoId) return;
+    if (lockRef.current || !photoId) return;
 
     if (!getToken()) {
       toast.info("Silakan masuk atau daftar untuk menyukai foto ini.");
       return;
     }
+
+    lockRef.current = true;
+    setLoading(true);
 
     // 1. Optimistic UI update dalam < 50ms
     const prevLiked = liked;
@@ -66,7 +70,6 @@ export default function LikeButton({
     setCount(nextCount);
     onLikeChange?.(nextLiked, nextCount);
 
-    setLoading(true);
     try {
       const res = await togglePhotoLike(photoId);
       if (res?.data) {
@@ -81,6 +84,7 @@ export default function LikeButton({
       onLikeChange?.(prevLiked, prevCount);
       toast.error(err.message || "Failed to like photo.");
     } finally {
+      lockRef.current = false;
       setLoading(false);
     }
   }

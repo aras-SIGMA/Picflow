@@ -52,6 +52,7 @@ PicFlow bertransformasi menjadi platform media sosial dan showcase fotografi kur
   - Klik tombol "Like" menerapkan optimistic UI update dalam $\le 50$ ms dan mensinkronisasi data ke backend/Supabase.
   - Perubahan jumlah like dan penambahan komentar baru ter-broadcast ke pengguna lain secara real-time via event stream (SSE / WebSocket).
   - Fitur follow/unfollow memperbarui feed tab "Following" secara real-time.
+  - Klik cepat beruntun (*rapid-click*) pada tombol Like dan Follow dilindungi *synchronous lock ref* pada level frontend; backend menangani potensi race-condition PostgreSQL `23505 (unique_violation)` secara idempoten tanpa melempar status `500`.
 
 #### US-04: Migrasi Database ke Cloud (Supabase PostgreSQL)
 - **Story**: As a system administrator, I want database records hosted on Supabase with Row Level Security (RLS) so that user data is reliable, relational, and natively reactive.
@@ -65,7 +66,9 @@ PicFlow bertransformasi menjadi platform media sosial dan showcase fotografi kur
   - Penilai memberikan skor numerik (skala 1-5) pada 4 pilar: Composition (Komposisi), Lighting (Pencahayaan), Color & Tone (Warna), dan Concept & Narrative (Konsep).
   - Form menyediakan kolom input terpisah untuk "Strengths" (Kekuatan karya) dan "Areas for Improvement" (Saran pengembangan).
   - Halaman foto menghitung agregat skor rata-rata per pilar dan skor keseluruhan secara otomatis.
-  - Penambahan dan penghapusan kritik ter-sinkronisasi instan via event real-time `critique:added` dan `critique:deleted`.
+  - Setiap pengguna dibatasi maksimal 1 ulasan kritik per karya foto guna menjaga integritas skor dan mencegah spamming rating.
+  - Pengguna yang telah memberikan kritik dapat menyunting (mengubah rating/masukan) ulasannya via `PUT /api/photos/:id/critiques/:critiqueId`.
+  - Penambahan, penyuntingan, dan penghapusan kritik ter-sinkronisasi instan via event real-time `critique:added`, `critique:updated`, dan `critique:deleted`.
 
 #### US-06: Editorial Showcase Landing Page & Ekosistem Kamera Calibrated
 - **Story**: As a guest visitor, I want an engaging editorial landing page with smooth motion and gear credibility so that I understand PicFlow's value proposition immediately.

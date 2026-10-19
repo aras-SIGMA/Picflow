@@ -56,8 +56,16 @@ router.post("/:id/follow", async (req, res, next) => {
           following_id: targetUserId,
         });
 
-      if (insErr) return next(new Error(insErr.message));
-      isFollowing = true;
+      if (insErr) {
+        if (insErr.code === "23505") {
+          // Idempotent: jika request paralel sudah menginsert, anggap berhasil difollow
+          isFollowing = true;
+        } else {
+          return next(new Error(insErr.message));
+        }
+      } else {
+        isFollowing = true;
+      }
     }
 
     // Hitung follower count terbaru

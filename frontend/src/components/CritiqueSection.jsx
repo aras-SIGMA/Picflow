@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Trash2,
   Plus,
+  Pencil,
   X,
   Send,
   SlidersHorizontal,
@@ -24,6 +25,7 @@ import {
 import {
   getPhotoCritiques,
   addPhotoCritique,
+  updatePhotoCritique,
   deletePhotoCritique,
 } from "@/lib/api";
 import { usePhotoRealtime } from "@/lib/realtime";
@@ -64,6 +66,7 @@ export default function CritiqueSection({
   });
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCritiqueId, setEditingCritiqueId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
@@ -85,6 +88,47 @@ export default function CritiqueSection({
   const isOwner = Boolean(
     user && (user.id_user === photoOwnerId || user.id === photoOwnerId)
   );
+
+  const myCritique = useMemo(() => {
+    if (!user) return null;
+    const currentUid = String(user.id_user || user.id || "");
+    if (!currentUid) return null;
+    return (
+      critiques.find(
+        (c) =>
+          String(c.id_user || c.user?.id_user || "") === currentUid ||
+          Boolean(c.is_owner && !c.pending)
+      ) || null
+    );
+  }, [critiques, user]);
+
+  function handleOpenCreate() {
+    setEditingCritiqueId(null);
+    setFormData({
+      rating_composition: 4,
+      rating_lighting: 4,
+      rating_color: 4,
+      rating_concept: 4,
+      strengths: "",
+      improvements: "",
+    });
+    setIsFormOpen(true);
+  }
+
+  function handleOpenEdit(target) {
+    const critiqueToEdit = target || myCritique;
+    if (!critiqueToEdit) return;
+    setEditingCritiqueId(critiqueToEdit.id_critique);
+    setFormData({
+      rating_composition: critiqueToEdit.rating_composition || 4,
+      rating_lighting: critiqueToEdit.rating_lighting || 4,
+      rating_color: critiqueToEdit.rating_color || 4,
+      rating_concept: critiqueToEdit.rating_concept || 4,
+      strengths: critiqueToEdit.strengths || "",
+      improvements: critiqueToEdit.improvements || "",
+    });
+    setIsFormOpen(true);
+  }
 
   // Muat kritik awal
   useEffect(() => {
@@ -155,6 +199,27 @@ export default function CritiqueSection({
       });
     },
 
+    onCritiqueUpdated: (payload) => {
+      if (!payload?.critique) return;
+      const updatedCritique = payload.critique;
+
+      setCritiques((prev) => {
+        const next = prev.map((c) => {
+          if (String(c.id_critique) === String(updatedCritique.id_critique)) {
+            return {
+              ...updatedCritique,
+              is_owner: Boolean(
+                user?.id_user && updatedCritique.id_user === user.id_user
+              ),
+            };
+          }
+          return c;
+        });
+        recalcStats(next);
+        return next;
+      });
+    },
+
     onCritiqueDeleted: (payload) => {
       if (!payload?.critique_id) return;
       setCritiques((prev) => {
@@ -220,7 +285,6 @@ export default function CritiqueSection({
     submittingRef.current = true;
     setSubmitting(true);
 
-    const tempId = createTempId();
     const overallScore = +(
       (formData.rating_composition +
         formData.rating_lighting +
@@ -229,6 +293,57 @@ export default function CritiqueSection({
       4
     ).toFixed(1);
 
+    // MODE EDIT KRITIK
+    if (editingCritiqueId) {
+      const prevCritiques = [...critiques];
+      const updatedList = critiques.map((c) => {
+        if (String(c.id_critique) === String(editingCritiqueId)) {
+          return {
+            ...c,
+            rating_composition: formData.rating_composition,
+            rating_lighting: formData.rating_lighting,
+            rating_color: formData.rating_color,
+            rating_concept: formData.rating_concept,
+            overall_score: overallScore,
+            strengths: formData.strengths.trim(),
+            improvements: formData.improvements.trim(),
+            updated_at: new Date().toISOString(),
+          };
+        }
+        return c;
+      });
+
+      setCritiques(updatedList);
+      recalcStats(updatedList);
+      setIsFormOpen(false);
+
+      try {
+        const res = await updatePhotoCritique(photoId, editingCritiqueId, formData);
+        if (res?.data) {
+          const saved = res.data;
+          setCritiques((prev) =>
+            prev.map((c) =>
+              String(c.id_critique) === String(editingCritiqueId)
+                ? { ...saved, is_owner: true }
+                : c
+            )
+          );
+          toast.success("Critique updated successfully!");
+          setEditingCritiqueId(null);
+        }
+      } catch (err) {
+        setCritiques(prevCritiques);
+        recalcStats(prevCritiques);
+        toast.error(err.message || "Failed to update critique.");
+      } finally {
+        submittingRef.current = false;
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // MODE TAMBAH KRITIK BARU
+    const tempId = createTempId();
     const optimisticCritique = {
       id_critique: tempId,
       id_photo: photoId,
@@ -342,13 +457,26 @@ export default function CritiqueSection({
                   toast.info("Please sign in or register to provide critique & feedback.");
                   return;
                 }
-                setIsFormOpen((prev) => !prev);
+                if (isFormOpen) {
+                  setIsFormOpen(false);
+                  setEditingCritiqueId(null);
+                } else {
+                  if (myCritique) {
+                    handleOpenEdit(myCritique);
+                  } else {
+                    handleOpenCreate();
+                  }
+                }
               }}
               className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer"
             >
               {isFormOpen ? (
                 <>
                   <X size={12} /> Cancel
+                </>
+              ) : myCritique ? (
+                <>
+                  <Pencil size={12} /> Edit Your Critique
                 </>
               ) : (
                 <>
@@ -435,7 +563,11 @@ export default function CritiqueSection({
           >
             <div className="flex items-center gap-1.5 pb-2.5 text-xs font-bold text-stone-900 border-b border-blue-100">
               <SlidersHorizontal size={14} className="text-blue-600" />
-              <span>Submit 4-Pillar Constructive Critique</span>
+              <span>
+                {editingCritiqueId
+                  ? "Edit 4-Pillar Constructive Critique"
+                  : "Submit 4-Pillar Constructive Critique"}
+              </span>
             </div>
 
             {/* Input Slider / Rating 4 Pilar */}
@@ -532,7 +664,9 @@ export default function CritiqueSection({
                 ) : (
                   <Send size={13} />
                 )}
-                <span>Submit Critique</span>
+                <span>
+                  {editingCritiqueId ? "Update Critique" : "Submit Critique"}
+                </span>
               </button>
             </div>
           </motion.form>
@@ -604,6 +738,17 @@ export default function CritiqueSection({
                         <Star size={10} className="fill-blue-600 text-blue-600" />
                         {Number(c.overall_score || 0).toFixed(1)}
                       </span>
+                      {isCritiqueOwner && !c.pending && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(c)}
+                          aria-label="Edit critique"
+                          title="Edit your critique"
+                          className="transition-colors p-0.5 cursor-pointer text-stone-400 hover:text-blue-600"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
                       {canDeleteCritique && !c.pending && (
                         <button
                           type="button"

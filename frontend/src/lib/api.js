@@ -110,6 +110,11 @@ export const getPhotoCritiques = (id) =>
   apiFetch(`/photos/${id}/critiques`);
 export const addPhotoCritique = (id, critiqueData) =>
   apiFetch(`/photos/${id}/critiques`, { method: "POST", body: critiqueData });
+export const updatePhotoCritique = (photoId, critiqueId, critiqueData) =>
+  apiFetch(`/photos/${photoId}/critiques/${critiqueId}`, {
+    method: "PUT",
+    body: critiqueData,
+  });
 export const deletePhotoCritique = (photoId, critiqueId) =>
   apiFetch(`/photos/${photoId}/critiques/${critiqueId}`, { method: "DELETE" });
 
