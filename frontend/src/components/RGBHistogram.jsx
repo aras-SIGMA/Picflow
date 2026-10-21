@@ -212,28 +212,28 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
 
   return (
     <div
-      className={`rounded-2xl border border-stone-800 bg-[#0F1115] p-4 text-white shadow-xl ${className}`}
+      className={`rounded-2xl border border-gray-200/90 bg-[#FAF8F5] p-4 text-stone-900 shadow-2xs ${className}`}
     >
       {/* Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800/80 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-stone-800 text-stone-300">
-            <Gauge size={12} className="text-blue-400" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+            <Gauge size={12} className="text-blue-600" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-300">
+          <span className="text-xs font-bold uppercase tracking-wider text-stone-800">
             RGB Tonal Histogram
           </span>
         </div>
 
         {/* Channel Switcher */}
-        <div className="inline-flex rounded-lg border border-stone-800 bg-stone-900/90 p-0.5 text-[11px] font-semibold">
+        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 text-[11px] font-semibold shadow-2xs">
           <button
             type="button"
             onClick={() => setActiveChannel("rgb")}
             className={`rounded-md px-2 py-0.5 transition-all ${
               activeChannel === "rgb"
-                ? "bg-stone-700 text-white shadow-xs"
-                : "text-stone-400 hover:text-stone-200"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-500 hover:text-stone-900 hover:bg-gray-50"
             }`}
           >
             RGB
@@ -243,8 +243,8 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             onClick={() => setActiveChannel("luma")}
             className={`rounded-md px-2 py-0.5 transition-all ${
               activeChannel === "luma"
-                ? "bg-stone-700 text-white shadow-xs"
-                : "text-stone-400 hover:text-stone-200"
+                ? "bg-stone-900 text-white shadow-xs"
+                : "text-stone-500 hover:text-stone-900 hover:bg-gray-50"
             }`}
           >
             Luma
@@ -254,8 +254,8 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             onClick={() => setActiveChannel("r")}
             className={`rounded-md px-2 py-0.5 transition-all ${
               activeChannel === "r"
-                ? "bg-red-600/80 text-white shadow-xs"
-                : "text-red-400 hover:text-red-300"
+                ? "bg-red-600 text-white shadow-xs"
+                : "text-red-600 hover:bg-red-50"
             }`}
           >
             R
@@ -265,8 +265,8 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             onClick={() => setActiveChannel("g")}
             className={`rounded-md px-2 py-0.5 transition-all ${
               activeChannel === "g"
-                ? "bg-emerald-600/80 text-white shadow-xs"
-                : "text-emerald-400 hover:text-emerald-300"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-emerald-600 hover:bg-emerald-50"
             }`}
           >
             G
@@ -276,8 +276,8 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             onClick={() => setActiveChannel("b")}
             className={`rounded-md px-2 py-0.5 transition-all ${
               activeChannel === "b"
-                ? "bg-blue-600/80 text-white shadow-xs"
-                : "text-blue-400 hover:text-blue-300"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-blue-600 hover:bg-blue-50"
             }`}
           >
             B
@@ -288,17 +288,17 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
       {/* Main Graph Stage */}
       <div className="relative mt-3">
         {status === "loading" ? (
-          <div className="flex h-32 w-full items-center justify-center rounded-xl border border-stone-800/80 bg-stone-950/60">
+          <div className="flex h-32 w-full items-center justify-center rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center gap-2 text-xs text-stone-500">
               <span className="h-2 w-2 animate-ping rounded-full bg-blue-500" />
               <span>Analyzing color channels...</span>
             </div>
           </div>
         ) : status === "error" || !histogramData ? (
-          <div className="flex h-32 w-full flex-col items-center justify-center rounded-xl border border-dashed border-stone-800 bg-stone-950/40 p-4 text-center">
-            <AlertCircle size={20} className="text-stone-500 mb-1" />
-            <p className="text-xs text-stone-400 font-medium">Histogram unavailable</p>
-            <p className="text-[10px] text-stone-600 mt-0.5">
+          <div className="flex h-32 w-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center">
+            <AlertCircle size={20} className="text-stone-400 mb-1" />
+            <p className="text-xs text-stone-600 font-medium">Histogram unavailable</p>
+            <p className="text-[10px] text-stone-400 mt-0.5">
               Cross-origin security or invalid image asset.
             </p>
           </div>
@@ -307,14 +307,14 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             ref={containerRef}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            className="group relative h-32 w-full cursor-crosshair overflow-hidden rounded-xl border border-stone-800 bg-black/90 p-1 select-none"
+            className="group relative h-32 w-full cursor-crosshair overflow-hidden rounded-xl border border-gray-200/90 bg-white p-1 select-none shadow-inner"
           >
             {/* Background Grid Lines (25%, 50%, 75% Tonal Range) */}
             <div className="pointer-events-none absolute inset-0 flex justify-between px-1">
-              <div className="h-full w-px border-r border-dashed border-stone-800/60" />
-              <div className="h-full w-px border-r border-dashed border-stone-800/60" />
-              <div className="h-full w-px border-r border-dashed border-stone-800/60" />
-              <div className="h-full w-px border-r border-dashed border-stone-800/60" />
+              <div className="h-full w-px border-r border-dashed border-gray-200" />
+              <div className="h-full w-px border-r border-dashed border-gray-200" />
+              <div className="h-full w-px border-r border-dashed border-gray-200" />
+              <div className="h-full w-px border-r border-dashed border-gray-200" />
             </div>
 
             {/* SVG Visual Curves */}
@@ -325,48 +325,48 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             >
               <defs>
                 <linearGradient id="grad-red" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.45" />
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.30" />
                   <stop offset="100%" stopColor="#EF4444" stopOpacity="0.02" />
                 </linearGradient>
                 <linearGradient id="grad-green" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.45" />
+                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.30" />
                   <stop offset="100%" stopColor="#10B981" stopOpacity="0.02" />
                 </linearGradient>
                 <linearGradient id="grad-blue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.45" />
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.30" />
                   <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.02" />
                 </linearGradient>
                 <linearGradient id="grad-luma" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F3F4F6" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#9CA3AF" stopOpacity="0.05" />
+                  <stop offset="0%" stopColor="#475569" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.03" />
                 </linearGradient>
               </defs>
 
-              {/* RGB Overlaid (Screen blend mode simulates light addition) */}
+              {/* RGB Overlaid (Multiply blend mode simulates transparent color ink overlay on paper) */}
               {activeChannel === "rgb" && (
-                <g style={{ mixBlendMode: "screen" }}>
+                <g style={{ mixBlendMode: "multiply" }}>
                   {paths?.r && (
                     <path
                       d={paths.r.fill}
                       fill="url(#grad-red)"
-                      stroke="#EF4444"
-                      strokeWidth="1.2"
+                      stroke="#DC2626"
+                      strokeWidth="1.3"
                     />
                   )}
                   {paths?.g && (
                     <path
                       d={paths.g.fill}
                       fill="url(#grad-green)"
-                      stroke="#10B981"
-                      strokeWidth="1.2"
+                      stroke="#059669"
+                      strokeWidth="1.3"
                     />
                   )}
                   {paths?.b && (
                     <path
                       d={paths.b.fill}
                       fill="url(#grad-blue)"
-                      stroke="#3B82F6"
-                      strokeWidth="1.2"
+                      stroke="#2563EB"
+                      strokeWidth="1.3"
                     />
                   )}
                 </g>
@@ -377,7 +377,7 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
                 <path
                   d={paths.l.fill}
                   fill="url(#grad-luma)"
-                  stroke="#E5E7EB"
+                  stroke="#334155"
                   strokeWidth="1.5"
                 />
               )}
@@ -387,7 +387,7 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
                 <path
                   d={paths.r.fill}
                   fill="url(#grad-red)"
-                  stroke="#EF4444"
+                  stroke="#DC2626"
                   strokeWidth="1.5"
                 />
               )}
@@ -397,7 +397,7 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
                 <path
                   d={paths.g.fill}
                   fill="url(#grad-green)"
-                  stroke="#10B981"
+                  stroke="#059669"
                   strokeWidth="1.5"
                 />
               )}
@@ -407,7 +407,7 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
                 <path
                   d={paths.b.fill}
                   fill="url(#grad-blue)"
-                  stroke="#3B82F6"
+                  stroke="#2563EB"
                   strokeWidth="1.5"
                 />
               )}
@@ -419,7 +419,7 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
                   y1={0}
                   x2={hoverIndex}
                   y2={VIEW_HEIGHT}
-                  stroke="#FFFFFF"
+                  stroke="#334155"
                   strokeWidth="1"
                   strokeDasharray="2 2"
                   opacity="0.8"
@@ -430,31 +430,31 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
             {/* Hover Tooltip Overlay */}
             {hoveredValues && (
               <div
-                className="pointer-events-none absolute top-2 rounded-lg border border-stone-700 bg-stone-900/95 px-2.5 py-1 text-[10px] shadow-lg backdrop-blur-sm"
+                className="pointer-events-none absolute top-2 rounded-lg border border-gray-200 bg-white/95 px-2.5 py-1 text-[10px] shadow-md backdrop-blur-xs"
                 style={{
                   left: hoverIndex > 140 ? "auto" : `${(hoverIndex / 255) * 85 + 5}%`,
                   right: hoverIndex > 140 ? `${100 - (hoverIndex / 255) * 100}%` : "auto",
                 }}
               >
-                <div className="flex items-center gap-2 font-bold text-white">
+                <div className="flex items-center gap-2 font-bold text-stone-900">
                   <span>{hoveredValues.index}</span>
-                  <span className="text-stone-400 font-normal">({hoveredValues.zone})</span>
+                  <span className="text-stone-500 font-normal">({hoveredValues.zone})</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-[9px] font-mono">
                   {activeChannel === "rgb" ? (
                     <>
-                      <span className="text-red-400">R:{hoveredValues.rVal}%</span>
-                      <span className="text-emerald-400">G:{hoveredValues.gVal}%</span>
-                      <span className="text-blue-400">B:{hoveredValues.bVal}%</span>
+                      <span className="text-red-600 font-semibold">R:{hoveredValues.rVal}%</span>
+                      <span className="text-emerald-700 font-semibold">G:{hoveredValues.gVal}%</span>
+                      <span className="text-blue-600 font-semibold">B:{hoveredValues.bVal}%</span>
                     </>
                   ) : activeChannel === "luma" ? (
-                    <span className="text-stone-200">Luma: {hoveredValues.lVal}%</span>
+                    <span className="text-stone-800 font-semibold">Luma: {hoveredValues.lVal}%</span>
                   ) : activeChannel === "r" ? (
-                    <span className="text-red-400">Red: {hoveredValues.rVal}%</span>
+                    <span className="text-red-600 font-semibold">Red: {hoveredValues.rVal}%</span>
                   ) : activeChannel === "g" ? (
-                    <span className="text-emerald-400">Green: {hoveredValues.gVal}%</span>
+                    <span className="text-emerald-700 font-semibold">Green: {hoveredValues.gVal}%</span>
                   ) : (
-                    <span className="text-blue-400">Blue: {hoveredValues.bVal}%</span>
+                    <span className="text-blue-600 font-semibold">Blue: {hoveredValues.bVal}%</span>
                   )}
                 </div>
               </div>
@@ -463,12 +463,12 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
         )}
 
         {/* Tonal Range Gradient Bar (0 = Black, 255 = White) */}
-        <div className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full border border-stone-800">
-          <div className="h-full w-full bg-gradient-to-r from-black via-stone-500 to-white opacity-80" />
+        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full border border-gray-300 shadow-2xs">
+          <div className="h-full w-full bg-gradient-to-r from-black via-stone-400 to-white" />
         </div>
 
         {/* Zone Labels */}
-        <div className="mt-1 flex justify-between text-[9px] font-semibold text-stone-500">
+        <div className="mt-1 flex justify-between text-[9px] font-semibold text-stone-400">
           <span>0 (Blacks)</span>
           <span>Shadows</span>
           <span>Midtones</span>
@@ -479,28 +479,30 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
 
       {/* Exposure Metrics & Clipping Warnings */}
       {histogramData && (
-        <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-stone-800/80 pt-3 text-[11px]">
+        <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-gray-200/80 pt-3 text-[11px]">
           {/* Mean Brightness */}
-          <div className="rounded-lg bg-stone-900/60 p-2 border border-stone-800/60">
-            <span className="text-[10px] text-stone-400">Avg Luminance</span>
-            <p className="mt-0.5 font-mono text-xs font-bold text-stone-200">
+          <div className="rounded-xl bg-white p-2 border border-gray-200 shadow-2xs">
+            <span className="text-[10px] font-medium text-stone-400">Avg Luminance</span>
+            <p className="mt-0.5 font-mono text-xs font-bold text-stone-800">
               {histogramData.avgLuma} / 255
             </p>
           </div>
 
           {/* Shadow Clipping Warning */}
           <div
-            className={`rounded-lg p-2 border ${
+            className={`rounded-xl p-2 border shadow-2xs ${
               Number(histogramData.shadowClippedPct) > 1.0
-                ? "bg-blue-950/40 border-blue-900/60 text-blue-200"
-                : "bg-stone-900/60 border-stone-800/60 text-stone-400"
+                ? "bg-blue-50 border-blue-200 text-blue-900"
+                : "bg-white border-gray-200 text-stone-700"
             }`}
           >
-            <div className="flex items-center gap-1 text-[10px]">
+            <div className="flex items-center gap-1 text-[10px] font-medium text-stone-400">
               {Number(histogramData.shadowClippedPct) > 1.0 && (
-                <AlertTriangle size={10} className="text-blue-400 shrink-0" />
+                <AlertTriangle size={10} className="text-blue-600 shrink-0" />
               )}
-              <span>Shadow Clip</span>
+              <span className={Number(histogramData.shadowClippedPct) > 1.0 ? "text-blue-700" : ""}>
+                Shadow Clip
+              </span>
             </div>
             <p className="mt-0.5 font-mono text-xs font-bold">
               {histogramData.shadowClippedPct}%
@@ -509,17 +511,19 @@ export default function RGBHistogram({ photo, imageUrl, className = "" }) {
 
           {/* Highlight Clipping Warning */}
           <div
-            className={`rounded-lg p-2 border ${
+            className={`rounded-xl p-2 border shadow-2xs ${
               Number(histogramData.highlightClippedPct) > 1.0
-                ? "bg-red-950/40 border-red-900/60 text-red-200"
-                : "bg-stone-900/60 border-stone-800/60 text-stone-400"
+                ? "bg-red-50 border-red-200 text-red-900"
+                : "bg-white border-gray-200 text-stone-700"
             }`}
           >
-            <div className="flex items-center gap-1 text-[10px]">
+            <div className="flex items-center gap-1 text-[10px] font-medium text-stone-400">
               {Number(histogramData.highlightClippedPct) > 1.0 && (
-                <AlertTriangle size={10} className="text-red-400 shrink-0" />
+                <AlertTriangle size={10} className="text-red-600 shrink-0" />
               )}
-              <span>Highlight Clip</span>
+              <span className={Number(histogramData.highlightClippedPct) > 1.0 ? "text-red-700" : ""}>
+                Highlight Clip
+              </span>
             </div>
             <p className="mt-0.5 font-mono text-xs font-bold">
               {histogramData.highlightClippedPct}%
