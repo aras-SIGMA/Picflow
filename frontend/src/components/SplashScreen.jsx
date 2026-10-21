@@ -3,12 +3,11 @@
 // src/components/SplashScreen.jsx
 // Splash Screen sinematik pembuka PicFlow:
 // - Kanvas warm cream #FFFDF6
-// - Animasi aperture lensa 4 blade sRGB yang membuka secara presisi
-// - Wordmark "PicFlow" dengan micro dots kalibrasi R-G-B
+// - Animasi 3 batang histogram RGB prism (Merah #D62B2B, Hijau #16A34A, Biru #2563EB)
+// - Wordmark "Pic" + "F"(Red) + "l"(Green) + "ow"(Blue) & subtext "PHOTOGRAPHY"
 // - Transisi keluar mulus (fade out & scale up)
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import Logo from "@/components/ui/Logo";
 
 export default function SplashScreen({ onFinish }) {
   const [progress, setProgress] = useState(0);
@@ -56,60 +55,98 @@ export default function SplashScreen({ onFinish }) {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="relative flex flex-col items-center"
       >
-        {/* Shutter Blade Animation Ring */}
+        {/* Histogram RGB Prism Animated Mark */}
         <div className="relative flex items-center justify-center">
           {/* Cincin luar pulse berkelanjutan */}
           <motion.div
             initial={{ scale: 0.85, opacity: 0.1 }}
-            animate={{ scale: [0.85, 1.25, 0.85], opacity: [0.15, 0.45, 0.15] }}
+            animate={{ scale: [0.85, 1.25, 0.85], opacity: [0.15, 0.35, 0.15] }}
             transition={{ duration: 2.4, ease: "easeInOut", repeat: Infinity }}
-            className="absolute -inset-5 rounded-full border border-blue-600/30"
+            className="absolute -inset-7 rounded-3xl border border-blue-600/20"
           />
 
-          {/* Logo Utama Aperture */}
-          <Logo variant="mark" size={76} />
+          <svg
+            width="68"
+            height="76"
+            viewBox="0 0 54 60"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="PicFlow Logo"
+          >
+            {/* Red Bar */}
+            <motion.rect
+              x="0"
+              y="0"
+              width="14"
+              height="60"
+              rx="7"
+              fill="#D62B2B"
+              initial={{ scaleY: 0.2, originY: 1, opacity: 0 }}
+              animate={{ scaleY: [0.2, 1, 0.9, 1], opacity: 1 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+            />
+            {/* Green Bar */}
+            <motion.rect
+              x="20"
+              y="10"
+              width="14"
+              height="50"
+              rx="7"
+              fill="#16A34A"
+              initial={{ scaleY: 0.2, originY: 1, opacity: 0 }}
+              animate={{ scaleY: [0.2, 1, 0.92, 1], opacity: 1 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
+            />
+            {/* Blue Bar */}
+            <motion.rect
+              x="40"
+              y="4"
+              width="14"
+              height="56"
+              rx="7"
+              fill="#2563EB"
+              initial={{ scaleY: 0.2, originY: 1, opacity: 0 }}
+              animate={{ scaleY: [0.2, 1, 0.95, 1], opacity: 1 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+            />
+          </svg>
         </div>
 
         {/* Wordmark PicFlow */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.5, ease: "easeOut" }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
           className="mt-6 flex flex-col items-center"
         >
           <div className="flex items-baseline text-2xl font-extrabold tracking-tight">
-            <span className="text-stone-900">Pic</span>
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  "linear-gradient(90deg, #EF4444 0%, #F97316 35%, #10B981 70%, #3B82F6 100%)",
-              }}
-            >
-              Flow
-            </span>
+            <span className="text-[#111318]">Pic</span>
+            <span style={{ color: "#D62B2B" }}>F</span>
+            <span style={{ color: "#16A34A" }}>l</span>
+            <span style={{ color: "#2563EB" }}>ow</span>
           </div>
 
-          {/* Micro dots R-G-B & Tagline */}
+          {/* Subtext PHOTOGRAPHY & Tri-color Dots */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.45, duration: 0.4 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
             className="mt-2.5 flex items-center gap-2"
           >
             <span className="flex items-center gap-1" aria-hidden="true">
-              <i className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
-              <i className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-              <i className="h-1.5 w-1.5 rounded-full bg-[#3B82F6]" />
+              <i className="h-1.5 w-1.5 rounded-full bg-[#D62B2B]" />
+              <i className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
+              <i className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
             </span>
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
-              sRGB Standard &amp; Craft
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[3.5px] text-[#888888]">
+              PHOTOGRAPHY
             </span>
           </motion.div>
         </motion.div>
       </motion.div>
 
-      {/* Indikator progress bar gradasi halus spektrum PicFlow (Tersinkronisasi 5 Detik) */}
+      {/* Indikator progress bar gradasi halus spektrum PicFlow */}
       <div className="absolute bottom-16 flex flex-col items-center gap-2">
         <div className="relative h-2.5 w-56 sm:w-64 overflow-hidden rounded-full border border-[#E8DEC9] bg-[#EFE7D8]/80 shadow-inner">
           <div
@@ -117,12 +154,12 @@ export default function SplashScreen({ onFinish }) {
             style={{
               width: `${progress}%`,
               backgroundImage:
-                "linear-gradient(90deg, #475569 0%, #64748B 12%, #EF4444 32%, #F97316 48%, #10B981 70%, #38BDF8 86%, #3B82F6 100%)",
+                "linear-gradient(90deg, #D62B2B 0%, #16A34A 50%, #2563EB 100%)",
             }}
           />
         </div>
         <div className="flex w-56 sm:w-64 items-center justify-between font-mono text-[11px] text-stone-500">
-          <span>Loading sRGB calibration...</span>
+          <span>Calibrating RGB channels...</span>
           <span className="font-semibold text-stone-700">{progress}%</span>
         </div>
       </div>
