@@ -11,7 +11,7 @@
 //    - Dark Showcase Container (Sensor & Format RAW ecosystem)
 //    - Editorial Curator Quote
 //    - 3-Column Statistics
-//    - Preview Carousel Marquee Foto Format Landscape (Pengganti galeri lama)
+//    - Filmstrip Contact Sheet 35mm Analog (Kurasi Proof Frame, Perforasi Sprocket & EXIF)
 //    - Bottom Call-to-Action Banner
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,7 @@ import Lightbox from "@/components/Lightbox";
 import Skeleton from "@/components/ui/Skeleton";
 import SplashScreen from "@/components/SplashScreen";
 import LandingPage from "@/components/LandingPage";
-import LandscapePhotoCarousel from "@/components/LandscapePhotoCarousel";
+import FilmstripContactSheet from "@/components/FilmstripContactSheet";
 import { PageTransition } from "@/components/ui/Motion";
 
 export default function RootGuestHomePage() {
@@ -80,7 +80,7 @@ export default function RootGuestHomePage() {
           setPhotos(pRes.data || []);
         }
       } catch {
-        // Fallback di LandscapePhotoCarousel tetap menjamin tampilan sempurna
+        // Fallback di FilmstripContactSheet tetap menjamin tampilan sempurna
       } finally {
         if (active) setFetching(false);
       }
@@ -118,8 +118,8 @@ export default function RootGuestHomePage() {
           ) : (
             <PageTransition key="guest-landing-main">
               <LandingPage>
-                {/* Preview Carousel Marquee Foto Format Landscape */}
-                <LandscapePhotoCarousel
+                {/* Filmstrip Contact Sheet 35mm Analog */}
+                <FilmstripContactSheet
                   photos={photos}
                   onOpenPhoto={setSelected}
                 />
