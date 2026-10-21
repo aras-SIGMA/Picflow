@@ -29,6 +29,7 @@ export default function PhotoCard({
   const src = photo.medium_url || fileUrl(photo.image_url);
   const aspect = ASPECTS[Math.abs(Number(photo.id_photo) || 0) % ASPECTS.length];
 
+  const creatorId = photo.creator?.id_user || photo.id_user || null;
   const creatorName = photo.creator?.username || null;
   const creatorAvatar = photo.creator?.avatar_url || null;
 
@@ -116,7 +117,16 @@ export default function PhotoCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-ink">{photo.title}</p>
           <div className="mt-0.5 flex items-center gap-2 text-[11px] text-faint">
-            {creatorName && <span>@{creatorName}</span>}
+            {creatorName && creatorId ? (
+              <Link
+                href={`/account/${creatorId}`}
+                className="hover:text-blue-600 transition-colors font-medium truncate"
+              >
+                @{creatorName}
+              </Link>
+            ) : creatorName ? (
+              <span>@{creatorName}</span>
+            ) : null}
             <span>·</span>
             <span className="inline-flex items-center gap-1">
               <MessageSquare size={11} />

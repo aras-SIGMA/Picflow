@@ -1,0 +1,56 @@
+PIC FLOW — BRAND GUIDELINES
+============================
+
+LOGO
+----
+Wordmark: "Pic" (bold, dark/white) + "Flow" (bold, RGB tri-color)
+Subtext: PHOTOGRAPHY (optional, tracking +3.5, muted gray)
+Icon: Three vertical bars — histogram / RGB prism
+
+COLORS
+------
+Primary RGB (Light mode):
+  Red   #D62B2B
+  Green #16A34A
+  Blue  #2563EB
+
+Primary RGB (Dark mode):
+  Red   #F05555
+  Green #34D672
+  Blue  #60A5FA
+
+Text:
+  Dark background text  #111318
+  Light background text #F5F5F5
+  Subtext               #999999
+
+TYPOGRAPHY
+----------
+Font: Inter (fallback: system-ui, sans-serif)
+Wordmark weight: 800 (Extra Bold)
+Subtext weight: 400, letter-spacing 3.5px, ALL CAPS
+
+ICON SIZES
+----------
+64px  — App icon, large UI
+48px  — App icon, medium
+32px  — Toolbar, navigation
+20px  — Favicon, small UI
+
+USAGE RULES
+-----------
+- Always keep 3 colors as brand identity — do not remove or swap
+- "Flow" letter colors: F=Red, l=Green, ow=Blue
+- Minimum clear space around logo: 1× icon height on all sides
+- Do not stretch, rotate, or recolor the bars
+- Subtext "PHOTOGRAPHY" is optional for compact usage
+
+FILES INCLUDED
+--------------
+picflow-wordmark-light.svg   — Full logo, light background
+picflow-wordmark-dark.svg    — Full logo, dark background
+picflow-icon-64.svg          — App icon 64×64
+picflow-icon-48.svg          — App icon 48×48
+picflow-icon-32.svg          — Icon 32×32
+picflow-favicon-20.svg       — Favicon 20×20
+picflow-brand-guidelines.txt — This file

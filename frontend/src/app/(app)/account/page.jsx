@@ -10,10 +10,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderPlus, ImagePlus, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  Camera,
+  FolderPlus,
+  ImagePlus,
+  LogOut,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  TrendingUp,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import {
   getToken,
   getMe,
+  updateProfile,
   listCategories,
   createCategory,
   deleteCategory,
@@ -42,7 +54,7 @@ import {
 import { fadeUp } from "@/components/ui/motion";
 
 export default function AccountPage() {
-  const { logout } = useAuth();
+  const { logout, setUser } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
@@ -53,7 +65,16 @@ export default function AccountPage() {
   const [profileFile, setProfileFile] = useState(null);
   const [profilePreview, setProfilePreview] = useState("");
   const profilePreviewUrlRef = useRef("");
+  const profileInputRef = useRef(null);
   const [profileBusy, setProfileBusy] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editFullName, setEditFullName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
@@ -121,30 +142,31 @@ export default function AccountPage() {
     setProfilePreview("");
   }
 
-  function handleProfileFileChange(event) {
-    const selectedFile = event.target.files?.[0] || null;
-    setError("");
+  function openAvatarModal() {
+    setAvatarError("");
+    setAvatarModalOpen(true);
+  }
 
-    if (!selectedFile) {
-      setProfileFile(null);
-      clearProfilePreview();
-      return;
-    }
+  function closeAvatarModal() {
+    if (profileBusy) return;
+    setAvatarModalOpen(false);
+    setProfileFile(null);
+    clearProfilePreview();
+    setAvatarError("");
+  }
+
+  function handleAvatarSelect(selectedFile) {
+    setAvatarError("");
+    if (!selectedFile) return;
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(selectedFile.type)) {
-      setProfileFile(null);
-      clearProfilePreview();
-      event.target.value = "";
-      setError("Please use JPG, PNG, WEBP, or GIF image.");
+      setAvatarError("Please use a JPG, PNG, WEBP, or GIF image.");
       return;
     }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
-      setProfileFile(null);
-      clearProfilePreview();
-      event.target.value = "";
-      setError("Profile image size must be under 5MB.");
+      setAvatarError("Profile image size must be under 5MB.");
       return;
     }
 
@@ -156,11 +178,11 @@ export default function AccountPage() {
   }
 
   async function handleProfilePictureSubmit(event) {
-    event.preventDefault();
-    setError("");
+    if (event) event.preventDefault();
+    setAvatarError("");
 
     if (!profileFile) {
-      setError("Please choose a profile image first.");
+      setAvatarError("Please choose a profile image first.");
       return;
     }
 
@@ -175,15 +197,62 @@ export default function AccountPage() {
       }));
       setProfileFile(null);
       clearProfilePreview();
+      setAvatarModalOpen(false);
       toast.success("Profile picture updated successfully.");
     } catch (err) {
       if (err.status === 401) {
         logout();
         return;
       }
-      setError(err.errors?.join(", ") || err.message);
+      setAvatarError(err.errors?.join(", ") || err.message);
     } finally {
       setProfileBusy(false);
+    }
+  }
+
+  function openEditProfile() {
+    setEditFullName(profile?.full_name || "");
+    setEditBio(profile?.bio || "");
+    setEditUsername(profile?.username || "");
+    setEditError("");
+    setEditProfileOpen(true);
+  }
+
+  async function handleSaveProfile(event) {
+    if (event) event.preventDefault();
+    setEditError("");
+    setEditBusy(true);
+
+    try {
+      const response = await updateProfile({
+        full_name: editFullName.trim() || null,
+        bio: editBio.trim() || null,
+        username: editUsername.trim() || profile?.username,
+      });
+
+      setProfile((current) => ({
+        ...current,
+        ...response.data,
+      }));
+
+      if (setUser) {
+        setUser((prev) => ({
+          ...prev,
+          username: response.data.username,
+          full_name: response.data.full_name,
+        }));
+      }
+
+      setEditProfileOpen(false);
+      toast.success("Profile information updated successfully.");
+    } catch (err) {
+      if (err.status === 401) {
+        logout();
+        return;
+      }
+      setEditError(err.errors?.join(", ") || err.message);
+    } finally {
+      setEditBusy(false);
     }
   }
 
@@ -302,54 +371,49 @@ export default function AccountPage() {
             {/* Glow sebagai anak (pointer-events:none tidak di-inherit) */}
             <div aria-hidden="true" className="hero-glow" />
             <div className="relative flex flex-wrap items-center gap-4">
-              {/* Avatar dengan ring gradient + upload foto profil */}
-              <form onSubmit={handleProfilePictureSubmit} className="group relative shrink-0">
-                <div className="rounded-full bg-gradient-to-tr from-[var(--accent)] via-[var(--accent-2)] to-transparent p-[2px]">
-                  <div className="rounded-full bg-[var(--bg)] p-[2px]">
-                    {profilePreview || profile.profile_picture_url ? (
-                      // Preview blob & URL Cloudinary memakai img biasa.
+              {/* Avatar dengan ring gradient brand baru + trigger modal upload */}
+              <div className="relative shrink-0 group">
+                <button
+                  type="button"
+                  onClick={openAvatarModal}
+                  aria-label="Change profile picture"
+                  className="relative block h-20 w-20 sm:h-24 sm:w-24 rounded-full p-[2.5px] bg-gradient-to-tr from-[#D62B2B] via-[#16A34A] to-[#2563EB] shadow-card transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                >
+                  <div className="relative h-full w-full rounded-full bg-[#FFFDF6] p-[2px] overflow-hidden">
+                    {profile.profile_picture_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={
-                          profilePreview ||
-                          buildCloudinaryUrl(profile.profile_picture_url, {
-                            width: 128,
-                            crop: "fill",
-                          })
-                        }
+                        src={buildCloudinaryUrl(profile.profile_picture_url, {
+                          width: 256,
+                          crop: "fill",
+                        })}
                         alt="Profile picture"
-                        className="h-14 w-14 rounded-full object-cover"
+                        className="h-full w-full rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface)] text-lg font-bold text-ink">
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-[#F5EFE6] text-2xl sm:text-3xl font-extrabold text-stone-800">
                         {profile.username?.charAt(0).toUpperCase()}
                       </div>
                     )}
+
+                    {/* Hover Camera Overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 backdrop-blur-[1px]">
+                      <Camera size={18} />
+                      <span className="mt-0.5 text-[10px] font-medium tracking-tight">Edit</span>
+                    </div>
                   </div>
-                </div>
-                <label
-                  htmlFor="profile-picture"
-                  className="absolute -bottom-1 -right-1 cursor-pointer rounded-full border border-line bg-[var(--surface)] px-2.5 py-1 text-[10px] font-medium text-muted transition-colors hover:text-ink"
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAvatarModal}
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#DCD0BE] bg-[#FFFDF6] text-stone-700 shadow-sm transition-all hover:bg-stone-100 hover:text-stone-900 hover:scale-110"
+                  title="Change avatar"
+                  aria-label="Change avatar button"
                 >
-                  {profileBusy ? "..." : "Change"}
-                </label>
-                <input
-                  id="profile-picture"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handleProfileFileChange}
-                  className="sr-only"
-                />
-                {profileFile && (
-                  <button
-                    type="submit"
-                    disabled={profileBusy}
-                    className="absolute -top-1 -right-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-black disabled:opacity-50"
-                  >
-                    {profileBusy ? "..." : "Save"}
-                  </button>
-                )}
-              </form>
+                  <Camera size={13} />
+                </button>
+              </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -361,10 +425,32 @@ export default function AccountPage() {
                     </span>
                   )}
                 </div>
-                <h1 className="mt-2 truncate text-xl font-semibold tracking-tight text-ink">
-                  {profile.username}
-                </h1>
-                <p className="mt-0.5 truncate text-sm text-muted">{profile.email}</p>
+
+                <div className="mt-2">
+                  <h1 className="truncate text-xl sm:text-2xl font-bold tracking-tight text-ink">
+                    {profile.full_name || profile.username}
+                  </h1>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted">
+                    <span className="font-semibold text-blue-600">@{profile.username}</span>
+                    <span className="text-stone-300">·</span>
+                    <span className="truncate">{profile.email}</span>
+                  </p>
+                </div>
+
+                {profile.bio ? (
+                  <p className="mt-2.5 text-xs leading-relaxed text-stone-600 max-w-xl">
+                    {profile.bio}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={openEditProfile}
+                    className="mt-2 text-xs italic text-stone-400 hover:text-blue-600 transition-colors text-left"
+                  >
+                    + Add a bio to introduce your photography journey, style, and camera systems...
+                  </button>
+                )}
+
                 {error && (
                   <p className="mt-2 text-sm text-danger" role="alert">
                     {error}
@@ -372,11 +458,29 @@ export default function AccountPage() {
                 )}
               </div>
 
-              {/* Logout di halaman Account (sesuai spesifikasi) */}
-              <Button variant="ghost" size="sm" onClick={logout} className="shrink-0">
-                <LogOut size={14} />
-                Logout
-              </Button>
+              {/* Action Buttons: Edit Profile & Logout */}
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-2xs transition-all hover:bg-blue-100 hover:text-blue-900"
+                >
+                  <TrendingUp size={13} />
+                  <span>Analytics Dashboard</span>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={openEditProfile}
+                  className="rounded-full shadow-2xs"
+                >
+                  <Pencil size={13} />
+                  Edit Profile
+                </Button>
+                <Button variant="ghost" size="sm" onClick={logout} className="shrink-0 text-stone-500 hover:text-stone-900">
+                  <LogOut size={14} />
+                  Logout
+                </Button>
+              </div>
             </div>
           </section>
         </Reveal>
@@ -394,6 +498,29 @@ export default function AccountPage() {
             </motion.div>
           ))}
         </RevealGroup>
+
+        {/* ============ DASHBOARD PROMPT BANNER ============ */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-2xs">
+              <TrendingUp size={15} />
+            </div>
+            <div>
+              <p className="font-bold text-stone-900">
+                Track Detailed Insights &amp; Engagement Timeline
+              </p>
+              <p className="text-[11px] text-stone-500">
+                Analyze likes growth, new followers, 4-pillar critique performance, and top performing shots.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-700"
+          >
+            Open Dashboard →
+          </Link>
+        </div>
 
         {/* ============ KATEGORI (Khusus Admin) ============ */}
         {profile.role === "admin" && (
@@ -527,6 +654,245 @@ export default function AccountPage() {
             Delete
           </Button>
         </div>
+      </Modal>
+
+      {/* ============ MODAL UPLOAD FOTO PROFIL ============ */}
+      <Modal
+        open={avatarModalOpen}
+        onClose={closeAvatarModal}
+        labelledBy="avatar-modal-title"
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5EFE6] text-stone-800 border border-[#E8DEC9]">
+            <Camera size={22} className="text-stone-700" />
+          </div>
+
+          <h2 id="avatar-modal-title" className="mt-3 text-lg font-bold text-stone-900 tracking-tight">
+            Update Profile Picture
+          </h2>
+          <p className="mt-1 text-xs text-stone-500 max-w-xs">
+            Upload a high-resolution photo for your creator profile and critique reviews.
+          </p>
+
+          {/* Avatar Preview Stage */}
+          <div className="relative mt-6 flex flex-col items-center">
+            <div className="relative h-28 w-28 rounded-full border-4 border-[#FFFDF6] bg-[#F5EFE6] p-1 shadow-card overflow-hidden ring-2 ring-[#E8DEC9]">
+              {profilePreview || profile.profile_picture_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={
+                    profilePreview ||
+                    buildCloudinaryUrl(profile.profile_picture_url, {
+                      width: 256,
+                      crop: "fill",
+                    })
+                  }
+                  alt="Preview"
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#EFE7D8] text-3xl font-extrabold text-stone-700">
+                  {profile.username?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {profileFile && (
+              <span className="mt-2 text-[11px] font-medium text-stone-600 truncate max-w-[220px]">
+                {profileFile.name} ({(profileFile.size / (1024 * 1024)).toFixed(2)} MB)
+              </span>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {avatarError && (
+            <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg w-full" role="alert">
+              {avatarError}
+            </p>
+          )}
+
+          {/* Dropzone / File Picker */}
+          <div className="mt-5 w-full">
+            <input
+              ref={profileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => {
+                handleAvatarSelect(e.target.files?.[0] || null);
+                e.target.value = "";
+              }}
+              className="sr-only"
+            />
+
+            <div
+              onClick={() => profileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleAvatarSelect(e.dataTransfer.files?.[0] || null);
+              }}
+              className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#DCD0BE] bg-[#F8F3E8]/60 p-5 cursor-pointer transition-all hover:border-blue-500 hover:bg-[#F5EFE6]"
+            >
+              <UploadCloud size={24} className="text-stone-400 transition-colors group-hover:text-blue-600" />
+              <p className="mt-2 text-xs font-semibold text-stone-700 group-hover:text-stone-900">
+                {profileFile ? "Choose a different image" : "Click to browse or drag & drop"}
+              </p>
+              <p className="mt-0.5 text-[10px] text-stone-400">
+                JPG, PNG, WEBP, or GIF (max 5MB)
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 flex w-full gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={closeAvatarModal}
+              disabled={profileBusy}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleProfilePictureSubmit}
+              disabled={!profileFile || profileBusy}
+              className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {profileBusy ? "Saving..." : "Save Avatar"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ============ MODAL EDIT PROFIL (FULL NAME & BIO) ============ */}
+      <Modal
+        open={editProfileOpen}
+        onClose={() => (editBusy ? null : setEditProfileOpen(false))}
+        labelledBy="edit-profile-modal-title"
+      >
+        <form onSubmit={handleSaveProfile} className="flex flex-col">
+          <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-3.5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Pencil size={15} />
+              </div>
+              <div>
+                <h2 id="edit-profile-modal-title" className="text-base font-bold text-stone-900 tracking-tight">
+                  Edit Creator Profile
+                </h2>
+                <p className="text-[11px] text-stone-500">
+                  Update your identity and photography narrative
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={editBusy}
+              onClick={() => setEditProfileOpen(false)}
+              className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Error Banner */}
+          {editError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600" role="alert">
+              {editError}
+            </div>
+          )}
+
+          <div className="mt-4 space-y-4">
+            {/* Full Name Field */}
+            <div>
+              <label htmlFor="edit-full-name" className="block text-xs font-bold text-stone-800">
+                Full Name
+              </label>
+              <input
+                id="edit-full-name"
+                type="text"
+                value={editFullName}
+                onChange={(e) => setEditFullName(e.target.value)}
+                maxLength={100}
+                placeholder="e.g. John Doe, Maya Sari"
+                className="mt-1.5 w-full rounded-xl border border-[#DCD0BE] bg-white px-3.5 py-2 text-xs text-stone-900 placeholder:text-stone-400 shadow-2xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+              />
+              <p className="mt-1 text-[10px] text-stone-400">
+                Shown prominently on your vault and constructive critiques.
+              </p>
+            </div>
+
+            {/* Username Field */}
+            <div>
+              <label htmlFor="edit-username" className="block text-xs font-bold text-stone-800">
+                Username Handle
+              </label>
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-400">
+                  @
+                </span>
+                <input
+                  id="edit-username"
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  maxLength={30}
+                  placeholder="username"
+                  className="w-full rounded-xl border border-[#DCD0BE] bg-white py-2 pl-8 pr-3.5 text-xs text-stone-900 placeholder:text-stone-400 shadow-2xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+                />
+              </div>
+              <p className="mt-1 text-[10px] text-stone-400">
+                Unique platform handle. Alphanumeric and underscores only.
+              </p>
+            </div>
+
+            {/* Bio Field */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label htmlFor="edit-bio" className="block text-xs font-bold text-stone-800">
+                  Photographer Bio &amp; Artist Statement
+                </label>
+                <span className={`text-[10px] font-mono ${editBio.length > 450 ? "text-amber-600 font-bold" : "text-stone-400"}`}>
+                  {editBio.length}/500
+                </span>
+              </div>
+              <textarea
+                id="edit-bio"
+                rows={4}
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                maxLength={500}
+                placeholder="Share your visual philosophy, camera systems, favorite focal lengths (e.g. 35mm, 85mm), or location..."
+                className="mt-1.5 w-full resize-none rounded-xl border border-[#DCD0BE] bg-white p-3 text-xs leading-relaxed text-stone-900 placeholder:text-stone-400 shadow-2xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-[#E8DEC9] pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={editBusy}
+              onClick={() => setEditProfileOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              loading={editBusy}
+              className="rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-xs"
+            >
+              Save Profile
+            </Button>
+          </div>
+        </form>
       </Modal>
     </PageTransition>
   );

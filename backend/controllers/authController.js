@@ -18,6 +18,17 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const updateProfileSchema = z.object({
+  full_name: z.string().max(100, "Full name maximum 100 characters").optional().nullable(),
+  bio: z.string().max(500, "Bio maximum 500 characters").optional().nullable(),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username maximum 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+    .optional(),
+});
+
 export const authController = {
   async register(req, res, next) {
     try {
@@ -184,6 +195,43 @@ export const authController = {
 
       res.json({
         message: "Profile fetched",
+        data: serializeProfile(data, req.user.email),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateProfile(req, res, next) {
+    try {
+      const validation = updateProfileSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: validation.error.issues.map((issue) => issue.message),
+        });
+      }
+
+      const { full_name, bio, username } = validation.data;
+
+      // Cek keunikan username jika diubah
+      if (username) {
+        const { data: existing } = await userModel.findProfileByUsername(username);
+        if (existing && existing.id !== req.user.id) {
+          return res.status(409).json({ message: "Username already taken" });
+        }
+      }
+
+      const { data, error } = await userModel.updateProfile(req.user.id, {
+        fullName: full_name,
+        bio,
+        username,
+      });
+
+      if (error) return next(new Error(error.message));
+
+      res.json({
+        message: "Profile updated",
         data: serializeProfile(data, req.user.email),
       });
     } catch (error) {

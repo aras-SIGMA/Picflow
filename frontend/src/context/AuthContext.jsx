@@ -67,8 +67,21 @@ export function AuthProvider({ children }) {
     router.push("/login");
   }
 
+  // REFRESH: ambil data profil terbaru
+  async function refreshUser() {
+    try {
+      const res = await getMe();
+      setUser(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, setUser, loading, login, register, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

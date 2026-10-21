@@ -16,6 +16,8 @@ router.put(
   upload.single("image"),
   authController.updateProfilePicture
 );
+router.put("/profile", verifyToken, authController.updateProfile);
+router.put("/me", verifyToken, authController.updateProfile);
 router.get("/me", verifyToken, authController.getMe);
 
 export default router;

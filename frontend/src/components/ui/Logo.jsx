@@ -1,51 +1,68 @@
 // src/components/ui/Logo.jsx
-// Logo resmi PicFlow: Lensa aperture 4 blade (Merah, Hijau, Biru, Slate)
-// dengan barrel optik presisi, wordmark "Pic" + "Flow" (gradien sRGB spektrum),
-// dan micro dots kalibrasi warna R-G-B.
-// Sumber spesifikasi: assets/images/stitch_picflow_brand_design_system/code.html
+// Logo resmi PicFlow: Tiga batang histogram / prisma RGB (Merah, Hijau, Biru)
+// dengan wordmark "Pic" + "F" (Red) + "l" (Green) + "ow" (Blue)
+// dan subtext opsional "PHOTOGRAPHY" (tracking +3.5px).
+// Sumber spesifikasi resmi: assets/images/picflow_logo_assets/picflow_logo/picflow-brand-guidelines.txt
+
 export default function Logo({
-  variant = "lockup",
-  size = 36,
+  variant = "lockup", // "mark" | "lockup" | "icon"
+  size = 32,
   className = "",
   showTagline = false,
   inverted = false, // true jika di atas latar gelap, false jika di atas latar terang
 }) {
-  const uid = `picflow-logo-${variant}-${size}`;
+  const red = inverted ? "#F05555" : "#D62B2B";
+  const green = inverted ? "#34D672" : "#16A34A";
+  const blue = inverted ? "#60A5FA" : "#2563EB";
+  const textDark = inverted ? "#F5F5F5" : "#111318";
+  const subtextColor = inverted ? "#888888" : "#999999";
 
   if (variant === "mark") {
-    return <Mark size={size} className={className} uid={uid} />;
+    return (
+      <Mark
+        size={size}
+        className={className}
+        red={red}
+        green={green}
+        blue={blue}
+      />
+    );
+  }
+
+  if (variant === "icon") {
+    return (
+      <IconCard
+        size={size}
+        className={className}
+        red={red}
+        green={green}
+        blue={blue}
+        inverted={inverted}
+      />
+    );
   }
 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <Mark size={size} uid={uid} />
-      <span className="flex flex-col">
-        <span className="flex items-baseline text-[1.35em] font-extrabold leading-none tracking-tight">
-          <span className={inverted ? "text-white" : "text-slate-900"}>Pic</span>
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, #EF4444 0%, #10B981 50%, #3B82F6 100%)",
-            }}
-          >
-            Flow
-          </span>
+      <Mark
+        size={size}
+        red={red}
+        green={green}
+        blue={blue}
+      />
+      <span className="flex flex-col select-none">
+        <span className="flex items-baseline text-[1.28em] font-extrabold leading-none tracking-tight">
+          <span style={{ color: textDark }}>Pic</span>
+          <span style={{ color: red }}>F</span>
+          <span style={{ color: green }}>l</span>
+          <span style={{ color: blue }}>ow</span>
         </span>
         {showTagline && (
-          <span className="mt-1 flex items-center gap-1.5">
-            <span className="flex items-center gap-[3px]" aria-hidden="true">
-              <i className="h-[4px] w-[4px] rounded-full bg-[#EF4444]" />
-              <i className="h-[4px] w-[4px] rounded-full bg-[#10B981]" />
-              <i className="h-[4px] w-[4px] rounded-full bg-[#3B82F6]" />
-            </span>
-            <span
-              className={`font-mono text-[0.52em] font-semibold uppercase tracking-[0.16em] ${
-                inverted ? "text-slate-400" : "text-slate-500"
-              }`}
-            >
-              sRGB Standard &amp; Craft
-            </span>
+          <span
+            className="mt-1 font-mono text-[0.45em] font-medium uppercase tracking-[3.5px]"
+            style={{ color: subtextColor }}
+          >
+            PHOTOGRAPHY
           </span>
         )}
       </span>
@@ -53,92 +70,61 @@ export default function Logo({
   );
 }
 
-function Mark({ size = 36, className = "", uid }) {
-  const red = `${uid}-red`;
-  const green = `${uid}-green`;
-  const blue = `${uid}-blue`;
-  const slate = `${uid}-slate`;
-  const glass = `${uid}-glass`;
+// 3 Bar Histogram / RGB Prism Mark
+export function Mark({ size = 32, className = "", red = "#D62B2B", green = "#16A34A", blue = "#2563EB" }) {
+  // Aspek rasio 54 lebar : 60 tinggi (0.9)
+  const width = Math.round((size * 54) / 60);
 
+  return (
+    <svg
+      width={width}
+      height={size}
+      viewBox="0 0 54 60"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      role="img"
+      aria-label="PicFlow Histogram RGB Prism Logo"
+    >
+      {/* Red Bar */}
+      <rect x="0" y="0" width="14" height="60" rx="7" fill={red} />
+      {/* Green Bar */}
+      <rect x="20" y="10" width="14" height="50" rx="7" fill={green} />
+      {/* Blue Bar */}
+      <rect x="40" y="4" width="14" height="56" rx="7" fill={blue} />
+    </svg>
+  );
+}
+
+// App Icon dengan squircle container
+export function IconCard({
+  size = 48,
+  className = "",
+  red = "#D62B2B",
+  green = "#16A34A",
+  blue = "#2563EB",
+  inverted = false,
+}) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 88 88"
+      viewBox="0 0 64 64"
       fill="none"
+      xmlns="http://www.w3.org/2000/svg"
       className={className}
       role="img"
-      aria-label="PicFlow Aperture Logo"
+      aria-label="PicFlow App Icon"
     >
-      <defs>
-        <linearGradient id={red} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F87171" />
-          <stop offset="100%" stopColor="#EF4444" />
-        </linearGradient>
-        <linearGradient id={green} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#34D399" />
-          <stop offset="100%" stopColor="#10B981" />
-        </linearGradient>
-        <linearGradient id={blue} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#60A5FA" />
-          <stop offset="100%" stopColor="#3B82F6" />
-        </linearGradient>
-        <linearGradient id={slate} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#94A3B8" />
-          <stop offset="100%" stopColor="#475569" />
-        </linearGradient>
-        <linearGradient id={glass} x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {/* Outer Neutral Precision Lens Barrel */}
-      <circle
-        cx="44"
-        cy="44"
-        r="41.5"
-        stroke="#CBD5E1"
-        strokeWidth="1.75"
-        fill="none"
+      <rect
+        width="64"
+        height="64"
+        rx="16"
+        fill={inverted ? "#181B22" : "#F8F8F8"}
       />
-      <circle cx="44" cy="44" r="35" fill="#0F172A" />
-
-      {/* 4 Aperture Blades: Blue, Green, Red, Slate */}
-      <path
-        d="M 44 18 C 58 18 70 29 70 44 C 56 42 46 32 44 18 Z"
-        fill={`url(#${blue})`}
-      />
-      <path
-        d="M 70 44 C 70 58 59 70 44 70 C 46 56 56 46 70 44 Z"
-        fill={`url(#${green})`}
-      />
-      <path
-        d="M 44 70 C 30 70 18 59 18 44 C 32 46 42 56 44 70 Z"
-        fill={`url(#${red})`}
-      />
-      <path
-        d="M 18 44 C 18 30 29 18 44 18 C 42 32 32 42 18 44 Z"
-        fill={`url(#${slate})`}
-      />
-
-      {/* Optical Core Lens */}
-      <circle
-        cx="44"
-        cy="44"
-        r="11"
-        fill="#0B0F19"
-        stroke="#E2E8F0"
-        strokeWidth="1.5"
-      />
-      <ellipse
-        cx="41"
-        cy="40"
-        rx="3.5"
-        ry="2"
-        fill={`url(#${glass})`}
-        transform="rotate(-30 41 40)"
-      />
+      <rect x="13" y="10" width="10" height="44" rx="5" fill={red} />
+      <rect x="27" y="18" width="10" height="36" rx="5" fill={green} />
+      <rect x="41" y="12" width="10" height="40" rx="5" fill={blue} />
     </svg>
   );
 }

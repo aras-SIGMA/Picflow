@@ -4,7 +4,9 @@
 // Panel metadata teknis EXIF kamera: Camera, Lens, Focal Length, Aperture,
 // Shutter Speed, ISO, dan Timestamp pemotretan.
 // Konsisten dengan standar desain .md/DESIGN/design.md
+import { useState } from "react";
 import {
+  Activity,
   Aperture,
   Camera,
   Clock,
@@ -13,8 +15,15 @@ import {
   Gauge,
   Timer,
 } from "lucide-react";
+import RGBHistogram from "./RGBHistogram";
 
-export default function ExifMetadataPanel({ photo, className = "" }) {
+export default function ExifMetadataPanel({
+  photo,
+  className = "",
+  initialShowHistogram = true,
+}) {
+  const [showHistogram, setShowHistogram] = useState(initialShowHistogram);
+
   if (!photo) return null;
 
   const cameraParts = [photo.camera_make, photo.camera_model]
@@ -55,9 +64,18 @@ export default function ExifMetadataPanel({ photo, className = "" }) {
         <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
           EXIF Camera Metadata
         </span>
-        <span className="text-[10px] font-medium text-stone-400">
-          {hasAnyExif ? "Auto Extracted" : "No camera tags found (N/A)"}
-        </span>
+        <button
+          type="button"
+          onClick={() => setShowHistogram((v) => !v)}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-all ${
+            showHistogram
+              ? "bg-stone-900 text-white shadow-xs"
+              : "border border-gray-200 bg-gray-50 text-stone-600 hover:bg-gray-100"
+          }`}
+        >
+          <Activity size={10} className={showHistogram ? "text-blue-400" : "text-stone-400"} />
+          <span>{showHistogram ? "Hide Histogram" : "RGB Histogram"}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
@@ -129,11 +147,23 @@ export default function ExifMetadataPanel({ photo, className = "" }) {
       </div>
 
       {/* Timestamp */}
-      <div className="mt-3.5 flex items-center gap-1.5 border-t border-gray-100 pt-2.5 text-[11px]">
-        <Clock size={12} className="shrink-0 text-stone-400" />
-        <span className="text-stone-400">Captured:</span>
-        <span className="font-semibold text-stone-700">{takenAtValue}</span>
+      <div className="mt-3.5 flex items-center justify-between border-t border-gray-100 pt-2.5 text-[11px]">
+        <div className="flex items-center gap-1.5">
+          <Clock size={12} className="shrink-0 text-stone-400" />
+          <span className="text-stone-400">Captured:</span>
+          <span className="font-semibold text-stone-700">{takenAtValue}</span>
+        </div>
+        <span className="text-[10px] font-medium text-stone-400">
+          {hasAnyExif ? "EXIF Extracted" : "Manual / No EXIF"}
+        </span>
       </div>
+
+      {/* RGB Tonal Histogram Visualizer */}
+      {showHistogram && (
+        <div className="mt-4 border-t border-gray-100 pt-3.5">
+          <RGBHistogram photo={photo} />
+        </div>
+      )}
     </div>
   );
 }

@@ -73,6 +73,8 @@ export const register = (payload) =>
 export const login = (payload) =>
   apiFetch("/auth/login", { method: "POST", body: payload, auth: false });
 export const getMe = () => apiFetch("/auth/me");
+export const updateProfile = (payload) =>
+  apiFetch("/auth/profile", { method: "PUT", body: payload });
 export const uploadProfilePicture = (formData) =>
   apiFetch("/auth/profile-picture", { method: "PUT", formData });
 
@@ -118,11 +120,19 @@ export const updatePhotoCritique = (photoId, critiqueId, critiqueData) =>
 export const deletePhotoCritique = (photoId, critiqueId) =>
   apiFetch(`/photos/${photoId}/critiques/${critiqueId}`, { method: "DELETE" });
 
-// ====== SOCIAL: FOLLOWS ======
+// ====== SOCIAL: FOLLOWS & DASHBOARD ======
 export const toggleFollowUser = (userId) =>
   apiFetch(`/users/${userId}/follow`, { method: "POST" });
 export const getUserFollowStatus = (userId) =>
   apiFetch(`/users/${userId}/follow-status`);
+export const getPublicProfile = (idOrUsername) =>
+  apiFetch(`/users/${idOrUsername}`);
+export const getUserDashboard = (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.period) query.set("period", params.period);
+  const qs = query.toString();
+  return apiFetch(qs ? `/users/dashboard?${qs}` : "/users/dashboard");
+};
 
 // ====== CATEGORIES ======
 export const listCategories = () => apiFetch("/categories", { auth: false });
