@@ -1,12 +1,15 @@
 "use client";
 
 // src/components/ui/Dropzone.jsx
-// Area drag-and-drop: border dashed, glow ungu saat drag-over, klik untuk
-// memilih file, preview langsung (rounded) dengan tombol ganti/hapus,
-// tampilkan nama file + ukuran. Validasi tipe & ukuran inline (bukan alert).
+// Area drag-and-drop & preview foto studio:
+// - Desain viewfinder kamera dengan bracket sudut (corner reticles)
+// - Drag-over responsif dengan aksen biru PicFlow
+// - Preview resolusi tinggi dengan proteksi rasio aspek (object-contain di panggung hitam elegan)
+// - Floating control pills (Ganti, Hapus, info format/ukuran)
+
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ImagePlus, RefreshCcw, Trash2 } from "lucide-react";
+import { Camera, ImagePlus, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
 import { EASE } from "./motion";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/tiff"];
@@ -22,7 +25,7 @@ export default function Dropzone({
   onFileChange,
   previewUrl,
   oldImage,
-  label = "Tarik & lepas gambarmu di sini",
+  label = "Drag & drop your photograph here",
 }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -34,9 +37,9 @@ export default function Dropzone({
       selected.name.toLowerCase().endsWith(".tif") ||
       selected.name.toLowerCase().endsWith(".tiff");
     if (!ALLOWED.includes(selected.type) && !isTiff) {
-      return "Gunakan gambar JPG, PNG, WEBP, GIF, atau TIFF.";
+      return "Please choose a JPG, PNG, WEBP, GIF, or TIFF image.";
     }
-    if (selected.size > MAX_SIZE) return "Ukuran gambar maksimal 25MB.";
+    if (selected.size > MAX_SIZE) return "Image size exceeds 25MB limit.";
     return null;
   }
 
@@ -63,7 +66,7 @@ export default function Dropzone({
   const showPreview = previewUrl || oldImage;
 
   return (
-    <div>
+    <div className="relative">
       <input
         ref={inputRef}
         type="file"
@@ -76,39 +79,66 @@ export default function Dropzone({
         {showPreview ? (
           <motion.div
             key="preview"
-            initial={{ opacity: 0, scale: 0.97 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.35, ease: EASE }}
-            className="group relative overflow-hidden rounded-[var(--radius-md)] border border-line"
+            className="group relative overflow-hidden rounded-2xl border border-gray-200/90 bg-black shadow-card"
           >
-            {/* Preview lokal/belum diunggah memakai img biasa (blob URL). */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl || oldImage}
-              alt="Selected image preview"
-              className="max-h-80 w-full object-cover"
-            />
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <p className="min-w-0 truncate text-xs text-white/80">
-                {file ? `${file.name} · ${formatSize(file.size)}` : "Stored image"}
-              </p>
-              <div className="flex shrink-0 gap-2">
+            {/* Viewfinder Preview Stage */}
+            <div className="relative flex min-h-[300px] max-h-[460px] w-full items-center justify-center overflow-hidden bg-radial from-stone-900 to-black p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl || oldImage}
+                alt="Selected photo preview"
+                className="max-h-[440px] w-full rounded-xl object-contain"
+              />
+
+              {/* Viewfinder Corner Framing Marks */}
+              <div className="pointer-events-none absolute inset-4 border border-white/10">
+                <div className="absolute top-0 left-0 h-4 w-4 border-t-2 border-l-2 border-white/60" />
+                <div className="absolute top-0 right-0 h-4 w-4 border-t-2 border-r-2 border-white/60" />
+                <div className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-white/60" />
+                <div className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-white/60" />
+              </div>
+
+              {/* Top Floating Badge */}
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md shadow-xs">
+                <Camera size={12} className="text-blue-400" />
+                <span>Live Preview</span>
+              </div>
+            </div>
+
+            {/* Bottom Floating Bar */}
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white">
+                  {file ? file.name : "Loaded Master File"}
+                </p>
+                <p className="text-[10px] text-white/60">
+                  {file ? formatSize(file.size) : "Ready for publish"}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
+                  title="Change image"
                   aria-label="Replace image"
-                  className="rounded-full border border-white/20 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/30"
                 >
-                  <RefreshCcw size={14} />
+                  <RefreshCcw size={12} />
+                  <span>Change</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => onFileChange(null, null)}
+                  title="Remove image"
                   aria-label="Remove image"
-                  className="rounded-full border border-white/20 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/30 bg-red-600/30 text-red-200 backdrop-blur-md transition-all hover:bg-red-600/60 hover:text-white"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
               </div>
             </div>
@@ -128,15 +158,38 @@ export default function Dropzone({
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             aria-label="Choose or drop image"
-            className={`flex w-full flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed px-6 py-14 text-center transition-all duration-300 ${
+            className={`group relative flex w-full flex-col items-center justify-center gap-3.5 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition-all duration-300 ${
               dragOver
-                ? "border-accent bg-accent/10 shadow-[0_0_60px_-12px_rgba(124,108,255,0.5)]"
-                : "border-white/15 bg-[var(--bg-elevated)] hover:border-white/30"
+                ? "border-blue-600 bg-blue-50/70 shadow-lg ring-4 ring-blue-500/10"
+                : "border-[#DCD0BE] bg-[#FAF8F5]/80 hover:border-blue-500 hover:bg-[#F5EFE6]"
             }`}
           >
-            <ImagePlus size={28} className={dragOver ? "text-accent" : "text-faint"} />
-            <span className="text-sm text-ink">{label}</span>
-            <span className="text-xs text-faint">JPG, PNG, WEBP, or TIFF · max 25MB</span>
+            {/* Camera Viewfinder Corner Accents */}
+            <div className="pointer-events-none absolute inset-3 border border-stone-300/40 rounded-2xl transition-colors group-hover:border-blue-500/30">
+              <div className="absolute top-0 left-0 h-3 w-3 border-t-2 border-l-2 border-stone-400 group-hover:border-blue-600" />
+              <div className="absolute top-0 right-0 h-3 w-3 border-t-2 border-r-2 border-stone-400 group-hover:border-blue-600" />
+              <div className="absolute bottom-0 left-0 h-3 w-3 border-b-2 border-l-2 border-stone-400 group-hover:border-blue-600" />
+              <div className="absolute bottom-0 right-0 h-3 w-3 border-b-2 border-r-2 border-stone-400 group-hover:border-blue-600" />
+            </div>
+
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white border border-[#E8DEC9] text-stone-700 shadow-sm transition-transform group-hover:scale-105 group-hover:text-blue-600">
+              <UploadCloud size={28} />
+            </div>
+
+            <div className="space-y-1">
+              <span className="block text-sm font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
+                {label}
+              </span>
+              <span className="block text-xs text-stone-500">
+                Click to browse or drag &amp; drop from your files
+              </span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-semibold text-stone-600 shadow-2xs">
+              <span>RAW / TIFF / JPG / PNG / WEBP</span>
+              <span className="text-stone-300">·</span>
+              <span>Max 25MB</span>
+            </div>
           </motion.button>
         )}
       </AnimatePresence>
