@@ -3,6 +3,7 @@
 
 import supabase from "../config/supabase.js";
 import { calculateCritiqueStats } from "./critiqueModel.js";
+import { serializePhoto } from "./photoModel.js";
 
 export function serializeProfile(profile, email) {
   return {
@@ -21,7 +22,7 @@ export const userModel = {
   async findProfileByUsername(username) {
     return supabase
       .from("profiles")
-      .select("id")
+      .select("id, username, full_name, bio, avatar_url, avatar_public_id, role, created_at")
       .eq("username", username)
       .maybeSingle();
   },
@@ -313,6 +314,85 @@ export const userModel = {
         },
       })),
       timeline,
+    };
+  },
+
+  async getPublicProfileData(identifier, viewerUserId = null) {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        identifier
+      );
+
+    const { data: profile, error: profErr } = isUuid
+      ? await this.findProfileById(identifier)
+      : await this.findProfileByUsername(identifier);
+
+    if (profErr) throw new Error(profErr.message);
+    if (!profile) return null;
+
+    const [followersRes, followingRes, followStatusRes, photosRes] =
+      await Promise.all([
+        this.countFollowers(profile.id),
+        this.countFollowing(profile.id),
+        viewerUserId && viewerUserId !== profile.id
+          ? this.findFollow(viewerUserId, profile.id)
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("photos")
+          .select("*, categories(name), likes(count), comments(count)")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false }),
+      ]);
+
+    if (photosRes.error) throw new Error(photosRes.error.message);
+
+    const rawPhotos = photosRes.data || [];
+    const photoIds = rawPhotos.map((p) => p.id);
+
+    let userLikedSet = new Set();
+    if (viewerUserId && photoIds.length > 0) {
+      const { data: userLikes } = await supabase
+        .from("likes")
+        .select("photo_id")
+        .eq("user_id", viewerUserId)
+        .in("photo_id", photoIds);
+
+      userLikedSet = new Set((userLikes || []).map((l) => l.photo_id));
+    }
+
+    const totalLikes = rawPhotos.reduce(
+      (sum, p) => sum + (p.likes?.[0]?.count ?? 0),
+      0
+    );
+
+    const serializedPhotos = rawPhotos.map((row) => {
+      row.profiles = {
+        id: profile.id,
+        username: profile.username,
+        avatar_url: profile.avatar_url,
+      };
+      return serializePhoto(row, row.categories?.name, userLikedSet.has(row.id));
+    });
+
+    return {
+      profile: {
+        id_user: profile.id,
+        username: profile.username,
+        full_name: profile.full_name,
+        bio: profile.bio,
+        profile_picture_url: profile.avatar_url,
+        role: profile.role === "admin" ? "admin" : "user",
+        created_at: profile.created_at,
+      },
+      stats: {
+        photos_count: rawPhotos.length,
+        followers_count: followersRes.count ?? 0,
+        following_count: followingRes.count ?? 0,
+        total_likes: totalLikes,
+      },
+      is_following: Boolean(followStatusRes.data),
+      is_self: Boolean(viewerUserId && viewerUserId === profile.id),
+      photos: serializedPhotos,
     };
   },
 };

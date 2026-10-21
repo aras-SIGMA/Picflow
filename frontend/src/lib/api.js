@@ -125,6 +125,8 @@ export const toggleFollowUser = (userId) =>
   apiFetch(`/users/${userId}/follow`, { method: "POST" });
 export const getUserFollowStatus = (userId) =>
   apiFetch(`/users/${userId}/follow-status`);
+export const getPublicProfile = (idOrUsername) =>
+  apiFetch(`/users/${idOrUsername}`);
 export const getUserDashboard = (params = {}) => {
   const query = new URLSearchParams();
   if (params.period) query.set("period", params.period);

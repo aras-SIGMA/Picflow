@@ -111,4 +111,25 @@ export const userController = {
       next(error);
     }
   },
+
+  async getPublicProfile(req, res, next) {
+    try {
+      const identifier = req.params.id;
+      const profileData = await userModel.getPublicProfileData(
+        identifier,
+        req.user?.id
+      );
+
+      if (!profileData) {
+        return res.status(404).json({ message: "Creator not found" });
+      }
+
+      res.json({
+        message: "Public profile fetched",
+        data: profileData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

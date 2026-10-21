@@ -550,12 +550,11 @@ function SearchContent() {
                       key={creator.id}
                       className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-sm transition-all hover:shadow-card"
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleSuggestionClick(creator.username)}
-                        className="flex items-center gap-3 min-w-0 text-left"
+                      <Link
+                        href={`/account/${creator.id}`}
+                        className="flex items-center gap-3 min-w-0 text-left group"
                       >
-                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-stone-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-stone-200 bg-stone-900 text-xs font-bold text-white shadow-xs transition-transform group-hover:scale-105">
                           {creator.avatar_url ? (
                             <Image
                               src={creator.avatar_url}
@@ -571,7 +570,7 @@ function SearchContent() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-bold text-stone-900 hover:text-blue-600">
+                          <p className="truncate text-xs font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
                             @{creator.username}
                           </p>
                           <p className="truncate text-[11px] text-stone-500">
@@ -581,7 +580,7 @@ function SearchContent() {
                             {creator.photoCount} {creator.photoCount === 1 ? "shot" : "shots"} published
                           </p>
                         </div>
-                      </button>
+                      </Link>
 
                       {user?.id_user !== creator.id && (
                         <div className="shrink-0">

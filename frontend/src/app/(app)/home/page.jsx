@@ -784,7 +784,10 @@ export default function HomePage() {
                     <div className="flex items-center justify-between p-4 pb-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar */}
-                        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                        <Link
+                          href={`/account/${photo.creator?.id_user || photo.id_user}`}
+                          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs transition-transform hover:scale-105"
+                        >
                           {photo.creator?.avatar_url ? (
                             <Image
                               src={photo.creator.avatar_url}
@@ -796,14 +799,17 @@ export default function HomePage() {
                           ) : (
                             (photo.creator?.username || "A").charAt(0).toUpperCase()
                           )}
-                        </div>
+                        </Link>
 
                         {/* Metainfo */}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="truncate text-xs font-bold text-stone-900">
+                            <Link
+                              href={`/account/${photo.creator?.id_user || photo.id_user}`}
+                              className="truncate text-xs font-bold text-stone-900 hover:text-blue-600 transition-colors"
+                            >
                               {photo.creator?.username || "Anonymous Artist"}
-                            </span>
+                            </Link>
                             <span className="text-[10px] text-gray-400">·</span>
                             <span className="text-[11px] text-gray-500">
                               {formatRelativeTime(photo.created_at)}
@@ -1154,8 +1160,11 @@ export default function HomePage() {
                       key={creator.id_user}
                       className="flex items-center justify-between gap-2"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
+                      <Link
+                        href={`/account/${creator.id_user}`}
+                        className="flex items-center gap-2.5 min-w-0 group transition-transform hover:translate-x-0.5"
+                      >
+                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs transition-transform group-hover:scale-105">
                           {creator.avatar_url ? (
                             <Image
                               src={creator.avatar_url}
@@ -1170,14 +1179,14 @@ export default function HomePage() {
                         </div>
 
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-bold text-stone-900">
+                          <p className="truncate text-xs font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
                             {creator.username}
                           </p>
                           <p className="truncate text-[10px] text-stone-500">
                             {creator.is_self ? "You" : "Photographer"}
                           </p>
                         </div>
-                      </div>
+                      </Link>
 
                       {!creator.is_self && (
                         <FollowButton
