@@ -22,7 +22,6 @@ import {
   ImagePlus,
   Layers,
   Sparkles,
-  Star,
   Timer,
   UploadCloud,
 } from "lucide-react";
@@ -38,7 +37,6 @@ import { parseClientExif } from "@/lib/exif";
 import Dropzone from "@/components/ui/Dropzone";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
-import PillBadge from "@/components/ui/PillBadge";
 import ApertureLoader from "@/components/ui/ApertureLoader";
 import ExifMetadataPanel from "@/components/ExifMetadataPanel";
 import { useToast } from "@/components/ui/Toast";
@@ -251,14 +249,6 @@ function AddPhotoForm() {
             <span>Back to Feed</span>
           </Link>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <PillBadge>{editId ? "Curatorial Edit Mode" : "Publishing Room"}</PillBadge>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-400">
-              <Camera size={12} className="text-blue-600" />
-              <span>Full Sensor EXIF Preservation</span>
-            </span>
-          </div>
-
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
             {editId ? "Refine Your Photograph" : "Publish a New Photograph"}
           </h1>
@@ -416,17 +406,6 @@ function AddPhotoForm() {
                   placeholder="Describe your creative intention, location, lighting setup, or artistic thoughts..."
                   className="mt-1.5 w-full resize-none rounded-xl border border-[#DCD0BE] bg-white p-3 text-xs leading-relaxed text-stone-900 placeholder:text-stone-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
                 />
-              </div>
-
-              {/* Critique Community Invitation Box */}
-              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4 text-xs text-amber-900 leading-relaxed">
-                <div className="flex items-center gap-1.5 font-bold text-amber-800 mb-1">
-                  <Star size={13} className="fill-amber-500 text-amber-600" />
-                  <span>Peer Critique Invitation</span>
-                </div>
-                <p className="text-[11px] text-amber-800/90">
-                  By publishing, you invite fellow photographers to evaluate this shot on 4 pillars: Composition, Lighting, Color Harmony, and Concept.
-                </p>
               </div>
 
               {/* Server Error Alert */}
