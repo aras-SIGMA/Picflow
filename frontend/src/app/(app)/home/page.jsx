@@ -38,6 +38,7 @@ import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { PageTransition } from "@/components/ui/Motion";
+import LumaBar from "@/components/ui/futuristic-nav";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "Recently";
@@ -320,7 +321,7 @@ export default function HomePage() {
 
   return (
     <PageTransition>
-      <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
+      <div className="mx-auto w-full max-w-7xl px-3 py-6 pb-28 sm:px-4 sm:py-8 sm:pb-32">
         <div className="flex items-start gap-6">
           {/* ======================================================== */}
           {/* LEFT COLUMN: Profil, Navigasi Feed & Kategori Fotografi   */}
@@ -1221,6 +1222,8 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Floating Futuristic Dock Navigation */}
+      <LumaBar />
 
       {/* Modal Konfirmasi Hapus */}
       <Modal
