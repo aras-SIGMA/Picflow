@@ -14,7 +14,7 @@ export default function errorHandler(err, req, res, next) {
   }
 
   // Error dari fileFilter kita (bukan gambar) -> kirim 400 juga
-  if (err.message === "Only image files are allowed (jpg, jpeg, png, webp, gif)") {
+  if (err.message && err.message.startsWith("Only image files are allowed")) {
     return res.status(400).json({ message: err.message });
   }
 

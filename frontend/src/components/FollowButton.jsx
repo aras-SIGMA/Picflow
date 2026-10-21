@@ -2,7 +2,7 @@
 
 // src/components/FollowButton.jsx
 // Tombol Follow / Unfollow kreator dengan Optimistic UI update.
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UserCheck, UserPlus, UserX } from "lucide-react";
 import { toggleFollowUser, getUserFollowStatus } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +23,7 @@ export default function FollowButton({
   );
   const [isHovered, setIsHovered] = useState(false);
   const [loading, setLoading] = useState(false);
+  const lockRef = useRef(false);
 
   // Jangan render tombol follow jika kreator adalah diri sendiri
   const isSelf = user?.id_user && String(user.id_user) === String(creatorId);
@@ -57,7 +58,10 @@ export default function FollowButton({
   async function handleClick(e) {
     e.stopPropagation();
     e.preventDefault();
-    if (loading) return;
+    if (lockRef.current || loading) return;
+
+    lockRef.current = true;
+    setLoading(true);
 
     // Optimistic UI toggle
     const prev = following;
@@ -65,7 +69,6 @@ export default function FollowButton({
     setFollowing(next);
     onFollowChange?.(next);
 
-    setLoading(true);
     try {
       const res = await toggleFollowUser(creatorId);
       if (res?.data?.is_following != null) {
@@ -78,6 +81,7 @@ export default function FollowButton({
       onFollowChange?.(prev);
       toast.error(err.message || "Failed to update follow status.");
     } finally {
+      lockRef.current = false;
       setLoading(false);
     }
   }
