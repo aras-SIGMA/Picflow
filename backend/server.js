@@ -12,7 +12,7 @@ dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoutes.js";
-import photoRouter from "./api/photo.js";
+import photoRouter from "./routes/photoRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import supabase from "./config/supabase.js";
