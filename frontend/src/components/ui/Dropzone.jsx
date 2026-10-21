@@ -158,10 +158,10 @@ export default function Dropzone({
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             aria-label="Choose or drop image"
-            className={`group relative flex w-full flex-col items-center justify-center gap-3.5 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition-all duration-300 ${
+            className={`group relative flex w-full flex-col items-center justify-center gap-3.5 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition-colors duration-200 bg-transparent ${
               dragOver
-                ? "border-blue-600 bg-blue-50/70 shadow-lg ring-4 ring-blue-500/10"
-                : "border-[#DCD0BE] bg-[#FAF8F5]/80 hover:border-blue-500 hover:bg-[#F5EFE6]"
+                ? "border-blue-600 ring-4 ring-blue-500/10"
+                : "border-[#DCD0BE] hover:border-blue-600"
             }`}
           >
             {/* Camera Viewfinder Corner Accents */}
