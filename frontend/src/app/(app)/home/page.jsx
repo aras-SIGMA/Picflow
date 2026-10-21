@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Aperture,
   ArrowRight,
   Camera,
   Compass,
@@ -16,6 +17,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  RotateCcw,
   Search,
   Share2,
   Sparkles,
@@ -50,6 +52,16 @@ function formatRelativeTime(dateString) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+const POPULAR_BRANDS = [
+  "Sony",
+  "Canon",
+  "Fujifilm",
+  "Nikon",
+  "Leica",
+  "Hasselblad",
+  "Panasonic",
+];
+
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -59,6 +71,7 @@ export default function HomePage() {
   const [photos, setPhotos] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedGear, setSelectedGear] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("latest");
   const [error, setError] = useState("");
@@ -189,6 +202,42 @@ export default function HomePage() {
     return map;
   }, [photos]);
 
+  const availableGears = useMemo(() => {
+    const brandSet = new Set(POPULAR_BRANDS);
+    photos.forEach((p) => {
+      if (p.camera_make) {
+        const trimmed = p.camera_make.trim();
+        if (trimmed) {
+          const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+          brandSet.add(normalized);
+        }
+      }
+    });
+    return Array.from(brandSet);
+  }, [photos]);
+
+  const gearStats = useMemo(() => {
+    const map = { all: photos.length, other: 0 };
+    photos.forEach((p) => {
+      const make = (p.camera_make || "").toLowerCase();
+      const model = (p.camera_model || "").toLowerCase();
+      let matched = false;
+
+      availableGears.forEach((brand) => {
+        const b = brand.toLowerCase();
+        if (make.includes(b) || model.includes(b)) {
+          map[brand] = (map[brand] || 0) + 1;
+          matched = true;
+        }
+      });
+
+      if (!matched && !p.camera_make && !p.camera_model) {
+        map.other = (map.other || 0) + 1;
+      }
+    });
+    return map;
+  }, [photos, availableGears]);
+
   const communityCreators = useMemo(() => {
     const seen = new Set();
     const list = [];
@@ -219,6 +268,18 @@ export default function HomePage() {
     let result = photos.filter((p) => {
       const matchCat =
         selectedCategory === "all" || String(p.id_category) === selectedCategory;
+
+      const matchGear =
+        selectedGear === "all"
+          ? true
+          : selectedGear === "other"
+            ? !p.camera_make && !p.camera_model
+            : Boolean(
+                p.camera_make?.toLowerCase().includes(selectedGear.toLowerCase()) ||
+                p.camera_model?.toLowerCase().includes(selectedGear.toLowerCase()) ||
+                p.lens?.toLowerCase().includes(selectedGear.toLowerCase())
+              );
+
       const matchSearch =
         !q ||
         p.title?.toLowerCase().includes(q) ||
@@ -228,7 +289,7 @@ export default function HomePage() {
         p.camera_model?.toLowerCase().includes(q) ||
         p.lens?.toLowerCase().includes(q);
 
-      return matchCat && matchSearch;
+      return matchCat && matchGear && matchSearch;
     });
 
     if (sortBy === "popular") {
@@ -242,7 +303,7 @@ export default function HomePage() {
     }
 
     return result;
-  }, [photos, selectedCategory, search, sortBy]);
+  }, [photos, selectedCategory, selectedGear, search, sortBy]);
 
   if (loading || fetching) {
     return (
@@ -324,6 +385,7 @@ export default function HomePage() {
                     onClick={() => {
                       setFeedTab("explore");
                       setSelectedCategory("all");
+                      setSelectedGear("all");
                     }}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                       feedTab === "explore" && selectedCategory === "all"
@@ -337,7 +399,10 @@ export default function HomePage() {
 
                   <button
                     type="button"
-                    onClick={() => setFeedTab("following")}
+                    onClick={() => {
+                      setFeedTab("following");
+                      setSelectedGear("all");
+                    }}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                       feedTab === "following"
                         ? "bg-blue-600 text-white shadow-xs"
@@ -409,6 +474,58 @@ export default function HomePage() {
                         }`}
                       >
                         <span className="truncate">{c.name}</span>
+                        <span className={`text-[10px] tabular-nums ${isSelected ? "text-blue-100" : "text-stone-400"}`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Camera & Optics Gear (Left Sidebar) */}
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-3 shadow-sidebar">
+                <div className="flex items-center justify-between px-2 pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                    Camera Systems
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                    {availableGears.length}
+                  </span>
+                </div>
+
+                <div className="mt-1 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGear("all")}
+                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                      selectedGear === "all"
+                        ? "bg-stone-900 text-white font-semibold shadow-xs"
+                        : "text-stone-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Aperture size={13} className={selectedGear === "all" ? "text-blue-400" : "text-stone-400"} />
+                      All Gear
+                    </span>
+                    <span className="text-[11px] opacity-75">{photos.length}</span>
+                  </button>
+
+                  {availableGears.map((brand) => {
+                    const count = gearStats[brand] || 0;
+                    const isSelected = selectedGear.toLowerCase() === brand.toLowerCase();
+                    return (
+                      <button
+                        key={brand}
+                        type="button"
+                        onClick={() => setSelectedGear(isSelected ? "all" : brand)}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
+                          isSelected
+                            ? "bg-blue-600 text-white font-semibold shadow-xs"
+                            : "text-stone-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className="truncate">{brand}</span>
                         <span className={`text-[10px] tabular-nums ${isSelected ? "text-blue-100" : "text-stone-400"}`}>
                           {count}
                         </span>
@@ -516,6 +633,143 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Gear & Optics Filter Bar */}
+            <div className="rounded-2xl bg-white p-3 shadow-card space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                  <Aperture size={14} className="text-blue-600" />
+                  <span>Filter by Camera Gear</span>
+                </div>
+                {selectedGear !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGear("all")}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                  >
+                    <RotateCcw size={11} />
+                    Reset Gear
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGear("all")}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                    selectedGear === "all"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
+                  }`}
+                >
+                  <span>All Gear</span>
+                  <span className={`text-[10px] ${selectedGear === "all" ? "text-stone-300" : "text-stone-500"}`}>
+                    {photos.length}
+                  </span>
+                </button>
+
+                {availableGears.map((brand) => {
+                  const count = gearStats[brand] || 0;
+                  const isSelected = selectedGear.toLowerCase() === brand.toLowerCase();
+                  return (
+                    <button
+                      key={brand}
+                      type="button"
+                      onClick={() => setSelectedGear(isSelected ? "all" : brand)}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-blue-600 text-white font-semibold shadow-xs"
+                          : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
+                      }`}
+                    >
+                      <span>{brand}</span>
+                      <span
+                        className={`rounded-full px-1.5 py-0.2 text-[10px] tabular-nums ${
+                          isSelected
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-stone-500 border border-gray-200"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {gearStats.other > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGear(selectedGear === "other" ? "all" : "other")}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                      selectedGear === "other"
+                        ? "bg-blue-600 text-white font-semibold shadow-xs"
+                        : "bg-gray-100 text-stone-600 hover:bg-gray-200/80"
+                    }`}
+                  >
+                    <span>Other</span>
+                    <span className="text-[10px] opacity-75">{gearStats.other}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Active Filters Summary */}
+            {(selectedCategory !== "all" || selectedGear !== "all" || search) && (
+              <div className="flex flex-wrap items-center gap-2 px-1 text-xs">
+                <span className="text-[11px] font-semibold text-stone-400">Active filters:</span>
+                {selectedCategory !== "all" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[11px] font-medium text-blue-700">
+                    Genre: {categories.find((c) => String(c.id_category) === selectedCategory)?.name || selectedCategory}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory("all")}
+                      className="hover:text-blue-900"
+                      aria-label="Remove category filter"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                )}
+                {selectedGear !== "all" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[11px] font-medium text-blue-700">
+                    Gear: {selectedGear}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGear("all")}
+                      className="hover:text-blue-900"
+                      aria-label="Remove gear filter"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                )}
+                {search && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 border border-stone-200 px-2.5 py-0.5 text-[11px] font-medium text-stone-700">
+                    &ldquo;{search}&rdquo;
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="hover:text-stone-900"
+                      aria-label="Clear search query"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory("all");
+                    setSelectedGear("all");
+                    setSearch("");
+                  }}
+                  className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 underline ml-1"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+
             {/* Error Banner */}
             {error && (
               <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
@@ -602,15 +856,35 @@ export default function HomePage() {
 
                           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
                             {photo.category_name && (
-                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCategory(String(photo.id_category));
+                                }}
+                                className="rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 text-[10px] font-semibold text-gray-700 transition-colors cursor-pointer"
+                                title={`Filter feed by genre ${photo.category_name}`}
+                              >
                                 {photo.category_name}
-                              </span>
+                              </button>
                             )}
                             {photo.camera_model && (
-                              <span className="truncate text-[10px] text-gray-500">
-                                {photo.camera_make ? `${photo.camera_make} ` : ""}
-                                {photo.camera_model}
-                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const brand = photo.camera_make || photo.camera_model;
+                                  setSelectedGear(brand);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 text-[10px] text-gray-600 transition-colors cursor-pointer"
+                                title={`Filter feed by ${photo.camera_make ? `${photo.camera_make} ` : ""}${photo.camera_model}`}
+                              >
+                                <Camera size={10} className="shrink-0 text-gray-400" />
+                                <span className="truncate max-w-[160px]">
+                                  {photo.camera_make ? `${photo.camera_make} ` : ""}
+                                  {photo.camera_model}
+                                </span>
+                              </button>
                             )}
                           </div>
                         </div>
