@@ -72,7 +72,6 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedGear, setSelectedGear] = useState("all");
-  const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("latest");
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
@@ -263,8 +262,6 @@ export default function HomePage() {
   }, [photos, user]);
 
   const shownPhotos = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
     let result = photos.filter((p) => {
       const matchCat =
         selectedCategory === "all" || String(p.id_category) === selectedCategory;
@@ -280,16 +277,7 @@ export default function HomePage() {
                 p.lens?.toLowerCase().includes(selectedGear.toLowerCase())
               );
 
-      const matchSearch =
-        !q ||
-        p.title?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.creator?.username?.toLowerCase().includes(q) ||
-        p.camera_make?.toLowerCase().includes(q) ||
-        p.camera_model?.toLowerCase().includes(q) ||
-        p.lens?.toLowerCase().includes(q);
-
-      return matchCat && matchGear && matchSearch;
+      return matchCat && matchGear;
     });
 
     if (sortBy === "popular") {
@@ -303,7 +291,7 @@ export default function HomePage() {
     }
 
     return result;
-  }, [photos, selectedCategory, selectedGear, search, sortBy]);
+  }, [photos, selectedCategory, selectedGear, sortBy]);
 
   if (loading || fetching) {
     return (
@@ -412,6 +400,14 @@ export default function HomePage() {
                     <Users size={16} />
                     <span>Following Feed</span>
                   </button>
+
+                  <Link
+                    href="/search"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-gray-50 hover:text-stone-900 transition-colors"
+                  >
+                    <Search size={16} />
+                    <span>Search & Explore</span>
+                  </Link>
 
                   <Link
                     href="/addphoto"
@@ -567,89 +563,63 @@ export default function HomePage() {
               </div>
             </section>
 
-            {/* Card Search Bar & Sort Filter */}
-            <div className="rounded-2xl bg-white p-3 shadow-card flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-              {/* Search Capsule */}
-              <div className="relative flex-1">
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search shots, gear, creators..."
-                  className="w-full rounded-full border border-gray-200 bg-white py-2 pl-9 pr-8 text-xs text-gray-500 placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 focus:outline-none"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-
-              {/* Sort Selector */}
-              <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                <span className="text-[11px] font-semibold text-gray-400">Sort by:</span>
-                <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setSortBy("latest")}
-                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                      sortBy === "latest"
-                        ? "bg-stone-900 text-white shadow-xs"
-                        : "text-gray-600 hover:text-stone-900"
-                    }`}
-                  >
-                    Latest
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSortBy("popular")}
-                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                      sortBy === "popular"
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "text-gray-600 hover:text-stone-900"
-                    }`}
-                  >
-                    Popular
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSortBy("discussed")}
-                    className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                      sortBy === "discussed"
-                        ? "bg-stone-900 text-white shadow-xs"
-                        : "text-gray-600 hover:text-stone-900"
-                    }`}
-                  >
-                    Discussed
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Gear & Optics Filter Bar */}
-            <div className="rounded-2xl bg-white p-3 shadow-card space-y-2">
-              <div className="flex items-center justify-between px-1">
+            {/* Gear & Optics Filter Bar & Sort Controls */}
+            <div className="rounded-2xl bg-white p-3 shadow-card space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
                   <Aperture size={14} className="text-blue-600" />
                   <span>Filter by Camera Gear</span>
+                  {selectedGear !== "all" && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGear("all")}
+                      className="ml-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                    >
+                      <RotateCcw size={11} />
+                      Reset
+                    </button>
+                  )}
                 </div>
-                {selectedGear !== "all" && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedGear("all")}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800"
-                  >
-                    <RotateCcw size={11} />
-                    Reset Gear
-                  </button>
-                )}
+
+                {/* Sort Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-gray-400">Sort:</span>
+                  <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setSortBy("latest")}
+                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                        sortBy === "latest"
+                          ? "bg-stone-900 text-white shadow-xs"
+                          : "text-gray-600 hover:text-stone-900"
+                      }`}
+                    >
+                      Latest
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortBy("popular")}
+                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                        sortBy === "popular"
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "text-gray-600 hover:text-stone-900"
+                      }`}
+                    >
+                      Popular
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortBy("discussed")}
+                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                        sortBy === "discussed"
+                          ? "bg-stone-900 text-white shadow-xs"
+                          : "text-gray-600 hover:text-stone-900"
+                      }`}
+                    >
+                      Discussed
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
@@ -714,7 +684,7 @@ export default function HomePage() {
             </div>
 
             {/* Active Filters Summary */}
-            {(selectedCategory !== "all" || selectedGear !== "all" || search) && (
+            {(selectedCategory !== "all" || selectedGear !== "all") && (
               <div className="flex flex-wrap items-center gap-2 px-1 text-xs">
                 <span className="text-[11px] font-semibold text-stone-400">Active filters:</span>
                 {selectedCategory !== "all" && (
@@ -743,25 +713,11 @@ export default function HomePage() {
                     </button>
                   </span>
                 )}
-                {search && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 border border-stone-200 px-2.5 py-0.5 text-[11px] font-medium text-stone-700">
-                    &ldquo;{search}&rdquo;
-                    <button
-                      type="button"
-                      onClick={() => setSearch("")}
-                      className="hover:text-stone-900"
-                      aria-label="Clear search query"
-                    >
-                      <X size={11} />
-                    </button>
-                  </span>
-                )}
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedCategory("all");
                     setSelectedGear("all");
-                    setSearch("");
                   }}
                   className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 underline ml-1"
                 >

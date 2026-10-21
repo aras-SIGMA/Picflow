@@ -15,6 +15,7 @@ import { EASE } from "@/components/ui/motion";
 
 const LINKS = [
   { href: "/home", label: "Home" },
+  { href: "/search", label: "Search" },
   { href: "/addphoto", label: "Add Photo" },
   { href: "/account", label: "Account" },
 ];
