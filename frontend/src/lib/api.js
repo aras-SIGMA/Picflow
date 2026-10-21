@@ -73,6 +73,8 @@ export const register = (payload) =>
 export const login = (payload) =>
   apiFetch("/auth/login", { method: "POST", body: payload, auth: false });
 export const getMe = () => apiFetch("/auth/me");
+export const updateProfile = (payload) =>
+  apiFetch("/auth/profile", { method: "PUT", body: payload });
 export const uploadProfilePicture = (formData) =>
   apiFetch("/auth/profile-picture", { method: "PUT", formData });
 

@@ -43,6 +43,20 @@ export const userModel = {
       .eq("id", userId);
   },
 
+  async updateProfile(userId, { fullName, bio, username }) {
+    const payload = { updated_at: new Date().toISOString() };
+    if (fullName !== undefined) payload.full_name = fullName ? fullName.trim() : null;
+    if (bio !== undefined) payload.bio = bio ? bio.trim() : null;
+    if (username !== undefined) payload.username = username.trim().toLowerCase();
+
+    return supabase
+      .from("profiles")
+      .update(payload)
+      .eq("id", userId)
+      .select("id, username, full_name, bio, avatar_url, avatar_public_id, role, created_at")
+      .single();
+  },
+
   async createAuthUser({ email, password, username }) {
     return supabase.auth.admin.createUser({
       email,
