@@ -8,6 +8,7 @@ import { userController } from "../controllers/userController.js";
 const router = express.Router();
 router.use(verifyToken);
 
+router.get("/dashboard", userController.getDashboard);
 router.post("/:id/follow", userController.toggleFollow);
 router.get("/:id/follow-status", userController.getFollowStatus);
 

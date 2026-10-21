@@ -97,4 +97,18 @@ export const userController = {
       next(error);
     }
   },
+
+  async getDashboard(req, res, next) {
+    try {
+      const period = req.query.period || "30d";
+      const dashboardData = await userModel.getDashboardData(req.user.id, period);
+
+      res.json({
+        message: "Dashboard analytics fetched",
+        data: dashboardData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

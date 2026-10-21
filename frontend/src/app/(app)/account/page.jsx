@@ -10,7 +10,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, FolderPlus, ImagePlus, LogOut, Pencil, ShieldCheck, Trash2, UploadCloud, X } from "lucide-react";
+import {
+  Camera,
+  FolderPlus,
+  ImagePlus,
+  LogOut,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  TrendingUp,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import {
   getToken,
   getMe,
@@ -448,7 +459,14 @@ export default function AccountPage() {
               </div>
 
               {/* Action Buttons: Edit Profile & Logout */}
-              <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-2xs transition-all hover:bg-blue-100 hover:text-blue-900"
+                >
+                  <TrendingUp size={13} />
+                  <span>Analytics Dashboard</span>
+                </Link>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -480,6 +498,29 @@ export default function AccountPage() {
             </motion.div>
           ))}
         </RevealGroup>
+
+        {/* ============ DASHBOARD PROMPT BANNER ============ */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-2xs">
+              <TrendingUp size={15} />
+            </div>
+            <div>
+              <p className="font-bold text-stone-900">
+                Track Detailed Insights &amp; Engagement Timeline
+              </p>
+              <p className="text-[11px] text-stone-500">
+                Analyze likes growth, new followers, 4-pillar critique performance, and top performing shots.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-700"
+          >
+            Open Dashboard →
+          </Link>
+        </div>
 
         {/* ============ KATEGORI (Khusus Admin) ============ */}
         {profile.role === "admin" && (
