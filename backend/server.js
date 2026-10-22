@@ -5,10 +5,16 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
+import swaggerUi from "swagger-ui-express";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, ".env") });
+
+const swaggerDocument = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "docs", "openapi.json"), "utf8")
+);
 
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoutes.js";
@@ -32,8 +38,29 @@ app.use(express.json());
 app.get("/api", (req, res) => {
   res.json({
     message: "PicFlow API is running",
+    docs: "/api/docs",
   });
 });
+
+// Swagger API Documentation (OpenAPI 3.0)
+app.get("/api/docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerDocument);
+});
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: "PicFlow API Docs",
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 25px 0 }
+      .swagger-ui .info .title { font-weight: 800; color: #1c1917; }
+      .swagger-ui .btn.authorize { background-color: #2563eb; color: #fff; border-color: #2563eb; }
+      .swagger-ui .btn.authorize svg { fill: #fff; }
+    `,
+  })
+);
 
 // Endpoint Server-Sent Events (SSE) untuk real-time stream interaksi sosial (latency <= 250ms)
 app.get("/api/realtime/stream", (req, res) => {

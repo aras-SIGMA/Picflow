@@ -1,0 +1,1604 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PicFlow API Engine",
+    "version": "1.0.0",
+    "description": "RESTful API Engine & Real-time Service for PicFlow: sRGB Photographic Showcase, Automatic EXIF Analysis, and 4-Pillar Peer Critique.",
+    "contact": {
+      "name": "PicFlow Engineering",
+      "url": "https://github.com/aras-SIGMA/picflow"
+    },
+    "license": {
+      "name": "ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Local Development API Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication and creator profile management"
+    },
+    {
+      "name": "Photos",
+      "description": "Photo uploads, EXIF extraction, feed discovery, and like interactions"
+    },
+    {
+      "name": "Critiques",
+      "description": "Constructive 4-pillar photography critique (Composition, Lighting, Color, Concept)"
+    },
+    {
+      "name": "Comments",
+      "description": "Photo discussions and comment threads"
+    },
+    {
+      "name": "Users",
+      "description": "Public portfolios, follow relationships, and creator analytics dashboard"
+    },
+    {
+      "name": "Categories",
+      "description": "Curated genre taxonomy management (Admin restricted)"
+    },
+    {
+      "name": "System",
+      "description": "Health checks, database connectivity, and real-time SSE stream"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Check API health status",
+        "description": "Returns status ping indicating the PicFlow backend engine is online.",
+        "responses": {
+          "200": {
+            "description": "API is operational",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "PicFlow API is running" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/database": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Test Supabase database connectivity",
+        "description": "Validates connection to Supabase PostgreSQL database.",
+        "responses": {
+          "200": {
+            "description": "Database connection successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Database connection successful" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database connection error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realtime/stream": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Subscribe to real-time Server-Sent Events (SSE)",
+        "description": "Establishes a persistent SSE connection for real-time updates (likes, comments, critiques, follows).",
+        "responses": {
+          "200": {
+            "description": "Event stream connection active",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "example": "event: photo:liked\ndata: {\"photoId\":\"uuid\",\"totalLikes\":10}\n\n"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new creator account",
+        "description": "Creates user credentials in Supabase Auth and generates the associated public profile.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthRegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Username or email already taken",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Authenticate user and issue JWT",
+        "description": "Authenticates user against Supabase Auth and returns a stateless JWT token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthLoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get authenticated user profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Current user fetched" },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized / invalid token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Update user profile (alias of /auth/profile)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProfileRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Profile updated" },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/profile": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Update full name, bio, and username",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProfileRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Profile updated" },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Username already taken",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/profile-picture": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Upload and update creator avatar",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Avatar image file (JPEG, PNG, WebP)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Profile picture updated" },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing file or invalid format",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos": {
+      "get": {
+        "tags": ["Photos"],
+        "summary": "Get curated or filtered photo feed",
+        "description": "Retrieves photos with optional filtering by feed type (explore, following, my), category, gear, or search query.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "query",
+            "description": "Feed mode",
+            "schema": { "type": "string", "enum": ["explore", "following", "my"], "default": "explore" }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "Filter by category numeric ID",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "Filter by creator UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photos retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photos fetched" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Photo" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Login required for protected feeds (my, following)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Photos"],
+        "summary": "Upload photo and auto-extract EXIF metadata",
+        "security": [{ "bearerAuth": [] }],
+        "description": "Uploads image to Cloudinary (generating multi-resolution responsive derivatives) and automatically parses camera EXIF data.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image", "title", "id_category"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Photo image file"
+                  },
+                  "title": { "type": "string", "example": "Alpine Sunrise over Lake Braies" },
+                  "description": { "type": "string", "example": "Captured at dawn using ND filter." },
+                  "id_category": { "type": "integer", "example": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Photo uploaded and EXIF parsed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photo created" },
+                    "data": { "$ref": "#/components/schemas/Photo" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing image file or validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}": {
+      "get": {
+        "tags": ["Photos"],
+        "summary": "Get photo detail with full optical EXIF and critique stats",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo detail found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photo fetched" },
+                    "data": { "$ref": "#/components/schemas/Photo" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Photo not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Photos"],
+        "summary": "Update photo metadata or replace image",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": { "type": "string", "format": "binary" },
+                  "title": { "type": "string", "example": "Updated Title" },
+                  "description": { "type": "string" },
+                  "id_category": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Photo updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photo updated" },
+                    "data": { "$ref": "#/components/schemas/Photo" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - not the photo owner or admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Photo not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Photos"],
+        "summary": "Delete photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photo deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Photo not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}/like": {
+      "post": {
+        "tags": ["Photos"],
+        "summary": "Toggle like status on a photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like toggled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Photo liked" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "is_liked": { "type": "boolean", "example": true },
+                        "total_likes": { "type": "integer", "example": 42 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Photo not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}/comments": {
+      "get": {
+        "tags": ["Comments"],
+        "summary": "Get comments for a photo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Comments fetched" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Comment" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Comments"],
+        "summary": "Post a comment on a photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CommentCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Comment added" },
+                    "data": { "$ref": "#/components/schemas/Comment" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}/comments/{commentId}": {
+      "delete": {
+        "tags": ["Comments"],
+        "summary": "Delete a comment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "description": "Comment UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Comment deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - not comment author, photo owner, or admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}/critiques": {
+      "get": {
+        "tags": ["Critiques"],
+        "summary": "Get 4-pillar critiques and aggregate scores for a photo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Critiques fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Critiques fetched" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "critiques": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Critique" }
+                        },
+                        "stats": { "$ref": "#/components/schemas/CritiqueStats" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Critiques"],
+        "summary": "Submit a structured 4-pillar photography critique",
+        "security": [{ "bearerAuth": [] }],
+        "description": "Scores Composition, Lighting, Color/Tone, and Concept (1-5 each) plus qualitative Strengths and Improvements.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CritiqueCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Critique created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Critique submitted" },
+                    "data": { "$ref": "#/components/schemas/Critique" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Self-critique forbidden or validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "User already critiqued this photo (use PUT to update)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photos/{id}/critiques/{critiqueId}": {
+      "put": {
+        "tags": ["Critiques"],
+        "summary": "Update an existing critique",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "critiqueId",
+            "in": "path",
+            "required": true,
+            "description": "Critique UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CritiqueCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Critique updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Critique updated" },
+                    "data": { "$ref": "#/components/schemas/Critique" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - not the critique author",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Critiques"],
+        "summary": "Delete a critique",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Photo UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "critiqueId",
+            "in": "path",
+            "required": true,
+            "description": "Critique UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Critique deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Critique deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/dashboard": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get creator analytics dashboard data",
+        "security": [{ "bearerAuth": [] }],
+        "description": "Returns aggregated portfolio statistics (total likes, views, critiques, comments, engagement rate) and daily timeline.",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time range",
+            "schema": { "type": "string", "enum": ["7d", "30d", "all"], "default": "30d" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard analytics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Dashboard analytics fetched" },
+                    "data": { "$ref": "#/components/schemas/DashboardData" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get public photographer portfolio",
+        "description": "Fetches creator bio, gear summary, follower count, and public portfolio grid by UUID or username.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Creator UUID or username",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Public profile fetched" },
+                    "data": { "$ref": "#/components/schemas/PublicProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Photographer not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/follow": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Follow or unfollow a creator",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target creator UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow relationship toggled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Follow status updated" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "is_following": { "type": "boolean", "example": true },
+                        "followers_count": { "type": "integer", "example": 128 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot follow oneself",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/follow-status": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Check follow relationship status",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Target creator UUID",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow status returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Follow status fetched" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "is_following": { "type": "boolean", "example": false },
+                        "followers_count": { "type": "integer", "example": 12 },
+                        "following_count": { "type": "integer", "example": 34 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "List all photography categories",
+        "responses": {
+          "200": {
+            "description": "Categories list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Categories fetched" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Category" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Create a new category (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CategoryCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Category created" },
+                    "data": { "$ref": "#/components/schemas/Category" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin privileges required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get category by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Category ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Category fetched" },
+                    "data": { "$ref": "#/components/schemas/Category" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Categories"],
+        "summary": "Update category (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Category ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CategoryCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Category updated" },
+                    "data": { "$ref": "#/components/schemas/Category" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin privileges required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Delete category (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Category ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Category deleted" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin privileges required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter the JWT token obtained from POST /api/auth/login or POST /api/auth/register."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "Validation failed" },
+          "errors": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["Password must be at least 6 characters"]
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+          "username": { "type": "string", "example": "aris_visual" },
+          "full_name": { "type": "string", "nullable": true, "example": "Aris Pratama" },
+          "bio": { "type": "string", "nullable": true, "example": "Documentary & landscape photographer based in Bali." },
+          "avatar_url": { "type": "string", "nullable": true, "example": "https://res.cloudinary.com/picflow/image/upload/v1234/avatar.jpg" },
+          "role": { "type": "string", "enum": ["user", "admin"], "example": "user" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AuthRegisterRequest": {
+        "type": "object",
+        "required": ["username", "email", "password"],
+        "properties": {
+          "username": { "type": "string", "minLength": 3, "example": "aris_visual" },
+          "email": { "type": "string", "format": "email", "example": "aris@example.com" },
+          "password": { "type": "string", "minLength": 6, "example": "secret123" }
+        }
+      },
+      "AuthLoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "aris@example.com" },
+          "password": { "type": "string", "example": "secret123" }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "Login successful" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+              "user": { "$ref": "#/components/schemas/UserProfile" }
+            }
+          }
+        }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "full_name": { "type": "string", "maxLength": 100, "example": "Aris Pratama" },
+          "bio": { "type": "string", "maxLength": 500, "example": "Street and architectural photographer." },
+          "username": { "type": "string", "minLength": 3, "maxLength": 30, "example": "aris_photoworks" }
+        }
+      },
+      "ExifData": {
+        "type": "object",
+        "properties": {
+          "camera_make": { "type": "string", "example": "SONY" },
+          "camera_model": { "type": "string", "example": "ILCE-7M4" },
+          "lens": { "type": "string", "example": "FE 35mm F1.4 GM" },
+          "focal_length": { "type": "string", "example": "35mm" },
+          "aperture": { "type": "string", "example": "f/1.4" },
+          "shutter_speed": { "type": "string", "example": "1/2000s" },
+          "iso": { "type": "string", "example": "100" },
+          "date_taken": { "type": "string", "nullable": true, "example": "2026-10-15T08:30:00.000Z" }
+        }
+      },
+      "Photo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string", "example": "Alpine Sunrise over Lake Braies" },
+          "description": { "type": "string", "nullable": true },
+          "photo_url": { "type": "string", "example": "https://res.cloudinary.com/picflow/image/upload/v1/photos/sample.jpg" },
+          "thumbnail_url": { "type": "string" },
+          "medium_url": { "type": "string" },
+          "high_url": { "type": "string" },
+          "id_category": { "type": "integer" },
+          "category_name": { "type": "string", "example": "Landscape" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "creator": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "username": { "type": "string" },
+              "full_name": { "type": "string", "nullable": true },
+              "avatar_url": { "type": "string", "nullable": true }
+            }
+          },
+          "exif_data": { "$ref": "#/components/schemas/ExifData" },
+          "total_likes": { "type": "integer", "example": 24 },
+          "total_comments": { "type": "integer", "example": 5 },
+          "total_critiques": { "type": "integer", "example": 3 },
+          "is_liked": { "type": "boolean", "example": false },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "photo_id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "content": { "type": "string", "example": "Incredible dynamic range and color contrast!" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "username": { "type": "string" },
+              "avatar_url": { "type": "string", "nullable": true }
+            }
+          }
+        }
+      },
+      "CommentCreateRequest": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": { "type": "string", "minLength": 1, "maxLength": 1000, "example": "The framing and leading lines here are top tier." }
+        }
+      },
+      "Critique": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "photo_id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "rating_composition": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+          "rating_lighting": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+          "rating_color": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+          "rating_concept": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+          "average_score": { "type": "number", "example": 4.5 },
+          "strengths": { "type": "string", "example": "Golden hour backlight is handled with great care; highlights do not clip." },
+          "improvements": { "type": "string", "example": "Consider stopping down to f/4 for corner sharpness on the mountain edges." },
+          "created_at": { "type": "string", "format": "date-time" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "username": { "type": "string" },
+              "avatar_url": { "type": "string", "nullable": true }
+            }
+          }
+        }
+      },
+      "CritiqueCreateRequest": {
+        "type": "object",
+        "required": ["rating_composition", "rating_lighting", "rating_color", "rating_concept", "strengths", "improvements"],
+        "properties": {
+          "rating_composition": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+          "rating_lighting": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+          "rating_color": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+          "rating_concept": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+          "strengths": { "type": "string", "minLength": 3, "maxLength": 2000, "example": "Strong compositional balance and immaculate sRGB tone fidelity." },
+          "improvements": { "type": "string", "minLength": 3, "maxLength": 2000, "example": "Foreground elements could use a slight lift in shadow detail." }
+        }
+      },
+      "CritiqueStats": {
+        "type": "object",
+        "properties": {
+          "total_critiques": { "type": "integer", "example": 8 },
+          "average_total": { "type": "number", "example": 4.6 },
+          "average_composition": { "type": "number", "example": 4.8 },
+          "average_lighting": { "type": "number", "example": 4.5 },
+          "average_color": { "type": "number", "example": 4.7 },
+          "average_concept": { "type": "number", "example": 4.4 }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Landscape" },
+          "description": { "type": "string", "nullable": true, "example": "Nature, scenic vistas, and environmental imagery." },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryCreateRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "example": "Architecture" },
+          "description": { "type": "string", "example": "Structural design, geometries, and urban facades." }
+        }
+      },
+      "DashboardData": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total_photos": { "type": "integer", "example": 18 },
+              "total_likes": { "type": "integer", "example": 482 },
+              "total_critiques": { "type": "integer", "example": 54 },
+              "total_comments": { "type": "integer", "example": 126 },
+              "total_views": { "type": "integer", "example": 3200 },
+              "engagement_rate": { "type": "number", "example": 20.7 }
+            }
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "example": "2026-10-20" },
+                "likes": { "type": "integer", "example": 14 },
+                "critiques": { "type": "integer", "example": 3 },
+                "comments": { "type": "integer", "example": 6 },
+                "photos": { "type": "integer", "example": 1 }
+              }
+            }
+          }
+        }
+      },
+      "PublicProfile": {
+        "type": "object",
+        "properties": {
+          "profile": { "$ref": "#/components/schemas/UserProfile" },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "photos_count": { "type": "integer", "example": 24 },
+              "followers_count": { "type": "integer", "example": 180 },
+              "following_count": { "type": "integer", "example": 95 },
+              "total_likes": { "type": "integer", "example": 890 }
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Photo" }
+          }
+        }
+      }
+    }
+  }
+}
