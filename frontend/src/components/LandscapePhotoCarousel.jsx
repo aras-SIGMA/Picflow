@@ -6,6 +6,7 @@
 // - Bergerak otomatis secara halus (marquee loop tanpa jeda, pause saat hover)
 // - Dilengkapi badge kategori, info fotografer, dan parameter optik EXIF
 // - Klik kartu membuka modal Lightbox untuk bedah EXIF mendalam
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, Eye, Sparkles } from "lucide-react";
 import { fileUrl } from "@/lib/api";
@@ -17,7 +18,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-1",
     title: "Alpine Sunrise over Lake Braies",
     image_url:
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=75",
     camera_model: "Sony α7R V",
     aperture: "f/2.8",
     shutter_speed: "1/800s",
@@ -29,7 +30,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-2",
     title: "Golden Hour in Kyoto Bamboo Groves",
     image_url:
-      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=720&q=75",
     camera_model: "Fujifilm X-T5",
     aperture: "f/4.0",
     shutter_speed: "1/250s",
@@ -41,7 +42,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-3",
     title: "Reykjavik Basalt Coastline at Dusk",
     image_url:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=720&q=75",
     camera_model: "Leica M11",
     aperture: "f/2.0",
     shutter_speed: "1/1200s",
@@ -53,7 +54,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-4",
     title: "Dolomites Pinnacles Under Morning Mist",
     image_url:
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=720&q=75",
     camera_model: "Nikon Z8",
     aperture: "f/8.0",
     shutter_speed: "1/320s",
@@ -65,7 +66,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-5",
     title: "Modern Glass Facade Geometry",
     image_url:
-      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=720&q=75",
     camera_model: "Hasselblad X2D",
     aperture: "f/5.6",
     shutter_speed: "1/160s",
@@ -77,7 +78,7 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
     id_photo: "ls-6",
     title: "Sahara Dunes Wind Pattern",
     image_url:
-      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=720&q=75",
     camera_model: "Canon EOS R5",
     aperture: "f/4.0",
     shutter_speed: "1/1000s",
@@ -88,6 +89,23 @@ const FALLBACK_LANDSCAPE_PHOTOS = [
 ];
 
 export default function LandscapePhotoCarousel({ photos = [], onOpenPhoto }) {
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Format data foto asli dari DB pengguna
   const liveItems = (photos || []).map((p) => ({
     id_photo: p.id_photo || p.id,
@@ -109,7 +127,11 @@ export default function LandscapePhotoCarousel({ photos = [], onOpenPhoto }) {
   const combinedPhotos = [...liveItems, ...FALLBACK_LANDSCAPE_PHOTOS];
 
   return (
-    <section id="galeri" className="relative overflow-hidden py-16 sm:py-24 border-b border-[#E8DEC9]">
+    <section
+      ref={sectionRef}
+      id="galeri"
+      className="relative overflow-hidden py-16 sm:py-24 border-b border-[#E8DEC9]"
+    >
       {/* Header Seksi Carousel Landscape */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -137,7 +159,10 @@ export default function LandscapePhotoCarousel({ photos = [], onOpenPhoto }) {
 
       {/* Track Marquee Foto Format Landscape (Single continuous track ke kanan) */}
       <div className="relative mt-10 w-full overflow-hidden py-4">
-        <div className="marquee-right flex gap-6 px-4">
+        <div
+          className="marquee-right flex gap-6 px-4"
+          style={{ animationPlayState: isVisible ? "running" : "paused" }}
+        >
           {/* Digandakan agar loop terus berjalan tanpa putus */}
           {[...combinedPhotos, ...combinedPhotos].map((photo, idx) => (
             <LandscapeCard
@@ -176,21 +201,21 @@ function LandscapeCard({ photo, onOpen }) {
 
       {/* Badge Kategori Kiri Atas */}
       <div className="absolute left-3.5 top-3.5 z-10">
-        <span className="rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1 text-[11px] font-bold text-stone-800 shadow-2xs backdrop-blur-md">
+        <span className="rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/95 sm:bg-[#FFFDF6]/90 px-3 py-1 text-[11px] font-bold text-stone-800 shadow-2xs sm:backdrop-blur-md">
           {photo.category_name}
         </span>
       </div>
 
       {/* Badge Rasio & Kamera Kanan Atas */}
       <div className="absolute right-3.5 top-3.5 z-10 flex items-center gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <span className="flex items-center gap-1 rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-[10px] font-mono text-white backdrop-blur-md">
+        <span className="flex items-center gap-1 rounded-full border border-white/20 bg-black/75 sm:bg-black/60 px-2.5 py-1 text-[10px] font-mono text-white sm:backdrop-blur-md">
           <Eye size={11} />
           Inspect EXIF
         </span>
       </div>
 
       {/* Kapsul Info Minimalis di Bagian Bawah (#FFFDF6 Warm Cream) */}
-      <figcaption className="absolute inset-x-3.5 bottom-3.5 z-10 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6]/95 p-3.5 shadow-md backdrop-blur-md transition-transform duration-300 group-hover:-translate-y-0.5">
+      <figcaption className="absolute inset-x-3.5 bottom-3.5 z-10 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6]/98 sm:bg-[#FFFDF6]/95 p-3.5 shadow-md sm:backdrop-blur-md transition-transform duration-300 group-hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-xs sm:text-sm font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
             {photo.title}

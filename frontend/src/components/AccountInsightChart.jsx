@@ -221,8 +221,8 @@ export default function AccountInsightChart({
       </div>
 
       {/* Metric Selector Pills & Current Totals */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full sm:w-auto">
           {Object.entries(METRIC_CONFIG).map(([key, config]) => {
             const Icon = config.icon;
             const isSelected = activeMetric === key;
@@ -234,7 +234,7 @@ export default function AccountInsightChart({
                   setActiveMetric(key);
                   setHoverIndex(null);
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                   isSelected
                     ? "bg-white font-semibold text-stone-900 shadow-xs border border-gray-300 ring-2 ring-stone-900/5"
                     : "border border-gray-200 bg-white/70 text-stone-600 hover:bg-white hover:text-stone-900"
@@ -251,7 +251,7 @@ export default function AccountInsightChart({
         </div>
 
         {/* Quick summary for current metric */}
-        <div className="flex items-center gap-4 text-xs font-medium text-stone-500">
+        <div className="flex items-center gap-4 text-xs font-medium text-stone-500 shrink-0">
           <div>
             <span>Total in window: </span>
             <strong className="font-mono font-bold text-stone-900">
@@ -368,7 +368,7 @@ export default function AccountInsightChart({
           {/* Interactive Tooltip Overlay */}
           {hoveredPoint && (
             <div
-              className="pointer-events-none absolute top-3 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur-xs transition-transform"
+              className="pointer-events-none absolute top-3 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs shadow-lg sm:backdrop-blur-xs transition-transform"
               style={{
                 left:
                   hoverIndex > points.length / 2

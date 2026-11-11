@@ -18,10 +18,14 @@ export default function SplashScreen({ onFinish }) {
     const totalDuration = 4800; // 4.8 detik
 
     let frameId;
+    let lastPct = 0;
     function updateProgress(now) {
       const elapsed = now - startTime;
-      const pct = Math.min(100, Math.round((elapsed / totalDuration) * 100));
-      setProgress(pct);
+      const pct = Math.min(100, Math.floor((elapsed / totalDuration) * 100));
+      if (pct !== lastPct) {
+        lastPct = pct;
+        setProgress(pct);
+      }
       if (pct < 100) {
         frameId = requestAnimationFrame(updateProgress);
       }

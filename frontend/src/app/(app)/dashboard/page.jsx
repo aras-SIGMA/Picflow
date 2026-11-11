@@ -181,88 +181,92 @@ export default function DashboardPage() {
         {/* ======================================================== */}
         {/* 4 PRIMARY METRIC CARDS                                   */}
         {/* ======================================================== */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* 1. Total Posts */}
-          <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card transition-all hover:shadow-card-hover">
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
             <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                Total Published
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
+                Published
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Camera size={16} />
+              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
+                <Camera size={14} className="sm:hidden" />
+                <Camera size={16} className="hidden sm:block" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-extrabold text-stone-900">
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
                 {summary.total_posts}
               </span>
-              <span className="text-xs text-stone-500 font-medium">photos</span>
+              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">photos</span>
             </div>
-            <p className="mt-1 text-[11px] text-stone-400">
-              Active shots stored in your vault
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
+              Active in your vault
             </p>
           </div>
 
           {/* 2. Total Likes Received */}
-          <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card transition-all hover:shadow-card-hover">
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
             <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                Likes Received
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
+                Likes
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                <Heart size={16} />
+              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-red-50 text-red-600">
+                <Heart size={14} className="sm:hidden" />
+                <Heart size={16} className="hidden sm:block" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-extrabold text-stone-900">
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
                 {summary.total_likes}
               </span>
-              <span className="text-xs text-stone-500 font-medium">appreciations</span>
+              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">likes</span>
             </div>
-            <p className="mt-1 text-[11px] text-stone-400">
-              Across all published photographs
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
+              Across all photographs
             </p>
           </div>
 
           {/* 3. Audience (Followers & Following) */}
-          <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card transition-all hover:shadow-card-hover">
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
             <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                Audience Network
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
+                Audience
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <Users size={16} />
+              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600">
+                <Users size={14} className="sm:hidden" />
+                <Users size={16} className="hidden sm:block" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-extrabold text-stone-900">
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
                 {summary.followers_count}
               </span>
-              <span className="text-xs text-stone-500 font-medium">followers</span>
+              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">followers</span>
             </div>
-            <p className="mt-1 text-[11px] text-stone-400">
-              Following {summary.following_count} other photographers
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
+              Following {summary.following_count}
             </p>
           </div>
 
           {/* 4. Total Community Feedback */}
-          <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card transition-all hover:shadow-card-hover">
+          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
             <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                Community Feedback
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
+                Critiques
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                <Sparkles size={16} />
+              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-purple-50 text-purple-600">
+                <Sparkles size={14} className="sm:hidden" />
+                <Sparkles size={16} className="hidden sm:block" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-extrabold text-stone-900">
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
                 {summary.total_critiques}
               </span>
-              <span className="text-xs text-stone-500 font-medium">critiques</span>
+              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">critiques</span>
             </div>
-            <p className="mt-1 text-[11px] text-stone-400">
-              Plus {summary.total_comments} discussion comments
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
+              {summary.total_comments} comments
             </p>
           </div>
         </section>

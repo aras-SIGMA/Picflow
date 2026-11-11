@@ -264,7 +264,7 @@ function AddPhotoForm() {
           {/* ---------------- KOLOM KIRI: DROPZONE & EXIF ---------------- */}
           <div className="space-y-5 lg:col-span-7">
             {/* Viewfinder Dropzone Stage */}
-            <div className="rounded-3xl border border-gray-200/90 bg-white p-5 sm:p-6 shadow-card space-y-4">
+            <div className="rounded-3xl border border-gray-200/90 bg-white p-4 sm:p-6 shadow-card space-y-4">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -332,7 +332,7 @@ function AddPhotoForm() {
 
           {/* ---------------- KOLOM KANAN: FORM KURATORIAL ---------------- */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl border border-gray-200/90 bg-white p-6 sm:p-7 shadow-card space-y-5 lg:sticky lg:top-20">
+            <div className="rounded-3xl border border-gray-200/90 bg-white p-4 sm:p-7 shadow-card space-y-5 lg:sticky lg:top-20">
               <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <Layers size={13} />

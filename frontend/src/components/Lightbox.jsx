@@ -76,7 +76,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: EASE }}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 sm:bg-black/85 p-2 sm:p-4 backdrop-blur-none sm:backdrop-blur-md"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -91,12 +91,12 @@ export default function Lightbox({ photo, layoutId, onClose }) {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
         transition={{ duration: 0.4, ease: EASE }}
-        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-[var(--bg-elevated)] outline-none"
+        className="relative flex max-h-[96vh] sm:max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl sm:rounded-[var(--radius-lg)] border border-line bg-[var(--bg-elevated)] outline-none"
       >
         <button
           onClick={onClose}
           aria-label="Tutup"
-          className="absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+          className="absolute right-3 top-3 sm:right-4 sm:top-4 z-10 rounded-full border border-white/15 bg-black/50 p-1.5 sm:p-2 text-white transition-colors hover:bg-black/70"
         >
           <X size={16} />
         </button>
@@ -106,7 +106,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           <motion.div
             layoutId={layoutId ? `${layoutId}-${photo.id_photo}` : undefined}
             transition={{ duration: 0.5, ease: EASE }}
-            className="relative flex max-h-[48vh] min-h-0 w-full items-center justify-center"
+            className="relative flex max-h-[36vh] sm:max-h-[48vh] min-h-0 w-full items-center justify-center"
           >
             {src ? (
               <Image
@@ -116,7 +116,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
                 width={2048}
                 height={1536}
                 sizes="(max-width: 1024px) 100vw, 2048px"
-                className="h-auto max-h-[48vh] w-auto max-w-full object-contain"
+                className="h-auto max-h-[36vh] sm:max-h-[48vh] w-auto max-w-full object-contain"
                 priority
               />
             ) : (
@@ -126,7 +126,7 @@ export default function Lightbox({ photo, layoutId, onClose }) {
         </div>
 
         {/* Floating info card, Social Actions & Panels */}
-        <div className="max-h-[44vh] overflow-y-auto border-t border-line p-5">
+        <div className="max-h-[56vh] sm:max-h-[44vh] overflow-y-auto border-t border-line p-3.5 sm:p-5">
           {/* Header Bar: Creator, Title, Actions */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -204,42 +204,42 @@ export default function Lightbox({ photo, layoutId, onClose }) {
           </div>
 
           {/* Tab Selector: EXIF Parameter vs Diskusi vs Kritik & Saran */}
-          <div className="mt-5 flex flex-wrap gap-2 border-b border-line/60 pb-2">
+          <div className="mt-4 sm:mt-5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar border-b border-line/60 pb-2">
             <button
               type="button"
               onClick={() => setActiveTab("exif")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 activeTab === "exif"
                   ? "bg-accent/20 text-accent font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
               <Camera size={13} />
-              EXIF Parameter
+              <span>EXIF</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("comments")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 activeTab === "comments"
                   ? "bg-accent/20 text-accent font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
               <MessageSquare size={13} />
-              Discussion ({commentsCount})
+              <span>Discussion ({commentsCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("critiques")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-medium transition-all ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 activeTab === "critiques"
                   ? "bg-accent/20 text-accent font-semibold"
                   : "text-muted hover:text-ink"
               }`}
             >
               <Sparkles size={13} />
-              Critique &amp; Feedback
+              <span>Critique &amp; Feedback</span>
             </button>
           </div>
 
