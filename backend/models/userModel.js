@@ -272,7 +272,12 @@ export const userModel = {
     const timeline = Array.from(timelineMap.values());
 
     return {
-      profile: profileRes.data,
+      profile: profileRes.data
+        ? {
+            ...profileRes.data,
+            profile_picture_url: profileRes.data.avatar_url,
+          }
+        : null,
       period,
       summary: {
         total_posts: totalPosts,
