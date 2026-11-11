@@ -2,9 +2,10 @@
 // Satu pintu koneksi Next.js -> Express.
 // Semua fetch ke NEXT_PUBLIC_API_URL, token JWT disimpan di localStorage.
 
-// NEXT_PUBLIC_API_URL boleh berupa "http://localhost:8000" atau nilai lama
-// "http://localhost:8000/api". Semua endpoint di bawah tetap memakai prefix /api.
-const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+// Kosong = same-origin ("/api/..."), dipakai saat deploy (Vercel Services
+// menaruh backend di domain yang sama). Isi variabelnya untuk dev lokal
+// (http://localhost:8000) atau backend di domain lain.
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
 const API_URL = configuredApiUrl.endsWith("/api")
   ? configuredApiUrl
   : `${configuredApiUrl}/api`;

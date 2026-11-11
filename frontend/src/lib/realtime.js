@@ -3,8 +3,9 @@
 // latensi <= 250ms dan mekanisme reconnect handler otomatis.
 import { useEffect, useRef } from "react";
 
+// Kosong = same-origin (lihat src/lib/api.js)
 const configuredApiUrl = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  process.env.NEXT_PUBLIC_API_URL || ""
 ).replace(/\/+$/, "");
 
 const STREAM_URL = configuredApiUrl.endsWith("/api")
