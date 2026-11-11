@@ -42,8 +42,15 @@ export default function Navbar() {
 
   // Deteksi scroll untuk memicu transformasi menjadi tabung panjang melayang
   useEffect(() => {
+    let ticking = false;
     function onScroll() {
-      setScrolled(window.scrollY > 16);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 16);
+          ticking = false;
+        });
+        ticking = true;
+      }
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -57,8 +64,8 @@ export default function Navbar() {
         transition={{ type: "spring", stiffness: 360, damping: 32 }}
         className={`pointer-events-auto relative flex items-center justify-between transition-all duration-500 ${
           scrolled
-            ? "mt-2.5 sm:mt-3 w-[94%] max-w-5xl rounded-full border border-[#E8DEC9] bg-[#FFFDF6]/92 backdrop-blur-2xl shadow-xl shadow-stone-900/5 px-4 sm:px-6 py-2"
-            : "w-full max-w-6xl rounded-none border-b border-transparent bg-transparent px-4 py-3.5"
+            ? "mt-2 sm:mt-3 w-[95%] sm:w-[94%] max-w-5xl rounded-full border border-[#E8DEC9] bg-[#FFFDF6]/98 sm:bg-[#FFFDF6]/92 backdrop-blur-none sm:backdrop-blur-2xl shadow-xl shadow-stone-900/5 px-3.5 sm:px-6 py-1.5 sm:py-2"
+            : "w-full max-w-6xl rounded-none border-b border-transparent bg-transparent px-3.5 sm:px-4 py-2.5 sm:py-3.5"
         }`}
       >
         {/* Brand Logo */}
@@ -157,16 +164,16 @@ export default function Navbar() {
             </div>
           </div>
         ) : (
-          <div className="hidden items-center gap-4 sm:flex">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Link
               href="/login"
-              className="text-xs font-semibold text-stone-600 transition-colors hover:text-stone-900 px-3 py-1.5"
+              className="text-xs font-semibold text-stone-600 transition-colors hover:text-stone-900 px-2.5 sm:px-3 py-1.5"
             >
               Login
             </Link>
             <Link
               href="/register"
-              className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-blue-700 hover:shadow-sm"
+              className="rounded-full bg-blue-600 px-3.5 sm:px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-blue-700 active:scale-95"
             >
               Register
             </Link>
@@ -195,7 +202,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.98 }}
               transition={{ duration: 0.25, ease: EASE }}
-              className="absolute left-0 right-0 top-full mt-2 rounded-2xl border border-[#E8DEC9] bg-[#FFFDF6]/98 p-3 shadow-xl backdrop-blur-2xl sm:hidden pointer-events-auto"
+              className="absolute left-0 right-0 top-full mt-2 rounded-2xl border border-[#E8DEC9] bg-[#FFFDF6] p-3 shadow-xl sm:hidden pointer-events-auto"
             >
               <div className="flex flex-col gap-1">
                 {LINKS.map((item) => {

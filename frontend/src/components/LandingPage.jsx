@@ -9,7 +9,7 @@
 //    - Spektrum sRGB (#EF4444, #10B981, #3B82F6, #475569)
 //    - Tombol & kapsul pill rounded-full
 //    - Tipografi editorial tegas & JetBrains Mono untuk metadata
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   motion,
@@ -194,6 +194,15 @@ const PROFESSIONAL_ECOSYSTEM_LOGOS = [
 ];
 
 export default function LandingPage({ children }) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   // State interaktif pada kartu Bento
   const [activeHistogram, setActiveHistogram] = useState(2);
   const [togglePillars, setTogglePillars] = useState({
@@ -211,6 +220,7 @@ export default function LandingPage({ children }) {
   const smoothHeroOpacity = useSpring(heroOpacity, { stiffness: 320, damping: 28 });
 
   const handleHeroMouseEnter = (e) => {
+    if (isMobile) return;
     const rect = e.currentTarget.getBoundingClientRect();
     // Snap koordinat seketika tepat di titik masuk kursor (tanpa glide dari 0,0 atau offscreen)
     heroMouseX.set(e.clientX - rect.left);
@@ -219,6 +229,7 @@ export default function LandingPage({ children }) {
   };
 
   const handleHeroMouseMove = (e) => {
+    if (isMobile) return;
     const rect = e.currentTarget.getBoundingClientRect();
     // Real-time direct update 1:1 tanpa lag mengejar kursor
     heroMouseX.set(e.clientX - rect.left);
@@ -229,6 +240,7 @@ export default function LandingPage({ children }) {
   };
 
   const handleHeroMouseLeave = () => {
+    if (isMobile) return;
     // Redupkan halus di tempat kursor keluar tanpa memindahkan koordinat
     heroOpacity.set(0);
   };
@@ -241,7 +253,7 @@ export default function LandingPage({ children }) {
   });
 
   // Spring physics dengan bobot dan inersia tinggi (mass: 1.4, damping: 32)
-  // agar seluruh pergerakan komponen di Community Feedback terasa lebih berbobot, berat, dan stabil
+  // agar seluruh pergerakan komponen di Community Feedback terasa lebih berbobot, berat, dan stabil di desktop
   const notepadScrollY = useSpring(rawScrollY, {
     stiffness: 70,
     damping: 32,
@@ -249,10 +261,12 @@ export default function LandingPage({ children }) {
     restDelta: 0.0005,
   });
 
+  const activeNotepadScroll = isMobile ? rawScrollY : notepadScrollY;
+
   // Track kartu ulasan bergeser mulus hingga card ke-6 (Julian Morales) dengan gap proporsional ke jendela
-  const notepadCardsX = useTransform(notepadScrollY, [0, 1], ["0%", "-66%"]);
+  const notepadCardsX = useTransform(activeNotepadScroll, [0, 1], ["0%", "-66%"]);
   // Teks latar belakang bergeser sehingga kata "PicFlow?" terlihat utuh dengan gap proporsional
-  const bgTextX = useTransform(notepadScrollY, [0, 1], ["0%", "-54%"]);
+  const bgTextX = useTransform(activeNotepadScroll, [0, 1], ["0%", "-54%"]);
 
   return (
     <div className="flex flex-col bg-[#FFFDF6] text-stone-900 selection:bg-blue-600 selection:text-white">
@@ -276,10 +290,10 @@ export default function LandingPage({ children }) {
           }}
         />
 
-        {/* Cursor Tracking Grid Reveal (Ultra-Diffuse Atmospheric Mask Tanpa Batas Lingkaran Kaku) */}
+        {/* Cursor Tracking Grid Reveal (Ultra-Diffuse Atmospheric Mask - Desktop Only) */}
         <motion.div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="hidden sm:block pointer-events-none absolute inset-0"
           style={{
             opacity: smoothHeroOpacity,
             backgroundImage:
@@ -290,17 +304,23 @@ export default function LandingPage({ children }) {
           }}
         />
 
-        {/* Cursor Optical Light Beam (Kabut Cahaya Sangat Pudar & Organik) */}
+        {/* Cursor Optical Light Beam (Desktop Only) */}
         <motion.div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="hidden sm:block pointer-events-none absolute inset-0"
           style={{
             opacity: smoothHeroOpacity,
             background: useMotionTemplate`radial-gradient(300px circle at ${heroMouseX}px ${heroMouseY}px, rgba(239, 68, 68, 0.04) 0%, rgba(16, 185, 129, 0.025) 35%, rgba(59, 130, 246, 0.03) 65%, transparent 100%)`,
           }}
         />
 
-        {/* Ambient radial glow di hero (Spektrum Segitiga sRGB Seimbang: Red, Green, Blue) */}
+        {/* Mobile Static Ambient Glow (0 GPU lag on phones) */}
+        <div
+          aria-hidden="true"
+          className="sm:hidden pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(59,130,246,0.07),rgba(16,185,129,0.05)_40%,transparent_70%)]"
+        />
+
+        {/* Ambient radial glow di hero (Desktop Only - Spektrum Segitiga sRGB Seimbang: Red, Green, Blue) */}
         {/* 1. Red Channel Orb (Kiri Atas) */}
         <motion.div
           aria-hidden="true"
@@ -313,7 +333,7 @@ export default function LandingPage({ children }) {
             duration: 7.5,
             ease: "easeInOut",
           }}
-          className="pointer-events-none absolute left-[22%] top-[22%] -translate-x-1/2 -translate-y-1/2 h-[420px] w-[520px] rounded-full bg-rose-500/12 blur-[130px]"
+          className="hidden sm:block pointer-events-none absolute left-[22%] top-[22%] -translate-x-1/2 -translate-y-1/2 h-[420px] w-[520px] rounded-full bg-rose-500/12 blur-[130px]"
         />
         {/* 2. Blue Channel Orb (Kanan Atas) */}
         <motion.div
@@ -327,7 +347,7 @@ export default function LandingPage({ children }) {
             duration: 9,
             ease: "easeInOut",
           }}
-          className="pointer-events-none absolute left-[78%] top-[26%] -translate-x-1/2 -translate-y-1/2 h-[440px] w-[560px] rounded-full bg-blue-500/10 blur-[130px]"
+          className="hidden sm:block pointer-events-none absolute left-[78%] top-[26%] -translate-x-1/2 -translate-y-1/2 h-[440px] w-[560px] rounded-full bg-blue-500/10 blur-[130px]"
         />
         {/* 3. Green Channel Orb (Tengah Bawah) */}
         <motion.div
@@ -341,7 +361,7 @@ export default function LandingPage({ children }) {
             duration: 8.5,
             ease: "easeInOut",
           }}
-          className="pointer-events-none absolute left-[50%] top-[45%] -translate-x-1/2 -translate-y-1/2 h-[380px] w-[480px] rounded-full bg-emerald-500/8 blur-[120px]"
+          className="hidden sm:block pointer-events-none absolute left-[50%] top-[45%] -translate-x-1/2 -translate-y-1/2 h-[380px] w-[480px] rounded-full bg-emerald-500/8 blur-[120px]"
         />
 
         {/* Viewfinder Reticle Framing Accents (Sentuhan Kamera Profesional & Tally Light Merah) */}
@@ -363,184 +383,188 @@ export default function LandingPage({ children }) {
         </div>
 
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          {/* 4 Floating Circular Cards / Creator Orbits (Meniru 4 Avatar dengan Panah di Referensi) */}
-          {/* --- Orbit 1: Kiri Atas (Sony α7 IV - Red Accent Diperkuat) --- */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.75, x: -30 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex absolute -left-2 top-8 z-20 items-center gap-3"
-          >
-            <motion.div
-              animate={{ y: [-4, 6, -4], rotate: [-0.8, 0.8, -0.8] }}
-              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut" }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
-            >
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10 text-red-600 ring-2 ring-[#EF4444]">
-                <Camera size={14} />
-              </span>
-              <div className="text-left text-[11px] leading-tight">
-                <p className="font-bold text-stone-900">Nadia S.</p>
-                <p className="font-mono text-[10px] text-stone-500">Sony α7 IV · 35mm</p>
-              </div>
-            </motion.div>
-            {/* Panah vektor halus mengarah ke teks utama (Aksen Merah) */}
-            <motion.svg
-              animate={{ opacity: [0.55, 0.95, 0.55], y: [-2, 2, -2] }}
-              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.2 }}
-              className="h-6 w-10 text-red-400/70 rotate-12"
-              fill="none"
-              viewBox="0 0 40 24"
-              stroke="currentColor"
-            >
-              <path
-                d="M4 20 C 15 20, 25 15, 34 6"
-                strokeWidth="1.75"
-                strokeDasharray="3 3"
-                strokeLinecap="round"
-              />
-              <path
-                d="M28 5 L 35 6 L 33 13"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </motion.svg>
-          </motion.div>
+          {/* 4 Floating Circular Cards / Creator Orbits (Meniru 4 Avatar dengan Panah di Referensi - Desktop Only) */}
+          {!isMobile && (
+            <>
+              {/* --- Orbit 1: Kiri Atas (Sony α7 IV - Red Accent Diperkuat) --- */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75, x: -30 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="hidden lg:flex absolute -left-2 top-8 z-20 items-center gap-3"
+              >
+                <motion.div
+                  animate={{ y: [-4, 6, -4], rotate: [-0.8, 0.8, -0.8] }}
+                  transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut" }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+                >
+                  <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10 text-red-600 ring-2 ring-[#EF4444]">
+                    <Camera size={14} />
+                  </span>
+                  <div className="text-left text-[11px] leading-tight">
+                    <p className="font-bold text-stone-900">Nadia S.</p>
+                    <p className="font-mono text-[10px] text-stone-500">Sony α7 IV · 35mm</p>
+                  </div>
+                </motion.div>
+                {/* Panah vektor halus mengarah ke teks utama (Aksen Merah) */}
+                <motion.svg
+                  animate={{ opacity: [0.55, 0.95, 0.55], y: [-2, 2, -2] }}
+                  transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.2 }}
+                  className="h-6 w-10 text-red-400/70 rotate-12"
+                  fill="none"
+                  viewBox="0 0 40 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M4 20 C 15 20, 25 15, 34 6"
+                    strokeWidth="1.75"
+                    strokeDasharray="3 3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M28 5 L 35 6 L 33 13"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </motion.svg>
+              </motion.div>
 
-          {/* --- Orbit 2: Kanan Atas (Leica M11 - Green Accent) --- */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.75, x: 30 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex absolute -right-2 top-8 z-20 items-center gap-3"
-          >
-            {/* Panah vektor mengarah ke teks */}
-            <motion.svg
-              animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
-              transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut", delay: 0.4 }}
-              className="h-6 w-10 text-stone-400 -rotate-12"
-              fill="none"
-              viewBox="0 0 40 24"
-              stroke="currentColor"
-            >
-              <path
-                d="M36 20 C 25 20, 15 15, 6 6"
-                strokeWidth="1.75"
-                strokeDasharray="3 3"
-                strokeLinecap="round"
-              />
-              <path
-                d="M12 5 L 5 6 L 7 13"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </motion.svg>
-            <motion.div
-              animate={{ y: [4, -5, 4], rotate: [0.8, -0.8, 0.8] }}
-              transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut" }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
-            >
-              <div className="text-right text-[11px] leading-tight">
-                <p className="font-bold text-stone-900">Bima Arya</p>
-                <p className="font-mono text-[10px] text-stone-500">Leica M11 · 50mm f/0.95</p>
-              </div>
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 ring-2 ring-[#10B981]">
-                <Aperture size={14} />
-              </span>
-            </motion.div>
-          </motion.div>
+              {/* --- Orbit 2: Kanan Atas (Leica M11 - Green Accent) --- */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75, x: 30 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="hidden lg:flex absolute -right-2 top-8 z-20 items-center gap-3"
+              >
+                {/* Panah vektor mengarah ke teks */}
+                <motion.svg
+                  animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
+                  transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut", delay: 0.4 }}
+                  className="h-6 w-10 text-stone-400 -rotate-12"
+                  fill="none"
+                  viewBox="0 0 40 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M36 20 C 25 20, 15 15, 6 6"
+                    strokeWidth="1.75"
+                    strokeDasharray="3 3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 5 L 5 6 L 7 13"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </motion.svg>
+                <motion.div
+                  animate={{ y: [4, -5, 4], rotate: [0.8, -0.8, 0.8] }}
+                  transition={{ repeat: Infinity, duration: 5.4, ease: "easeInOut" }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+                >
+                  <div className="text-right text-[11px] leading-tight">
+                    <p className="font-bold text-stone-900">Bima Arya</p>
+                    <p className="font-mono text-[10px] text-stone-500">Leica M11 · 50mm f/0.95</p>
+                  </div>
+                  <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 ring-2 ring-[#10B981]">
+                    <Aperture size={14} />
+                  </span>
+                </motion.div>
+              </motion.div>
 
-          {/* --- Orbit 3: Kiri Bawah (Fujifilm X-T5 - Blue Accent) --- */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.75, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex absolute left-8 bottom-4 z-20 items-center gap-3"
-          >
-            <motion.div
-              animate={{ y: [-5, 5, -5], rotate: [-1, 0.5, -1] }}
-              transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.6 }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
-            >
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 ring-2 ring-[#3B82F6]">
-                <Sparkles size={14} />
-              </span>
-              <div className="text-left text-[11px] leading-tight">
-                <p className="font-bold text-stone-900">Farah L.</p>
-                <p className="font-mono text-[10px] text-stone-500">Fuji X-T5 · Sim Classic</p>
-              </div>
-            </motion.div>
-            <motion.svg
-              animate={{ opacity: [0.45, 0.85, 0.45], y: [-2, 2, -2] }}
-              transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.8 }}
-              className="h-6 w-10 text-stone-400 -rotate-45"
-              fill="none"
-              viewBox="0 0 40 24"
-              stroke="currentColor"
-            >
-              <path
-                d="M4 14 C 15 14, 25 10, 34 4"
-                strokeWidth="1.75"
-                strokeDasharray="3 3"
-                strokeLinecap="round"
-              />
-              <path
-                d="M26 3 L 35 4 L 32 11"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </motion.svg>
-          </motion.div>
+              {/* --- Orbit 3: Kiri Bawah (Fujifilm X-T5 - Blue Accent) --- */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                className="hidden lg:flex absolute left-8 bottom-4 z-20 items-center gap-3"
+              >
+                <motion.div
+                  animate={{ y: [-5, 5, -5], rotate: [-1, 0.5, -1] }}
+                  transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.6 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+                >
+                  <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 ring-2 ring-[#3B82F6]">
+                    <Sparkles size={14} />
+                  </span>
+                  <div className="text-left text-[11px] leading-tight">
+                    <p className="font-bold text-stone-900">Farah L.</p>
+                    <p className="font-mono text-[10px] text-stone-500">Fuji X-T5 · Sim Classic</p>
+                  </div>
+                </motion.div>
+                <motion.svg
+                  animate={{ opacity: [0.45, 0.85, 0.45], y: [-2, 2, -2] }}
+                  transition={{ repeat: Infinity, duration: 6.0, ease: "easeInOut", delay: 0.8 }}
+                  className="h-6 w-10 text-stone-400 -rotate-45"
+                  fill="none"
+                  viewBox="0 0 40 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M4 14 C 15 14, 25 10, 34 4"
+                    strokeWidth="1.75"
+                    strokeDasharray="3 3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M26 3 L 35 4 L 32 11"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </motion.svg>
+              </motion.div>
 
-          {/* --- Orbit 4: Kanan Bawah (Canon EOS R5 - Slate Accent) --- */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.75, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex absolute right-12 bottom-4 z-20 items-center gap-3"
-          >
-            <motion.svg
-              animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
-              transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 1 }}
-              className="h-6 w-10 text-stone-400 rotate-45"
-              fill="none"
-              viewBox="0 0 40 24"
-              stroke="currentColor"
-            >
-              <path
-                d="M36 14 C 25 14, 15 10, 6 4"
-                strokeWidth="1.75"
-                strokeDasharray="3 3"
-                strokeLinecap="round"
-              />
-              <path
-                d="M14 3 L 5 4 L 8 11"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </motion.svg>
-            <motion.div
-              animate={{ y: [5, -4, 5], rotate: [0.8, -0.8, 0.8] }}
-              transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 0.3 }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
-            >
-              <div className="text-right text-[11px] leading-tight">
-                <p className="font-bold text-stone-900">Dimas K.</p>
-                <p className="font-mono text-[10px] text-stone-500">Canon R5 · 85mm f/1.2</p>
-              </div>
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-slate-500/10 text-slate-700 ring-2 ring-[#475569]">
-                <Layers size={14} />
-              </span>
-            </motion.div>
-          </motion.div>
+              {/* --- Orbit 4: Kanan Bawah (Canon EOS R5 - Slate Accent) --- */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                className="hidden lg:flex absolute right-12 bottom-4 z-20 items-center gap-3"
+              >
+                <motion.svg
+                  animate={{ opacity: [0.45, 0.85, 0.45], y: [2, -2, 2] }}
+                  transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 1 }}
+                  className="h-6 w-10 text-stone-400 rotate-45"
+                  fill="none"
+                  viewBox="0 0 40 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M36 14 C 25 14, 15 10, 6 4"
+                    strokeWidth="1.75"
+                    strokeDasharray="3 3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M14 3 L 5 4 L 8 11"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </motion.svg>
+                <motion.div
+                  animate={{ y: [5, -4, 5], rotate: [0.8, -0.8, 0.8] }}
+                  transition={{ repeat: Infinity, duration: 5.6, ease: "easeInOut", delay: 0.3 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative flex items-center gap-2.5 rounded-full border border-[#DCD0BE] bg-[#FFFDF6]/90 px-3 py-1.5 shadow-md backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg"
+                >
+                  <div className="text-right text-[11px] leading-tight">
+                    <p className="font-bold text-stone-900">Dimas K.</p>
+                    <p className="font-mono text-[10px] text-stone-500">Canon R5 · 85mm f/1.2</p>
+                  </div>
+                  <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-slate-500/10 text-slate-700 ring-2 ring-[#475569]">
+                    <Layers size={14} />
+                  </span>
+                </motion.div>
+              </motion.div>
+            </>
+          )}
 
           {/* Konten Sentral Hero */}
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
@@ -564,7 +588,7 @@ export default function LandingPage({ children }) {
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl lg:text-6xl"
+              className="mt-5 sm:mt-6 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-5xl lg:text-6xl"
               style={{ lineHeight: 1.12 }}
             >
               One platform to{" "}
@@ -614,7 +638,7 @@ export default function LandingPage({ children }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 max-w-2xl text-base leading-relaxed text-stone-600 sm:text-lg"
+              className="mt-4 sm:mt-6 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-lg"
             >
               PicFlow preserves color integrity without aggressive compression, extracts
               optical camera metadata instantly, and empowers constructive professional discourse.
@@ -716,7 +740,7 @@ export default function LandingPage({ children }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-2 rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-6 sm:p-10 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8"
+              className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-4 sm:p-10 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8"
             >
               {/* Kolom Teks Kiri */}
               <div className="max-w-md">
@@ -742,7 +766,7 @@ export default function LandingPage({ children }) {
               </div>
 
               {/* Mockup Visual Kanan (Meniru Bar Chart Grafis di Referensi) */}
-              <div className="w-full max-w-md rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-5 shadow-sm">
+              <div className="w-full max-w-md rounded-xl sm:rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold text-stone-900">
@@ -974,18 +998,23 @@ export default function LandingPage({ children }) {
         className="mx-auto w-full max-w-6xl px-4 sm:px-6 pb-20 sm:pb-28"
       >
         <div className="relative overflow-hidden rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/70 px-6 py-14 sm:px-12 sm:py-20 text-center shadow-xs">
-          {/* Efek 3 warna dasar gradasi blur halus (Merah #EF4444, Hijau #10B981, Biru #3B82F6) */}
+          {/* Efek 3 warna dasar gradasi blur halus (Desktop Only) */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-16 -left-12 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#EF4444]/15 blur-[100px]"
+            className="hidden sm:block pointer-events-none absolute -top-16 -left-12 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#EF4444]/15 blur-[100px]"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/4 -right-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#10B981]/15 blur-[100px]"
+            className="hidden sm:block pointer-events-none absolute top-1/4 -right-16 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#10B981]/15 blur-[100px]"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-16 left-1/3 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#3B82F6]/18 blur-[100px]"
+            className="hidden sm:block pointer-events-none absolute -bottom-16 left-1/3 h-72 w-72 sm:h-96 sm:w-96 rounded-full bg-[#3B82F6]/18 blur-[100px]"
+          />
+          {/* Mobile Static Gradient (0 GPU cost) */}
+          <div
+            aria-hidden="true"
+            className="sm:hidden pointer-events-none absolute inset-0 bg-gradient-to-tr from-rose-500/5 via-emerald-500/5 to-blue-500/5"
           />
 
           {/* Kurva gelombang spektrum organik di latar belakang */}
@@ -1045,7 +1074,7 @@ export default function LandingPage({ children }) {
             ].map((fmt) => (
               <div
                 key={fmt.code}
-                className="flex items-center gap-2.5 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6]/90 px-4 py-2.5 shadow-2xs hover:bg-white hover:border-stone-400 hover:shadow-xs transition-all cursor-default backdrop-blur-sm"
+                className="flex items-center gap-2.5 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] sm:bg-[#FFFDF6]/90 px-4 py-2.5 shadow-2xs hover:bg-white hover:border-stone-400 hover:shadow-xs transition-all cursor-default sm:backdrop-blur-sm"
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg ${fmt.color} font-mono text-[11px] font-bold`}
@@ -1069,7 +1098,7 @@ export default function LandingPage({ children }) {
       {/* ========================================================================= */}
       <section
         ref={notepadSectionRef}
-        className="relative h-[520vh] border-t border-[#E8DEC9] bg-[#FFFDF6]"
+        className="relative h-[260vh] sm:h-[520vh] border-t border-[#E8DEC9] bg-[#FFFDF6]"
       >
         <div className="sticky top-0 flex h-screen w-full flex-col justify-between overflow-hidden pt-20 sm:pt-24 pb-8 sm:pb-10">
           {/* Latar Belakang Teks Tipografi: "What they say about PicFlow?" */}
@@ -1106,7 +1135,7 @@ export default function LandingPage({ children }) {
           <div className="relative z-10 w-full overflow-visible py-8 my-auto">
             <motion.div
               style={{ x: notepadCardsX }}
-              className="flex items-center gap-32 sm:gap-48 lg:gap-64 pl-12 sm:pl-20 lg:pl-32 pr-8 sm:pr-14 lg:pr-20 w-max"
+              className="flex items-center gap-16 sm:gap-48 lg:gap-64 pl-6 sm:pl-20 lg:pl-32 pr-6 sm:pr-14 lg:pr-20 w-max"
             >
               {[
                 {
@@ -1115,7 +1144,7 @@ export default function LandingPage({ children }) {
                   role: "LEAD CURATOR",
                   roleColor: "text-amber-500",
                   avatar: "RP",
-                  offset: "-translate-y-8 sm:-translate-y-12",
+                  offset: "-translate-y-2 sm:-translate-y-12",
                   floatDuration: 4.2,
                   floatDelay: 0,
                   floatY: -14,
@@ -1129,7 +1158,7 @@ export default function LandingPage({ children }) {
                   role: "IT & ARCHITECTURE LEAD",
                   roleColor: "text-amber-500",
                   avatar: "JW",
-                  offset: "translate-y-14 sm:translate-y-20",
+                  offset: "translate-y-2 sm:translate-y-20",
                   floatDuration: 5.2,
                   floatDelay: 0.9,
                   floatY: -16,
@@ -1143,7 +1172,7 @@ export default function LandingPage({ children }) {
                   role: "CORE FELLOW & PRODUCER",
                   roleColor: "text-amber-500",
                   avatar: "AF",
-                  offset: "-translate-y-16 sm:-translate-y-24",
+                  offset: "-translate-y-3 sm:-translate-y-24",
                   floatDuration: 4.6,
                   floatDelay: 1.5,
                   floatY: -13,
@@ -1157,7 +1186,7 @@ export default function LandingPage({ children }) {
                   role: "STREET & SECURITY FELLOW",
                   roleColor: "text-amber-500",
                   avatar: "RS",
-                  offset: "translate-y-10 sm:translate-y-14",
+                  offset: "translate-y-2 sm:translate-y-14",
                   floatDuration: 5.5,
                   floatDelay: 0.4,
                   floatY: -15,
@@ -1171,7 +1200,7 @@ export default function LandingPage({ children }) {
                   role: "ASTROPHOTOGRAPHER",
                   roleColor: "text-[#10B981]",
                   avatar: "SC",
-                  offset: "-translate-y-10 sm:-translate-y-16",
+                  offset: "-translate-y-2 sm:-translate-y-16",
                   floatDuration: 4.8,
                   floatDelay: 1.2,
                   floatY: -14,
@@ -1185,7 +1214,7 @@ export default function LandingPage({ children }) {
                   role: "EDITORIAL VISUAL DIRECTOR",
                   roleColor: "text-blue-600",
                   avatar: "JM",
-                  offset: "translate-y-12 sm:translate-y-18",
+                  offset: "translate-y-3 sm:translate-y-18",
                   floatDuration: 5.3,
                   floatDelay: 0.7,
                   floatY: -16,
@@ -1196,22 +1225,34 @@ export default function LandingPage({ children }) {
               ].map((item) => (
                 <div key={item.id} className={`shrink-0 ${item.offset}`}>
                   <motion.div
-                    animate={{
-                      y: [0, item.floatY, 0],
-                      rotate: [item.tilt, item.tilt + 0.8, item.tilt - 0.6, item.tilt],
-                    }}
-                    whileHover={{
-                      scale: 1.02,
-                      rotate: 0,
-                      transition: { duration: 0.3 },
-                    }}
-                    transition={{
-                      duration: item.floatDuration,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: item.floatDelay,
-                    }}
-                    className="group relative flex w-[300px] sm:w-[350px] lg:w-[380px] flex-col justify-between rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6]/95 backdrop-blur-xs p-5 sm:p-6 shadow-[0_18px_38px_-12px_rgba(60,40,20,0.1)] hover:shadow-[0_26px_50px_-10px_rgba(60,40,20,0.18)] hover:border-stone-400 transition-shadow duration-300"
+                    animate={
+                      isMobile
+                        ? undefined
+                        : {
+                            y: [0, item.floatY, 0],
+                            rotate: [item.tilt, item.tilt + 0.8, item.tilt - 0.6, item.tilt],
+                          }
+                    }
+                    whileHover={
+                      isMobile
+                        ? undefined
+                        : {
+                            scale: 1.02,
+                            rotate: 0,
+                            transition: { duration: 0.3 },
+                          }
+                    }
+                    transition={
+                      isMobile
+                        ? undefined
+                        : {
+                            duration: item.floatDuration,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: item.floatDelay,
+                          }
+                    }
+                    className="group relative flex w-[300px] sm:w-[350px] lg:w-[380px] flex-col justify-between rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#FFFDF6] sm:bg-[#FFFDF6]/95 sm:backdrop-blur-xs p-5 sm:p-6 shadow-card sm:shadow-[0_18px_38px_-12px_rgba(60,40,20,0.1)] hover:shadow-card-hover sm:hover:shadow-[0_26px_50px_-10px_rgba(60,40,20,0.18)] hover:border-stone-400 transition-shadow duration-300"
                   >
                     {/* Ikon Kutipan (Rounded Squircle Sesuai Referensi) */}
                     <div>
@@ -1272,30 +1313,30 @@ export default function LandingPage({ children }) {
         transition={{ duration: 0.6 }}
         className="border-t border-b border-[#E8DEC9] bg-[#FFFDF6] py-14 sm:py-20"
       >
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
-            <div className="border-b border-[#E8DEC9] pb-6 sm:border-b-0 sm:border-r sm:pb-0">
-              <p className="text-4xl font-extrabold tracking-tight text-[#EF4444] sm:text-5xl">
+        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-8 text-center">
+            <div className="border-r border-[#E8DEC9] pr-2 sm:pr-0 pb-0">
+              <p className="text-xl sm:text-5xl font-extrabold tracking-tight text-[#EF4444]">
                 24-bit
               </p>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Calibrated sRGB Gamut
+              <p className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 truncate">
+                Calibrated sRGB
               </p>
             </div>
-            <div className="border-b border-[#E8DEC9] pb-6 sm:border-b-0 sm:border-r sm:pb-0">
-              <p className="text-4xl font-extrabold tracking-tight text-[#10B981] sm:text-5xl">
+            <div className="border-r border-[#E8DEC9] pr-2 sm:pr-0 pb-0">
+              <p className="text-xl sm:text-5xl font-extrabold tracking-tight text-[#10B981]">
                 15MB+
               </p>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                RAW Resolution Retained
+              <p className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 truncate">
+                RAW Retained
               </p>
             </div>
             <div>
-              <p className="text-4xl font-extrabold tracking-tight text-blue-600 sm:text-5xl">
+              <p className="text-xl sm:text-5xl font-extrabold tracking-tight text-blue-600">
                 &lt;250ms
               </p>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Real-Time Interaction Latency
+              <p className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 truncate">
+                Live Latency
               </p>
             </div>
           </div>

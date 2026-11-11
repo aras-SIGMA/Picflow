@@ -80,7 +80,7 @@ export default function InlineCommentSection({
   }, [photoId, onCountChange]);
 
   useEffect(() => {
-    if (autoFocus && inputRef.current) {
+    if (autoFocus && inputRef.current && typeof window !== "undefined" && window.innerWidth >= 768) {
       inputRef.current.focus();
     }
   }, [autoFocus]);

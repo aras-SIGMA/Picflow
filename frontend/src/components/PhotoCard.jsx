@@ -39,7 +39,7 @@ export default function PhotoCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.55, ease: EASE }}
-      className="group mb-4 break-inside-avoid overflow-hidden rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#FFFDF6] shadow-card transition-all hover:border-[#DCD0BE] hover:shadow-card-hover"
+      className="group mb-3 sm:mb-4 break-inside-avoid overflow-hidden rounded-xl sm:rounded-[var(--radius-md)] border border-[#E8DEC9] bg-[#FFFDF6] shadow-card transition-all hover:border-[#DCD0BE] hover:shadow-card-hover"
       onMouseEnter={() => onPeek?.(photo)}
     >
       <div className="relative">
@@ -107,16 +107,16 @@ export default function PhotoCard({
             initialLiked={photo.is_liked}
             initialCount={photo.likes_count}
             size="sm"
-            className="shadow-md backdrop-blur-md"
+            className="shadow-md backdrop-blur-none sm:backdrop-blur-md"
           />
         </div>
       </div>
 
       {/* Footer kartu: interaksi sosial & tindakan pemilik */}
-      <figcaption className="flex items-center justify-between gap-2 px-3.5 py-2.5">
+      <figcaption className="flex items-center justify-between gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium text-ink">{photo.title}</p>
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-faint">
+          <p className="truncate text-[11px] sm:text-xs font-medium text-ink">{photo.title}</p>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] sm:text-[11px] text-faint">
             {creatorName && creatorId ? (
               <Link
                 href={`/account/${creatorId}`}

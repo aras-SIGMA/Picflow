@@ -160,12 +160,21 @@ const GradientWaves = ({
     const container = containerRef.current;
     if (!container) return;
 
+    // Mobile optimization: skip heavy WebGL 2 raymarching on phones to guarantee 60fps & save battery
+    const isMobile = window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024);
+    if (isMobile) {
+      container.classList.add('gradient-waves-mobile-fallback');
+      return () => {
+        container.classList.remove('gradient-waves-mobile-fallback');
+      };
+    }
+
     const renderer = new Renderer({
       webgl: 2,
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5)
     });
 
     const gl = renderer.gl;

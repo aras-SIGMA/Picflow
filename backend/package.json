@@ -4,6 +4,9 @@
   "description": "Backend sederhana untuk menyimpan dan mengelola karya fotografi pribadi",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js"
@@ -18,6 +21,7 @@
     "exifr": "^7.1.3",
     "express": "^5.1.0",
     "multer": "^2.0.2",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.13"
   },
   "devDependencies": {

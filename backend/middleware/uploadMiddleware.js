@@ -6,15 +6,13 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
+import os from "os";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Pastikan folder uploads/ selalu ada (kalau belum, buat otomatis)
-const uploadDir = path.resolve(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// File ditampung sementara di OS temp dir lalu langsung diunggah ke Cloudinary
+// dan dihapus. Dipakai os.tmpdir() karena filesystem deploy (Vercel) read-only
+// kecuali /tmp; lokal hasilnya sama saja.
+const uploadDir = path.join(os.tmpdir(), "picflow-uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
 
 // Atur tempat simpan + nama file
 const storage = multer.diskStorage({

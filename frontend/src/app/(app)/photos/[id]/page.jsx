@@ -173,7 +173,7 @@ export default function PhotoDetailPage() {
             Back to feed
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <LikeButton
               photoId={photo.id_photo}
               initialLiked={photo.is_liked}
@@ -223,7 +223,7 @@ export default function PhotoDetailPage() {
         {/* Preview foto utama: floating shadow tanpa background */}
         <div className="mx-auto w-full max-w-5xl px-4 py-4">
           <Reveal>
-            <div className="flex min-h-[40vh] max-h-[75vh] items-center justify-center">
+            <div className="flex min-h-[25vh] sm:min-h-[40vh] max-h-[75vh] items-center justify-center">
               {src ? (
                 <Image
                   src={src}

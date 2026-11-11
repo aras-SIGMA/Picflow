@@ -61,7 +61,7 @@ export default function LoginPage() {
         />
 
         <div
-          className="relative w-full rounded-[20px] bg-[#FFFDF6] p-9 sm:p-10 border border-[#E8DEC9] transition-shadow duration-300"
+          className="relative w-full rounded-[20px] bg-[#FFFDF6] p-6 sm:p-9 md:p-10 border border-[#E8DEC9] transition-shadow duration-300"
           style={{
             boxShadow: `
               0 30px 60px -15px rgba(28, 25, 23, 0.12),

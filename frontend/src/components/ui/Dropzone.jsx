@@ -86,12 +86,12 @@ export default function Dropzone({
             className="group relative overflow-hidden rounded-2xl border border-gray-200/90 bg-black shadow-card"
           >
             {/* Viewfinder Preview Stage */}
-            <div className="relative flex min-h-[300px] max-h-[460px] w-full items-center justify-center overflow-hidden bg-radial from-stone-900 to-black p-2">
+            <div className="relative flex min-h-[220px] sm:min-h-[300px] max-h-[340px] sm:max-h-[460px] w-full items-center justify-center overflow-hidden bg-radial from-stone-900 to-black p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl || oldImage}
                 alt="Selected photo preview"
-                className="max-h-[440px] w-full rounded-xl object-contain"
+                className="max-h-[320px] sm:max-h-[440px] w-full rounded-xl object-contain"
               />
 
               {/* Viewfinder Corner Framing Marks */}
@@ -103,7 +103,7 @@ export default function Dropzone({
               </div>
 
               {/* Top Floating Badge */}
-              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md shadow-xs">
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/75 sm:bg-black/60 px-3 py-1 text-[11px] font-semibold text-white sm:backdrop-blur-md shadow-xs">
                 <Camera size={12} className="text-blue-400" />
                 <span>Live Preview</span>
               </div>
@@ -126,7 +126,7 @@ export default function Dropzone({
                   onClick={() => inputRef.current?.click()}
                   title="Change image"
                   aria-label="Replace image"
-                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/30"
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-stone-900/80 sm:bg-white/15 px-3 py-1.5 text-xs font-semibold text-white sm:backdrop-blur-md transition-all hover:bg-white/30"
                 >
                   <RefreshCcw size={12} />
                   <span>Change</span>
@@ -136,7 +136,7 @@ export default function Dropzone({
                   onClick={() => onFileChange(null, null)}
                   title="Remove image"
                   aria-label="Remove image"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/30 bg-red-600/30 text-red-200 backdrop-blur-md transition-all hover:bg-red-600/60 hover:text-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-red-500/30 bg-red-700/80 sm:bg-red-600/30 text-white sm:backdrop-blur-md transition-all hover:bg-red-600/60 hover:text-white"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -158,7 +158,7 @@ export default function Dropzone({
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             aria-label="Choose or drop image"
-            className={`group relative flex w-full flex-col items-center justify-center gap-3.5 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition-colors duration-200 bg-transparent ${
+            className={`group relative flex w-full flex-col items-center justify-center gap-3 sm:gap-3.5 rounded-3xl border-2 border-dashed px-4 sm:px-6 py-10 sm:py-16 text-center transition-colors duration-200 bg-transparent ${
               dragOver
                 ? "border-blue-600 ring-4 ring-blue-500/10"
                 : "border-[#DCD0BE] hover:border-blue-600"

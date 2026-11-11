@@ -320,7 +320,7 @@ export default function HomePage() {
 
   return (
     <PageTransition>
-      <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
+      <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-3.5 sm:py-8">
         <div className="flex items-start gap-6">
           {/* ======================================================== */}
           {/* LEFT COLUMN: Profil, Navigasi Feed & Kategori Fotografi   */}
@@ -538,7 +538,7 @@ export default function HomePage() {
           {/* ======================================================== */}
           <main className="min-w-0 flex-1 max-w-2xl mx-auto w-full space-y-5">
             {/* "Share a Shot" Card (Reference: Prompt Bar) */}
-            <section className="rounded-2xl bg-white p-4 shadow-card">
+            <section className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
                   {user?.avatar_url ? (
@@ -556,16 +556,81 @@ export default function HomePage() {
 
                 <Link
                   href="/addphoto"
-                  className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-4 py-2.5 text-left text-xs font-medium text-gray-500 transition-colors hover:border-gray-300 hover:bg-white hover:text-gray-700"
+                  className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-3.5 sm:px-4 py-2 sm:py-2.5 text-left text-xs font-medium text-gray-500 transition-colors hover:border-gray-300 hover:bg-white hover:text-gray-700 truncate"
                 >
-                  Share a new photograph or request community critique...
+                  <span className="hidden sm:inline">Share a new photograph or request community critique...</span>
+                  <span className="inline sm:hidden">Share a shot or request critique...</span>
                 </Link>
               </div>
             </section>
 
+            {/* Mobile Feed & Category Controls (Hanya tampil pada layar < lg) */}
+            <div className="lg:hidden rounded-2xl bg-white p-3 shadow-card space-y-2.5">
+              {/* Feed Switcher: Explore vs Following */}
+              <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setFeedTab("explore")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all ${
+                    feedTab === "explore"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  <Compass size={14} className={feedTab === "explore" ? "text-blue-400" : "text-stone-400"} />
+                  <span>Explore Feed</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeedTab("following")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all ${
+                    feedTab === "following"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  <Users size={14} className={feedTab === "following" ? "text-blue-100" : "text-stone-400"} />
+                  <span>Following</span>
+                </button>
+              </div>
+
+              {/* Genre & Category Horizontal Scroll Chips */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("all")}
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all ${
+                    selectedCategory === "all"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
+                  }`}
+                >
+                  <Layers size={12} className={selectedCategory === "all" ? "text-blue-400" : "text-stone-400"} />
+                  <span>All Genres</span>
+                </button>
+                {categories.map((c) => {
+                  const isSelected = selectedCategory === String(c.id_category);
+                  return (
+                    <button
+                      key={c.id_category}
+                      type="button"
+                      onClick={() => setSelectedCategory(isSelected ? "all" : String(c.id_category))}
+                      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-blue-600 text-white font-semibold shadow-xs"
+                          : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
+                      }`}
+                    >
+                      <span>{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Gear & Optics Filter Bar & Sort Controls */}
             <div className="rounded-2xl bg-white p-3 shadow-card space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
                   <Aperture size={14} className="text-blue-600" />
                   <span>Filter by Camera Gear</span>
@@ -767,8 +832,8 @@ export default function HomePage() {
             )}
 
             {/* Feed Cards List (Reference Post Structure) */}
-            <div className="space-y-6">
-              {shownPhotos.map((photo) => {
+            <div className="space-y-3.5 sm:space-y-6">
+              {shownPhotos.map((photo, index) => {
                 const isOwner = Boolean(user?.id_user && photo.id_user === user.id_user);
                 const isAdmin = user?.role === "admin";
                 const canModerate = isAdmin && !isOwner;
@@ -778,15 +843,15 @@ export default function HomePage() {
                 return (
                   <article
                     key={photo.id_photo}
-                    className="overflow-hidden rounded-2xl bg-white shadow-post transition-shadow duration-300 hover:shadow-card-hover"
+                    className="overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-post transition-shadow duration-300 hover:shadow-card-hover"
                   >
                     {/* Header Post */}
-                    <div className="flex items-center justify-between p-4 pb-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center justify-between p-3 sm:p-4 pb-2 sm:pb-3">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         {/* Avatar */}
                         <Link
                           href={`/account/${photo.creator?.id_user || photo.id_user}`}
-                          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs transition-transform hover:scale-105"
+                          className="relative flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs transition-transform hover:scale-105"
                         >
                           {photo.creator?.avatar_url ? (
                             <Image
@@ -935,37 +1000,37 @@ export default function HomePage() {
                     </div>
 
                     {/* Judul, Deskripsi & Metadata EXIF */}
-                    <div className="px-4 pb-3">
+                    <div className="px-3 sm:px-4 pb-2 sm:pb-3">
                       <Link href={`/photos/${photo.id_photo}`} className="group/title block">
-                        <h2 className="text-sm font-bold text-stone-900 group-hover/title:text-blue-600 transition-colors">
+                        <h2 className="text-[13px] sm:text-sm font-bold text-stone-900 group-hover/title:text-blue-600 transition-colors">
                           {photo.title}
                         </h2>
                       </Link>
                       {photo.description && (
-                        <p className="mt-1 text-xs leading-relaxed text-stone-700">
+                        <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs leading-relaxed text-stone-600 line-clamp-2 sm:line-clamp-none">
                           {photo.description}
                         </p>
                       )}
 
                       {(photo.focal_length || photo.aperture || photo.shutter_speed || photo.iso) && (
-                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           {photo.focal_length && (
-                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium text-gray-600">
                               {photo.focal_length}
                             </span>
                           )}
                           {photo.aperture && (
-                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium text-gray-600">
                               {photo.aperture}
                             </span>
                           )}
                           {photo.shutter_speed && (
-                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium text-gray-600">
                               {photo.shutter_speed}
                             </span>
                           )}
                           {photo.iso && (
-                            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                            <span className="rounded-md border border-gray-200 bg-gray-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium text-gray-600">
                               ISO {photo.iso}
                             </span>
                           )}
@@ -974,18 +1039,19 @@ export default function HomePage() {
                     </div>
 
                     {/* Frame Foto */}
-                    <div className="px-4 pb-3">
+                    <div className="px-3 sm:px-4 pb-2.5 sm:pb-3">
                       <Link
                         href={`/photos/${photo.id_photo}`}
-                        className="group/img relative block overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                        className="group/img relative block overflow-hidden rounded-lg sm:rounded-xl border border-gray-200 bg-gray-100"
                       >
-                        <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full">
+                        <div className="relative aspect-[3/2] sm:aspect-[16/10] w-full">
                           {photoSrc ? (
                             <Image
                               src={photoSrc}
                               loader={isCloudinaryUrl(photoSrc) ? cloudinaryLoader : undefined}
                               alt={photo.title || "Photo"}
                               fill
+                              priority={index === 0}
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 680px, 640px"
                               className="object-cover transition-transform duration-700 group-hover/img:scale-[1.02]"
                             />
@@ -998,9 +1064,9 @@ export default function HomePage() {
 
                         <div className="pointer-events-none absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/img:opacity-100">
                           <span className="text-[11px] font-semibold text-white">
-                            Inspect high-res photograph & critiques
+                            Inspect high-res photograph &amp; critiques
                           </span>
-                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white sm:backdrop-blur-xs">
                             HD
                           </span>
                         </div>
@@ -1008,7 +1074,7 @@ export default function HomePage() {
                     </div>
 
                     {/* Aksi Postingan (Likes, Comments, Critique, Share) */}
-                    <div className="flex items-center justify-between border-t border-gray-200 px-4 py-2.5">
+                    <div className="flex items-center justify-between border-t border-gray-100 px-3 sm:px-4 py-2 sm:py-2.5">
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <LikeButton
                           photoId={photo.id_photo}

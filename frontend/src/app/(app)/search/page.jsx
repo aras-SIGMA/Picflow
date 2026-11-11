@@ -8,7 +8,7 @@
 // - Filter sekunder: Genre/Kategori, Brand Kamera, dan Pengurutan (Latest, Popular, Discussed)
 // - Integrasi MasonryGrid + PhotoCard + Lightbox + follow kreator
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -98,6 +98,13 @@ function SearchContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const debounceTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
   // Update URL search params tanpa hard reload
   const updateUrlParams = useCallback(
@@ -224,16 +231,21 @@ function SearchContent() {
 
   const handleQueryChange = (val) => {
     setQuery(val);
-    updateUrlParams(val, selectedCategory, selectedGear);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      updateUrlParams(val, selectedCategory, selectedGear);
+    }, 280);
   };
 
   const handleClearQuery = () => {
     setQuery("");
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     updateUrlParams("", selectedCategory, selectedGear);
   };
 
   const handleSuggestionClick = (tag) => {
     setQuery(tag);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     updateUrlParams(tag, selectedCategory, selectedGear);
   };
 
@@ -270,26 +282,26 @@ function SearchContent() {
             <span>Search & Discover</span>
           </div>
 
-          <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
-            Explore Visual Art & Photography
+          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
+            Explore Visual Art &amp; Photography
           </h1>
-          <p className="mt-2 text-sm text-stone-500 max-w-lg mx-auto">
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-stone-500 max-w-lg mx-auto">
             Discover curated shots, optical equipment, camera gear, and inspiring photographers in PicFlow.
           </p>
 
           {/* Search Bar Input */}
-          <div className="relative mx-auto mt-6 max-w-2xl">
+          <div className="relative mx-auto mt-5 sm:mt-6 max-w-2xl">
             <div className="relative flex items-center">
               <Search
-                size={18}
-                className="pointer-events-none absolute left-4 text-stone-400"
+                size={17}
+                className="pointer-events-none absolute left-3.5 sm:left-4 text-stone-400"
               />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Search shots by title, camera, lens, category, or photographer..."
-                className="w-full rounded-2xl border border-stone-200 bg-white py-3.5 pl-11 pr-11 text-sm text-stone-900 placeholder:text-stone-400 shadow-sm transition-all focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                className="w-full rounded-xl sm:rounded-2xl border border-stone-200 bg-white py-2.5 sm:py-3.5 pl-10 sm:pl-11 pr-10 sm:pr-11 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 shadow-sm transition-all focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
                 autoFocus
               />
               {query && (
@@ -333,45 +345,47 @@ function SearchContent() {
         {/* ======================================================== */}
         <section className="mb-6 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-stone-200 pb-4">
-            {/* Main Category Tabs: All / Photos / Photographers */}
-            <div className="inline-flex rounded-xl border border-stone-200 bg-stone-50 p-1 text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setActiveTab("all")}
-                className={`rounded-lg px-3 py-1.5 transition-all ${
-                  activeTab === "all"
-                    ? "bg-stone-900 text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                All Results ({filteredPhotos.length + (query ? filteredCreators.length : 0)})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("photos")}
-                className={`rounded-lg px-3 py-1.5 transition-all ${
-                  activeTab === "photos"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Photographs ({filteredPhotos.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("photographers")}
-                className={`rounded-lg px-3 py-1.5 transition-all ${
-                  activeTab === "photographers"
-                    ? "bg-stone-900 text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Photographers ({filteredCreators.length})
-              </button>
+            {/* Main Category Tabs: All / Photos / Photographers (Mobile Scrollable) */}
+            <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-0.5">
+              <div className="inline-flex min-w-full sm:min-w-0 rounded-xl border border-stone-200 bg-stone-50 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("all")}
+                  className={`flex-1 sm:flex-initial shrink-0 rounded-lg px-3 py-1.5 transition-all text-center ${
+                    activeTab === "all"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  All ({filteredPhotos.length + (query ? filteredCreators.length : 0)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("photos")}
+                  className={`flex-1 sm:flex-initial shrink-0 rounded-lg px-3 py-1.5 transition-all text-center ${
+                    activeTab === "photos"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Photos ({filteredPhotos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("photographers")}
+                  className={`flex-1 sm:flex-initial shrink-0 rounded-lg px-3 py-1.5 transition-all text-center ${
+                    activeTab === "photographers"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Photographers ({filteredCreators.length})
+                </button>
+              </div>
             </div>
 
             {/* Sort Selector */}
-            <div className="flex items-center gap-2 self-end sm:self-auto text-xs">
+            <div className="flex items-center gap-2 self-start sm:self-auto text-xs">
               <span className="text-[11px] font-semibold text-stone-400">Sort:</span>
               <div className="inline-flex rounded-full border border-stone-200 bg-white p-0.5 font-semibold">
                 <button

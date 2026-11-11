@@ -19,6 +19,7 @@ Platform kurasi fotografi dengan kalibrasi warna sRGB, ekstraksi metadata optik 
 - [Arsitektur Teknologi](#arsitektur-teknologi)
 - [Struktur Proyek](#struktur-proyek)
 - [Memulai](#memulai)
+- [Deploy ke Vercel](#deploy-ke-vercel)
 - [Variabel Lingkungan](#variabel-lingkungan)
 - [Referensi API](#referensi-api)
 - [Design System](#design-system)
@@ -89,7 +90,7 @@ picflow/
 │   ├── middleware/       verifyToken, verifyAdmin, errorHandler
 │   ├── models/           Query database
 │   ├── routes/           Definisi rute API
-│   ├── uploads/          Penyimpanan sementara upload
+│   ├── docs/             Spesifikasi OpenAPI 3.0
 │   └── server.js         Entry point Express + endpoint SSE
 │
 ├── frontend/
@@ -116,6 +117,8 @@ picflow/
 │
 └── assets/               Aset brand & logo resmi
 ```
+
+`vercel.json` (root) = konfigurasi deploy Services untuk kedua folder di atas.
 
 ---
 
@@ -164,26 +167,51 @@ npm run lint         # ESLint
 
 ---
 
+## Deploy ke Vercel
+
+Repo ini sudah siap deploy dari **root repo** — tanpa mengubah Root Directory di dashboard.
+
+`vercel.json` memakai [Vercel Services](https://vercel.com/docs/services): dua service dalam satu project, satu domain.
+
+| Service | Root | Rewrite |
+| --- | --- | --- |
+| `frontend` | `frontend/` | `/(.*)` |
+| `backend` | `backend/` | `/api/(.*)` |
+
+Langkah:
+
+1. Push branch ke GitHub.
+2. Vercel → **Add New Project** → import repo. Biarkan Root Directory kosong, framework terdeteksi otomatis.
+3. **Deploy**.
+4. Tambah Environment Variables (nilai dari `backend/.env`, jangan commit): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
+
+`NEXT_PUBLIC_API_URL` **tidak perlu** diisi — default-nya same-origin (lihat `src/lib/api.js`).
+
+Catatan arsitektur: backend berjalan sebagai Vercel Function, jadi `app.listen` dilewati lewat guard `process.env.VERCEL` dan file upload ditampung di `os.tmpdir()` sebelum diteruskan ke Cloudinary (filesystem deploy read-only).
+
+---
+
 ## Variabel Lingkungan
 
 ### `backend/.env`
 
 ```env
 SUPABASE_URL=https://<project>.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+# Secret key (prefix `sb_secret_...`) — melewati Row Level Security
+SUPABASE_SECRET_KEY=<secret-key>
 CLOUDINARY_CLOUD_NAME=<cloud-name>
 CLOUDINARY_API_KEY=<api-key>
 CLOUDINARY_API_SECRET=<api-secret>
-JWT_SECRET=<random-secret>
 ```
 
-> Gunakan **service role key** hanya di backend. Jangan pernah mengeksposnya ke klien.
+> Gunakan **secret key** hanya di backend. Jangan pernah mengeksposnya ke klien.
 
 ### `frontend/.env.local`
 
 ```env
+# Opsional. Kosongkan di deploy: frontend memanggil backend lewat origin yang
+# sama (lihat vercel.json → rewrites /api/*).
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=<cloud-name>
 ```
 
 ---
@@ -302,4 +330,3 @@ PicFlow mengadopsi estetika **Modern Fluid Editorial & Calibrated Spectrum**. Re
 Dibangun untuk fotografer yang peduli pada setiap piksel.
 
 </div>
-

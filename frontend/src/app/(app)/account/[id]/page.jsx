@@ -284,40 +284,40 @@ export default function PublicProfilePage() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 border-t border-gray-200/80 pt-6">
-              <div className="rounded-2xl border border-gray-200/80 bg-white p-3.5 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            <div className="mt-6 sm:mt-8 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4 border-t border-gray-200/80 pt-4 sm:pt-6">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white p-2.5 sm:p-3.5 shadow-2xs">
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate block">
                   Published Shots
                 </span>
-                <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+                <p className="mt-0.5 sm:mt-1 font-mono text-base sm:text-xl font-bold text-stone-900">
                   {stats.photos_count}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-gray-200/80 bg-white p-3.5 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white p-2.5 sm:p-3.5 shadow-2xs">
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate block">
                   Followers
                 </span>
-                <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+                <p className="mt-0.5 sm:mt-1 font-mono text-base sm:text-xl font-bold text-stone-900">
                   {stats.followers_count}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-gray-200/80 bg-white p-3.5 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white p-2.5 sm:p-3.5 shadow-2xs">
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate block">
                   Following
                 </span>
-                <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+                <p className="mt-0.5 sm:mt-1 font-mono text-base sm:text-xl font-bold text-stone-900">
                   {stats.following_count}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-gray-200/80 bg-white p-3.5 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white p-2.5 sm:p-3.5 shadow-2xs">
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate block">
                   Total Likes
                 </span>
-                <p className="mt-1 font-mono text-xl font-bold text-red-600 flex items-center gap-1.5">
-                  <Heart size={14} className="fill-red-500" />
+                <p className="mt-0.5 sm:mt-1 font-mono text-base sm:text-xl font-bold text-red-600 flex items-center gap-1.5">
+                  <Heart size={13} className="fill-red-500 shrink-0" />
                   {stats.total_likes}
                 </p>
               </div>

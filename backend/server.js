@@ -6,9 +6,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import swaggerUi from "swagger-ui-express";
+import openapiDocument from "./docs/openapi.json" with { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, ".env") });
+
+const swaggerDocument = openapiDocument;
 
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoutes.js";
@@ -32,8 +36,29 @@ app.use(express.json());
 app.get("/api", (req, res) => {
   res.json({
     message: "PicFlow API is running",
+    docs: "/api/docs",
   });
 });
+
+// Swagger API Documentation (OpenAPI 3.0)
+app.get("/api/docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerDocument);
+});
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: "PicFlow API Docs",
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 25px 0 }
+      .swagger-ui .info .title { font-weight: 800; color: #1c1917; }
+      .swagger-ui .btn.authorize { background-color: #2563eb; color: #fff; border-color: #2563eb; }
+      .swagger-ui .btn.authorize svg { fill: #fff; }
+    `,
+  })
+);
 
 // Endpoint Server-Sent Events (SSE) untuk real-time stream interaksi sosial (latency <= 250ms)
 app.get("/api/realtime/stream", (req, res) => {
@@ -122,9 +147,13 @@ app.use("/api/users", userRouter);
 app.use(errorHandler);
 
 // ====== JALANKAN SERVER ======
+// Vercel mendeteksi Express lewat default export; `app.listen` hanya dipakai
+// saat dijalankan langsung (node server.js / nodemon).
+export default app;
 
-const port = 8000;
-
-app.listen(port, () => {
-  console.log(`PicFlow server is running on http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 8000;
+  app.listen(port, () => {
+    console.log(`PicFlow server is running on http://localhost:${port}`);
+  });
+}
