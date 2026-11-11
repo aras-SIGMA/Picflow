@@ -4,6 +4,9 @@
   "description": "Backend sederhana untuk menyimpan dan mengelola karya fotografi pribadi",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js"

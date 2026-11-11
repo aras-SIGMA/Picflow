@@ -5,16 +5,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import fs from "fs";
 import { fileURLToPath } from "url";
 import swaggerUi from "swagger-ui-express";
+import openapiDocument from "./docs/openapi.json" with { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
-const swaggerDocument = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "docs", "openapi.json"), "utf8")
-);
+const swaggerDocument = openapiDocument;
 
 import categoryRouter from "./routes/categoryRoutes.js";
 import authRouter from "./routes/authRoutes.js";
@@ -149,9 +147,13 @@ app.use("/api/users", userRouter);
 app.use(errorHandler);
 
 // ====== JALANKAN SERVER ======
+// Vercel mendeteksi Express lewat default export; `app.listen` hanya dipakai
+// saat dijalankan langsung (node server.js / nodemon).
+export default app;
 
-const port = 8000;
-
-app.listen(port, () => {
-  console.log(`PicFlow server is running on http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 8000;
+  app.listen(port, () => {
+    console.log(`PicFlow server is running on http://localhost:${port}`);
+  });
+}
