@@ -31,12 +31,31 @@ export default function RootGuestHomePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [selected, setSelected] = useState(null);
 
   // ====== 1. SPLASH SCREEN & AUTH ROUTING ======
+  useEffect(() => {
+    // Jika sudah login, langsung ke /home tanpa splash
+    if (getToken()) {
+      router.replace("/home");
+      return;
+    }
+
+    // Hanya tampilkan splash 1x per sesi browser
+    if (sessionStorage.getItem("picflow_splash_seen")) return;
+    sessionStorage.setItem("picflow_splash_seen", "1");
+
+    const show = setTimeout(() => setShowSplash(true), 0);
+    const hide = setTimeout(() => setShowSplash(false), 5000);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+  }, [router]);
+
   useEffect(() => {
     // Kunci scroll saat splash screen berjalan
     if (showSplash) {
@@ -49,19 +68,6 @@ export default function RootGuestHomePage() {
       document.body.style.overflow = "";
     };
   }, [showSplash]);
-
-  useEffect(() => {
-    // Jalankan splash screen 5 detik
-    const timer = setTimeout(() => {
-      if (getToken()) {
-        router.replace("/home");
-      } else {
-        setShowSplash(false);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [router]);
 
   // ====== 2. LOAD DATA UNTUK HOME GUEST ======
   useEffect(() => {
