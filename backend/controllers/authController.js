@@ -120,6 +120,7 @@ export const authController = {
           id_user: data.user.id,
           username: profile?.username || data.user.email,
           email: data.user.email,
+          profile_picture_url: profile?.avatar_url || null,
           role: profile?.role === "admin" ? "admin" : "user",
           token: data.session.access_token,
           refresh_token: data.session.refresh_token,
