@@ -42,6 +42,7 @@ export function AuthProvider({ children }) {
       id_user: res.data.id_user,
       username: res.data.username,
       email: res.data.email,
+      profile_picture_url: res.data.profile_picture_url || null,
       role: res.data.role || "user",
     });
     return res;

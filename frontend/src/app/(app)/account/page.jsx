@@ -54,7 +54,7 @@ import {
 import { fadeUp } from "@/components/ui/motion";
 
 export default function AccountPage() {
-  const { logout, setUser } = useAuth();
+  const { logout, setUser, refreshUser } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
@@ -195,6 +195,7 @@ export default function AccountPage() {
         ...current,
         profile_picture_url: response.data.profile_picture_url,
       }));
+      await refreshUser();
       setProfileFile(null);
       clearProfilePreview();
       setAvatarModalOpen(false);

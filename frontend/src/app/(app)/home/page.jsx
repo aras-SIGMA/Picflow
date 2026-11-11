@@ -331,9 +331,9 @@ export default function HomePage() {
               <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sidebar">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-sm font-bold text-white shadow-xs">
-                    {user?.avatar_url ? (
+                    {(user?.profile_picture_url || user?.avatar_url) ? (
                       <Image
-                        src={user.avatar_url}
+                        src={user.profile_picture_url || user.avatar_url}
                         alt={user.username || "Avatar"}
                         width={44}
                         height={44}
@@ -541,9 +541,9 @@ export default function HomePage() {
             <section className="rounded-2xl bg-white p-3.5 sm:p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
-                  {user?.avatar_url ? (
+                  {(user?.profile_picture_url || user?.avatar_url) ? (
                     <Image
-                      src={user.avatar_url}
+                      src={user.profile_picture_url || user.avatar_url}
                       alt={user.username || "Me"}
                       width={40}
                       height={40}

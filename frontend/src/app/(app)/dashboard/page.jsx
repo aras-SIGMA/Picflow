@@ -147,9 +147,9 @@ export default function DashboardPage() {
           {profile && (
             <div className="flex items-center gap-3 rounded-2xl border border-gray-200/90 bg-[#FAF8F5] p-2.5 pr-4 shadow-2xs self-start sm:self-auto">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
-                {profile.avatar_url ? (
+                {(profile.profile_picture_url || profile.avatar_url) ? (
                   <Image
-                    src={profile.avatar_url}
+                    src={profile.profile_picture_url || profile.avatar_url}
                     alt={profile.username || "Avatar"}
                     width={40}
                     height={40}
