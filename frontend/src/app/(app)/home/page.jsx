@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Aperture,
@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Search,
   Share2,
+  SlidersHorizontal,
   Sparkles,
   Star,
   Trash2,
@@ -28,6 +29,13 @@ import {
 } from "lucide-react";
 import { fileUrl, getToken, listPhotos, listCategories, deletePhoto } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
+import {
+  readFeedFilters,
+  feedHref,
+  feedFilterCount,
+  computeAvailableGears,
+  computeGearStats,
+} from "@/lib/feedFilters";
 import { subscribeRealtime } from "@/lib/realtime";
 import { useAuth } from "@/context/AuthContext";
 import InlineCommentSection from "@/components/InlineCommentSection";
@@ -52,27 +60,48 @@ function formatRelativeTime(dateString) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-const POPULAR_BRANDS = [
-  "Sony",
-  "Canon",
-  "Fujifilm",
-  "Nikon",
-  "Leica",
-  "Hasselblad",
-  "Panasonic",
-];
-
 export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <PageTransition>
+          <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-3.5 sm:py-8">
+            <div className="space-y-6">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-96 w-full rounded-2xl" />
+            </div>
+          </div>
+        </PageTransition>
+      }
+    >
+      <HomeFeed />
+    </Suspense>
+  );
+}
+
+function HomeFeed() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
-  const [feedTab, setFeedTab] = useState("explore");
+  // Filter disimpan di query string: /home?feed=following&genre=3&gear=Sony&sort=popular
+  const searchParams = useSearchParams();
+  const feedKey = searchParams.toString();
+  const {
+    feedTab,
+    selectedCategory,
+    selectedGear,
+    sortBy,
+  } = useMemo(() => readFeedFilters(new URLSearchParams(feedKey)), [feedKey]);
+
+  const activeFilterCount = feedFilterCount({
+    feedTab,
+    selectedCategory,
+    selectedGear,
+  });
+
   const [photos, setPhotos] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedGear, setSelectedGear] = useState("all");
-  const [sortBy, setSortBy] = useState("latest");
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
 
@@ -86,6 +115,14 @@ export default function HomePage() {
       ...prev,
       [photoId]: !prev[photoId],
     }));
+  };
+
+  // Tulis filter ke query string; nilai default tidak ikut ditulis.
+  const setFilters = (next) => {
+    router.replace(
+      feedHref({ feedTab, selectedCategory, selectedGear, sortBy, ...next }),
+      { scroll: false }
+    );
   };
 
   const handleCommentCountChange = (photoId, newCount) => {
@@ -103,24 +140,38 @@ export default function HomePage() {
       return;
     }
 
-    async function load() {
+    let active = true;
+
+    async function loadCategories() {
+      try {
+        const cRes = await listCategories();
+        if (active) setCategories(cRes.data || []);
+      } catch {
+        // Kategori hanya untuk filter; feed tetap bisa tampil.
+      }
+    }
+
+    async function loadPhotos() {
       setFetching(true);
       setError("");
       try {
-        const [pRes, cRes] = await Promise.all([
-          listPhotos({ feed: feedTab }),
-          listCategories(),
-        ]);
-        setPhotos(pRes.data || []);
-        setCategories(cRes.data || []);
+        const pRes = await listPhotos({ feed: feedTab });
+        if (active) setPhotos(pRes.data || []);
       } catch (err) {
+        if (!active) return;
         if (err.status === 401) router.replace("/");
         else setError(err.message);
       } finally {
-        setFetching(false);
+        if (active) setFetching(false);
       }
     }
-    load();
+
+    loadCategories();
+    loadPhotos();
+
+    return () => {
+      active = false;
+    };
   }, [loading, router, feedTab]);
 
   useEffect(() => {
@@ -201,41 +252,12 @@ export default function HomePage() {
     return map;
   }, [photos]);
 
-  const availableGears = useMemo(() => {
-    const brandSet = new Set(POPULAR_BRANDS);
-    photos.forEach((p) => {
-      if (p.camera_make) {
-        const trimmed = p.camera_make.trim();
-        if (trimmed) {
-          const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-          brandSet.add(normalized);
-        }
-      }
-    });
-    return Array.from(brandSet);
-  }, [photos]);
+  const availableGears = useMemo(() => computeAvailableGears(photos), [photos]);
 
-  const gearStats = useMemo(() => {
-    const map = { all: photos.length, other: 0 };
-    photos.forEach((p) => {
-      const make = (p.camera_make || "").toLowerCase();
-      const model = (p.camera_model || "").toLowerCase();
-      let matched = false;
-
-      availableGears.forEach((brand) => {
-        const b = brand.toLowerCase();
-        if (make.includes(b) || model.includes(b)) {
-          map[brand] = (map[brand] || 0) + 1;
-          matched = true;
-        }
-      });
-
-      if (!matched && !p.camera_make && !p.camera_model) {
-        map.other = (map.other || 0) + 1;
-      }
-    });
-    return map;
-  }, [photos, availableGears]);
+  const gearStats = useMemo(
+    () => computeGearStats(photos, availableGears),
+    [photos, availableGears]
+  );
 
   const communityCreators = useMemo(() => {
     const seen = new Set();
@@ -370,11 +392,9 @@ export default function HomePage() {
                 <div className="space-y-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFeedTab("explore");
-                      setSelectedCategory("all");
-                      setSelectedGear("all");
-                    }}
+                    onClick={() =>
+                      setFilters({ feed: "explore", genre: "all", gear: "all" })
+                    }
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                       feedTab === "explore" && selectedCategory === "all"
                         ? "bg-blue-600 text-white shadow-xs"
@@ -387,10 +407,7 @@ export default function HomePage() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setFeedTab("following");
-                      setSelectedGear("all");
-                    }}
+                    onClick={() => setFilters({ feed: "following", gear: "all" })}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                       feedTab === "following"
                         ? "bg-blue-600 text-white shadow-xs"
@@ -441,7 +458,7 @@ export default function HomePage() {
                 <div className="mt-1 space-y-0.5">
                   <button
                     type="button"
-                    onClick={() => setSelectedCategory("all")}
+                    onClick={() => setFilters({ genre: "all" })}
                     className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
                       selectedCategory === "all"
                         ? "bg-stone-900 text-white font-semibold shadow-xs"
@@ -462,7 +479,9 @@ export default function HomePage() {
                       <button
                         key={c.id_category}
                         type="button"
-                        onClick={() => setSelectedCategory(String(c.id_category))}
+                        onClick={() =>
+                          setFilters({ genre: String(c.id_category) })
+                        }
                         className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
                           isSelected
                             ? "bg-blue-600 text-white font-semibold shadow-xs"
@@ -493,7 +512,7 @@ export default function HomePage() {
                 <div className="mt-1 space-y-0.5">
                   <button
                     type="button"
-                    onClick={() => setSelectedGear("all")}
+                    onClick={() => setFilters({ gear: "all" })}
                     className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
                       selectedGear === "all"
                         ? "bg-stone-900 text-white font-semibold shadow-xs"
@@ -514,7 +533,9 @@ export default function HomePage() {
                       <button
                         key={brand}
                         type="button"
-                        onClick={() => setSelectedGear(isSelected ? "all" : brand)}
+                        onClick={() =>
+                          setFilters({ gear: isSelected ? "all" : brand })
+                        }
                         className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition-all ${
                           isSelected
                             ? "bg-blue-600 text-white font-semibold shadow-xs"
@@ -564,13 +585,12 @@ export default function HomePage() {
               </div>
             </section>
 
-            {/* Mobile Feed & Category Controls (Hanya tampil pada layar < lg) */}
+            {/* Mobile: strip ringkas — detail filter ada di /home/filters */}
             <div className="lg:hidden rounded-2xl bg-white p-3 shadow-card space-y-2.5">
-              {/* Feed Switcher: Explore vs Following */}
               <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1 text-xs font-semibold">
                 <button
                   type="button"
-                  onClick={() => setFeedTab("explore")}
+                  onClick={() => setFilters({ feed: "explore" })}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all ${
                     feedTab === "explore"
                       ? "bg-stone-900 text-white shadow-xs"
@@ -578,11 +598,11 @@ export default function HomePage() {
                   }`}
                 >
                   <Compass size={14} className={feedTab === "explore" ? "text-blue-400" : "text-stone-400"} />
-                  <span>Explore Feed</span>
+                  <span>Explore</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFeedTab("following")}
+                  onClick={() => setFilters({ feed: "following" })}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all ${
                     feedTab === "following"
                       ? "bg-blue-600 text-white shadow-xs"
@@ -592,44 +612,23 @@ export default function HomePage() {
                   <Users size={14} className={feedTab === "following" ? "text-blue-100" : "text-stone-400"} />
                   <span>Following</span>
                 </button>
-              </div>
-
-              {/* Genre & Category Horizontal Scroll Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory("all")}
-                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all ${
-                    selectedCategory === "all"
-                      ? "bg-stone-900 text-white shadow-xs"
-                      : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
-                  }`}
+                <Link
+                  href="/home/filters"
+                  className="relative flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-stone-600 transition-all hover:bg-white hover:text-stone-900"
                 >
-                  <Layers size={12} className={selectedCategory === "all" ? "text-blue-400" : "text-stone-400"} />
-                  <span>All Genres</span>
-                </button>
-                {categories.map((c) => {
-                  const isSelected = selectedCategory === String(c.id_category);
-                  return (
-                    <button
-                      key={c.id_category}
-                      type="button"
-                      onClick={() => setSelectedCategory(isSelected ? "all" : String(c.id_category))}
-                      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                        isSelected
-                          ? "bg-blue-600 text-white font-semibold shadow-xs"
-                          : "bg-gray-100 text-stone-700 hover:bg-gray-200/80"
-                      }`}
-                    >
-                      <span>{c.name}</span>
-                    </button>
-                  );
-                })}
+                  <SlidersHorizontal size={14} />
+                  <span>Filter</span>
+                  {activeFilterCount > 0 && (
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </Link>
               </div>
             </div>
 
-            {/* Gear & Optics Filter Bar & Sort Controls */}
-            <div className="rounded-2xl bg-white p-3 shadow-card space-y-2.5">
+            {/* Gear & Optics Filter Bar & Sort Controls (desktop saja) */}
+            <div className="hidden rounded-2xl bg-white p-3 shadow-card space-y-2.5 lg:block">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
                   <Aperture size={14} className="text-blue-600" />
@@ -637,7 +636,7 @@ export default function HomePage() {
                   {selectedGear !== "all" && (
                     <button
                       type="button"
-                      onClick={() => setSelectedGear("all")}
+                      onClick={() => setFilters({ gear: "all" })}
                       className="ml-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800"
                     >
                       <RotateCcw size={11} />
@@ -650,39 +649,39 @@ export default function HomePage() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-semibold text-gray-400">Sort:</span>
                   <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5 text-xs font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => setSortBy("latest")}
-                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                        sortBy === "latest"
-                          ? "bg-stone-900 text-white shadow-xs"
-                          : "text-gray-600 hover:text-stone-900"
-                      }`}
-                    >
-                      Latest
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSortBy("popular")}
-                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                        sortBy === "popular"
-                          ? "bg-blue-600 text-white shadow-xs"
-                          : "text-gray-600 hover:text-stone-900"
-                      }`}
-                    >
-                      Popular
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSortBy("discussed")}
-                      className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
-                        sortBy === "discussed"
-                          ? "bg-stone-900 text-white shadow-xs"
-                          : "text-gray-600 hover:text-stone-900"
-                      }`}
-                    >
-                      Discussed
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ sort: "latest" })}
+                        className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                          sortBy === "latest"
+                            ? "bg-stone-900 text-white shadow-xs"
+                            : "text-gray-600 hover:text-stone-900"
+                        }`}
+                      >
+                        Latest
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ sort: "popular" })}
+                        className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                          sortBy === "popular"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-gray-600 hover:text-stone-900"
+                        }`}
+                      >
+                        Popular
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilters({ sort: "discussed" })}
+                        className={`rounded-full px-2.5 py-1 text-[11px] transition-all ${
+                          sortBy === "discussed"
+                            ? "bg-stone-900 text-white shadow-xs"
+                            : "text-gray-600 hover:text-stone-900"
+                        }`}
+                      >
+                        Discussed
+                      </button>
                   </div>
                 </div>
               </div>
@@ -690,7 +689,7 @@ export default function HomePage() {
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedGear("all")}
+                  onClick={() => setFilters({ gear: "all" })}
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                     selectedGear === "all"
                       ? "bg-stone-900 text-white shadow-xs"
@@ -710,7 +709,9 @@ export default function HomePage() {
                     <button
                       key={brand}
                       type="button"
-                      onClick={() => setSelectedGear(isSelected ? "all" : brand)}
+                      onClick={() =>
+                        setFilters({ gear: isSelected ? "all" : brand })
+                      }
                       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                         isSelected
                           ? "bg-blue-600 text-white font-semibold shadow-xs"
@@ -734,7 +735,11 @@ export default function HomePage() {
                 {gearStats.other > 0 && (
                   <button
                     type="button"
-                    onClick={() => setSelectedGear(selectedGear === "other" ? "all" : "other")}
+                    onClick={() =>
+                      setFilters({
+                        gear: selectedGear === "other" ? "all" : "other",
+                      })
+                    }
                     className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                       selectedGear === "other"
                         ? "bg-blue-600 text-white font-semibold shadow-xs"
@@ -757,7 +762,7 @@ export default function HomePage() {
                     Genre: {categories.find((c) => String(c.id_category) === selectedCategory)?.name || selectedCategory}
                     <button
                       type="button"
-                      onClick={() => setSelectedCategory("all")}
+                      onClick={() => setFilters({ genre: "all" })}
                       className="hover:text-blue-900"
                       aria-label="Remove category filter"
                     >
@@ -770,7 +775,7 @@ export default function HomePage() {
                     Gear: {selectedGear}
                     <button
                       type="button"
-                      onClick={() => setSelectedGear("all")}
+                      onClick={() => setFilters({ gear: "all" })}
                       className="hover:text-blue-900"
                       aria-label="Remove gear filter"
                     >
@@ -780,10 +785,7 @@ export default function HomePage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedCategory("all");
-                    setSelectedGear("all");
-                  }}
+                  onClick={() => setFilters({ genre: "all", gear: "all" })}
                   className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 underline ml-1"
                 >
                   Clear all
@@ -887,7 +889,9 @@ export default function HomePage() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedCategory(String(photo.id_category));
+                                  setFilters({
+                                    genre: String(photo.id_category),
+                                  });
                                 }}
                                 className="rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 text-[10px] font-semibold text-gray-700 transition-colors cursor-pointer"
                                 title={`Filter feed by genre ${photo.category_name}`}
@@ -901,7 +905,7 @@ export default function HomePage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const brand = photo.camera_make || photo.camera_model;
-                                  setSelectedGear(brand);
+                                  setFilters({ gear: brand });
                                 }}
                                 className="inline-flex items-center gap-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 text-[10px] text-gray-600 transition-colors cursor-pointer"
                                 title={`Filter feed by ${photo.camera_make ? `${photo.camera_make} ` : ""}${photo.camera_model}`}
