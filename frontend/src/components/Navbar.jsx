@@ -15,17 +15,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BarChart3,
   Home,
   ImagePlus,
   LogOut,
   Menu,
   Search,
+  SlidersHorizontal,
   User,
   X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "@/components/ui/Logo";
-import { EASE } from "@/components/ui/motion";
 
 const LINKS = [
   { href: "/home", label: "Home", icon: Home },
@@ -57,8 +58,25 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // ESC untuk menutup + kunci scroll body selama sidebar terbuka.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onKey(e) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   return (
-    <header className="sticky top-0 z-40 w-full flex justify-center pointer-events-none transition-all duration-500">
+    <>
+      <header className="sticky top-0 z-40 w-full flex justify-center pointer-events-none transition-all duration-500">
       <motion.nav
         layout
         transition={{ type: "spring", stiffness: 360, damping: 32 }}
@@ -192,62 +210,147 @@ export default function Navbar() {
           </button>
         )}
 
-        {/* ======================================================== */}
-        {/* MOBILE: Dropdown Drawer                                  */}
-        {/* ======================================================== */}
-        <AnimatePresence>
+        </motion.nav>
+      </header>
+
+      {/* ======================================================== */}
+      {/* MOBILE: Pop-up Sidebar (kanan), minimalis                 */}
+      {/* ======================================================== */}
+      <AnimatePresence>
           {menuOpen && user && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              className="absolute left-0 right-0 top-full mt-2 rounded-2xl border border-[#E8DEC9] bg-[#FFFDF6] p-3 shadow-xl sm:hidden pointer-events-auto"
-            >
-              <div className="flex flex-col gap-1">
-                {LINKS.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/home" && pathname?.startsWith(item.href));
-                  const Icon = item.icon;
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setMenuOpen(false)}
+                className="fixed inset-0 z-40 bg-stone-900/25 sm:hidden"
+                aria-hidden="true"
+              />
+              <motion.aside
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", stiffness: 380, damping: 36 }}
+                className="fixed right-0 top-0 z-50 flex h-full w-[78%] max-w-[300px] flex-col border-l border-[#E8DEC9] bg-[#FFFDF6] shadow-2xl sm:hidden"
+              >
+                {/* Sidebar Header */}
+                <div className="flex items-center justify-between border-b border-[#E8DEC9] px-4 py-3">
+                  <Link
+                    href="/account"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex min-w-0 items-center gap-2.5"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white">
+                      {user?.profile_picture_url || user?.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={user.profile_picture_url || user.avatar_url}
+                          alt={user.username || "Avatar"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        (user?.username || "U").charAt(0).toUpperCase()
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-bold text-stone-900">
+                        {user?.username || "Photographer"}
+                      </span>
+                      <span className="block truncate text-[10px] text-stone-500">
+                        {user?.email || "PicFlow Member"}
+                      </span>
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    aria-label="Close menu"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-white hover:text-stone-900"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors ${
-                        isActive
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-stone-700 hover:bg-stone-50"
-                      }`}
-                    >
-                      <Icon
-                        size={15}
-                        className={isActive ? "text-blue-600" : "text-stone-400"}
-                      />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+                {/* Navigation */}
+                <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+                  <ul className="space-y-0.5">
+                    {LINKS.map((item) => {
+                      const isActive =
+                        pathname === item.href ||
+                        (item.href !== "/home" &&
+                          pathname?.startsWith(item.href));
+                      const Icon = item.icon;
 
-                <div className="my-1 border-t border-[#E8DEC9]" />
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setMenuOpen(false)}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+                              isActive
+                                ? "bg-white text-blue-700 shadow-2xs"
+                                : "text-stone-700 hover:bg-white hover:text-stone-900"
+                            }`}
+                          >
+                            <Icon
+                              size={17}
+                              className={isActive ? "text-blue-600" : "text-stone-400"}
+                            />
+                            <span>{item.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
 
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut size={15} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </motion.div>
+                  <p className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                    Browse
+                  </p>
+                  <ul className="space-y-0.5">
+                    <li>
+                      <Link
+                        href="/home/filters"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-stone-700 transition-colors hover:bg-white hover:text-stone-900"
+                      >
+                        <SlidersHorizontal size={17} className="text-stone-400" />
+                        <span>Filter Feed</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-stone-700 transition-colors hover:bg-white hover:text-stone-900"
+                      >
+                        <BarChart3 size={17} className="text-stone-400" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </nav>
+
+                {/* Footer: Logout */}
+                <div className="border-t border-[#E8DEC9] p-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-red-600 transition-colors hover:bg-red-50"
+                  >
+                    <LogOut size={17} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </motion.aside>
+            </>
           )}
         </AnimatePresence>
-      </motion.nav>
-    </header>
+    </>
   );
 }
