@@ -1,49 +1,57 @@
 "use client";
 
 // src/app/(app)/dashboard/page.jsx
-// Halaman Creator Analytics & Performance Dashboard:
-// - Metrik utama: Total Posts, Likes Received, Audience (Followers/Following), Total Reviews
-// - Grafik timeline interaktif: Insight aktivitas dalam rentang 7d, 30d, 90d
-// - Evaluasi 4 Pilar Kritik Fotografi (Komposisi, Pencahayaan, Warna, Konsep)
-// - Galeri 4 karya foto dengan performa interaksi tertinggi (Top Performing Shots)
+// Dashboard performa kreator (tema terang, shell gaya app-dashboard):
+// - Baris KPI + sparkline dari timeline
+// - Grafik insight (7d / 30d / 90d) via AccountInsightChart
+// - Rincian engagement periode berjalan
+// - Evaluasi 4 pilar kritik + top performing shots
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowDownRight,
+  ArrowUpRight,
   Camera,
-  CheckCircle2,
   ExternalLink,
   Heart,
   ImageOff,
-  Layers,
   MessageSquare,
-  Sparkles,
   Star,
-  TrendingUp,
-  UserCheck,
-  Users,
 } from "lucide-react";
 import { fileUrl, getToken, getUserDashboard } from "@/lib/api";
 import { cloudinaryLoader, isCloudinaryUrl } from "@/lib/cloudinary";
 import { useAuth } from "@/context/AuthContext";
 import AccountInsightChart from "@/components/AccountInsightChart";
-import Button from "@/components/ui/Button";
+import DashboardKpi from "@/components/ui/DashboardKpi";
 import Skeleton from "@/components/ui/Skeleton";
 import { PageTransition } from "@/components/ui/Motion";
 
 const PILLAR_LABELS = [
-  { key: "composition", label: "Composition & Framing", desc: "Rule of thirds, balance, lead lines" },
-  { key: "lighting", label: "Lighting & Dynamic Range", desc: "Highlights, shadows, exposure latitude" },
-  { key: "color", label: "Color Harmony & Tone", desc: "Palette balance, saturation, B&W gradation" },
-  { key: "concept", label: "Concept & Narrative", desc: "Visual storytelling, idea execution" },
+  { key: "composition", label: "Composition & Framing", color: "#2563EB" },
+  { key: "lighting", label: "Lighting & Range", color: "#D97706" },
+  { key: "color", label: "Color & Tone", color: "#16A34A" },
+  { key: "concept", label: "Concept & Narrative", color: "#7C3AED" },
 ];
+
+const ENGAGEMENT = [
+  { key: "likes", label: "Likes", color: "#D62B2B" },
+  { key: "comments", label: "Comments", color: "#D97706" },
+  { key: "critiques", label: "Critiques", color: "#7C3AED" },
+  { key: "followers", label: "New followers", color: "#16A34A" },
+];
+
+function deltaPercent(current, previous) {
+  if (!previous) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   const [period, setPeriod] = useState("30d");
   const [data, setData] = useState(null);
@@ -86,34 +94,66 @@ export default function DashboardPage() {
     total_critiques: 0,
     overall_critique_score: 0,
   };
-
-  const pillars = data?.critique_pillars || {
-    composition: 0,
-    lighting: 0,
-    color: 0,
-    concept: 0,
-    total_reviews: 0,
-  };
-
+  const pillars = data?.critique_pillars || { total_reviews: 0 };
   const topPhotos = data?.top_photos || [];
   const recentCritiques = data?.recent_critiques || [];
   const profile = data?.profile;
+  const timeline = useMemo(() => data?.timeline || [], [data]);
+
+  // Semua angka turunan di bawah hanya berasal dari timeline periode aktif.
+  const series = useMemo(() => {
+    const sum = (key) => timeline.reduce((acc, d) => acc + (d[key] || 0), 0);
+    return {
+      likes: sum("likes"),
+      comments: sum("comments"),
+      critiques: sum("critiques"),
+      followers: sum("followers"),
+      engagement: sum("total_engagement"),
+      posts: sum("posts"),
+    };
+  }, [timeline]);
+
+  const engagementBreakdown = useMemo(
+    () =>
+      ENGAGEMENT.map((m) => ({ ...m, value: series[m.key] })).sort(
+        (a, b) => b.value - a.value
+      ),
+    [series]
+  );
+  const breakdownTotal = engagementBreakdown.reduce((s, m) => s + m.value, 0);
+  const breakdownMax = Math.max(...engagementBreakdown.map((m) => m.value), 1);
+
+  // Parse tanggal timeline untuk menghitung split periode berjalan vs sebelumnya.
+  const { currentEngagement, previousEngagement } = useMemo(() => {
+    const half = Math.floor(timeline.length / 2);
+    const sumOf = (rows) =>
+      rows.reduce((acc, d) => acc + (d.total_engagement || 0), 0);
+    return {
+      currentEngagement: sumOf(timeline.slice(half)),
+      previousEngagement: sumOf(timeline.slice(0, half)),
+    };
+  }, [timeline]);
+  const engagementDelta = deltaPercent(
+    currentEngagement,
+    previousEngagement
+  );
+  const engagementUp = engagementDelta >= 0;
 
   if (loading && !data) {
     return (
       <PageTransition>
-        <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-10 space-y-6">
-          <Skeleton className="h-10 w-48 rounded-xl" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-28 rounded-2xl" />
-            <Skeleton className="h-28 rounded-2xl" />
-            <Skeleton className="h-28 rounded-2xl" />
-            <Skeleton className="h-28 rounded-2xl" />
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10">
+          <Skeleton className="h-9 w-56 rounded-xl" />
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            <Skeleton className="h-28 rounded-[16px]" />
+            <Skeleton className="h-28 rounded-[16px]" />
+            <Skeleton className="h-28 rounded-[16px]" />
+            <Skeleton className="h-28 rounded-[16px]" />
           </div>
-          <Skeleton className="h-80 w-full rounded-2xl" />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Skeleton className="h-72 rounded-2xl" />
-            <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-80 w-full rounded-[16px]" />
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <Skeleton className="h-72 rounded-[16px]" />
+            <Skeleton className="h-72 rounded-[16px]" />
           </div>
         </div>
       </PageTransition>
@@ -122,48 +162,51 @@ export default function DashboardPage() {
 
   return (
     <PageTransition>
-      <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-20 pt-8 space-y-8">
-        {/* ======================================================== */}
-        {/* TOP BAR & CREATOR HEADER                                 */}
-        {/* ======================================================== */}
-        <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200/80 pb-6">
-          <div>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 pb-20 pt-6 sm:gap-5 sm:px-4 sm:pt-8">
+        {/* Header */}
+        <section className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
             <Link
               href="/account"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-900 transition-colors mb-2"
+              className="mb-2 inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[color:var(--pf-text-muted)] transition-colors hover:text-ink"
             >
-              <ArrowLeft size={14} />
-              <span>Back to Creator Vault</span>
+              <ArrowLeft size={13} aria-hidden="true" />
+              <span>Creator Vault</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
-              Creator Performance &amp; Analytics
+            <h1 className="text-[24px] font-bold leading-none tracking-[-0.02em] text-ink sm:text-[28px]">
+              Creator{" "}
+              <span className="accent-serif font-normal">performance</span>
             </h1>
-            <p className="mt-1 text-xs text-stone-500 max-w-lg">
-              Track your audience reach, community appreciation, critique evaluation, and top-tier shots.
+            <p className="mt-2 text-[12.5px] text-[color:var(--pf-text-muted)]">
+              {period === "7d"
+                ? "7 hari terakhir"
+                : period === "90d"
+                  ? "90 hari terakhir"
+                  : "30 hari terakhir"}{" "}
+              · engagement, kritik, dan karya terbaik
             </p>
           </div>
 
-          {/* Quick Creator Badge */}
           {profile && (
-            <div className="flex items-center gap-3 rounded-2xl border border-gray-200/90 bg-[#FAF8F5] p-2.5 pr-4 shadow-2xs self-start sm:self-auto">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-stone-900 text-xs font-bold text-white shadow-xs">
-                {(profile.profile_picture_url || profile.avatar_url) ? (
+            <div className="flex items-center gap-2.5 rounded-[14px] border border-[color:var(--pf-border)] bg-[var(--pf-surface)] p-2 pr-3.5 shadow-[var(--pf-shadow-soft)]">
+              <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-ink text-[11px] font-semibold text-[#FFFDF6]">
+                {profile.profile_picture_url || profile.avatar_url ? (
                   <Image
                     src={profile.profile_picture_url || profile.avatar_url}
                     alt={profile.username || "Avatar"}
-                    width={40}
-                    height={40}
+                    width={36}
+                    height={36}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   (profile.username || "U").charAt(0).toUpperCase()
                 )}
-              </div>
+              </span>
               <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-stone-900">
+                <p className="truncate text-[12.5px] font-semibold leading-tight text-ink">
                   {profile.full_name || `@${profile.username}`}
                 </p>
-                <p className="text-[11px] font-semibold text-blue-600">
+                <p className="truncate text-[11px] leading-tight text-[color:var(--pf-text-muted)]">
                   @{profile.username}
                 </p>
               </div>
@@ -171,315 +214,326 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Error Banner */}
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-600">
+          <div
+            role="alert"
+            className="rounded-[14px] border border-[color:var(--pf-danger)]/30 bg-[var(--pf-danger-soft)] p-3.5 text-[12px] font-medium text-[color:var(--pf-danger)]"
+          >
             {error}
           </div>
         )}
 
-        {/* ======================================================== */}
-        {/* 4 PRIMARY METRIC CARDS                                   */}
-        {/* ======================================================== */}
-        <section className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* 1. Total Posts */}
-          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
-            <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
-                Published
-              </span>
-              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
-                <Camera size={14} className="sm:hidden" />
-                <Camera size={16} className="hidden sm:block" />
-              </div>
-            </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
-                {summary.total_posts}
-              </span>
-              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">photos</span>
-            </div>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
-              Active in your vault
-            </p>
-          </div>
-
-          {/* 2. Total Likes Received */}
-          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
-            <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
-                Likes
-              </span>
-              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-red-50 text-red-600">
-                <Heart size={14} className="sm:hidden" />
-                <Heart size={16} className="hidden sm:block" />
-              </div>
-            </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
-                {summary.total_likes}
-              </span>
-              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">likes</span>
-            </div>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
-              Across all photographs
-            </p>
-          </div>
-
-          {/* 3. Audience (Followers & Following) */}
-          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
-            <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
-                Audience
-              </span>
-              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600">
-                <Users size={14} className="sm:hidden" />
-                <Users size={16} className="hidden sm:block" />
-              </div>
-            </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
-                {summary.followers_count}
-              </span>
-              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">followers</span>
-            </div>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
-              Following {summary.following_count}
-            </p>
-          </div>
-
-          {/* 4. Total Community Feedback */}
-          <div className="rounded-xl sm:rounded-2xl border border-gray-200/90 bg-white p-3 sm:p-5 shadow-card transition-all hover:shadow-card-hover">
-            <div className="flex items-center justify-between text-stone-500">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-400 truncate">
-                Critiques
-              </span>
-              <div className="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-purple-50 text-purple-600">
-                <Sparkles size={14} className="sm:hidden" />
-                <Sparkles size={16} className="hidden sm:block" />
-              </div>
-            </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-              <span className="font-mono text-xl sm:text-3xl font-extrabold text-stone-900">
-                {summary.total_critiques}
-              </span>
-              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">critiques</span>
-            </div>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-stone-400 truncate">
-              {summary.total_comments} comments
-            </p>
-          </div>
-        </section>
-
-        {/* ======================================================== */}
-        {/* INTERACTIVE TIMELINE CHART                               */}
-        {/* ======================================================== */}
-        <section>
-          <AccountInsightChart
-            timeline={data?.timeline || []}
-            period={period}
-            onPeriodChange={(newPeriod) => setPeriod(newPeriod)}
+        {/* KPI row */}
+        <section
+          aria-label="Metrik utama"
+          className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
+        >
+          <DashboardKpi
+            id="posts"
+            label="Published"
+            value={summary.total_posts}
+            note={`${series.posts} diunggah periode ini`}
+            spark={timeline.map((d) => d.posts || 0)}
+            color="#2563EB"
+          />
+          <DashboardKpi
+            id="likes"
+            label="Likes received"
+            value={summary.total_likes}
+            note={`${series.likes} like periode ini`}
+            spark={timeline.map((d) => d.likes || 0)}
+            color="#D62B2B"
+          />
+          <DashboardKpi
+            id="audience"
+            label="Followers"
+            value={summary.followers_count}
+            note={`Following ${summary.following_count} · +${series.followers} baru`}
+            spark={timeline.map((d) => d.followers || 0)}
+            color="#16A34A"
+          />
+          <DashboardKpi
+            id="critiques"
+            label="Critiques"
+            value={summary.total_critiques}
+            note={`${series.comments} komentar diterima`}
+            spark={timeline.map((d) => d.critiques || 0)}
+            color="#7C3AED"
           />
         </section>
 
-        {/* ======================================================== */}
-        {/* TECHNICAL 4-PILLAR CRITIQUE EVALUATION & TOP SHOTS       */}
-        {/* ======================================================== */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Section: 4-Pillar Quality Index HUD */}
-          <section className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                    <Star size={13} className="fill-amber-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-stone-900">
-                      4-Pillar Quality Index
-                    </h3>
-                    <p className="text-[11px] text-stone-500">
-                      Structured peer assessment on professional photography standards
-                    </p>
-                  </div>
-                </div>
+        {/* Chart + engagement breakdown */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <AccountInsightChart
+            timeline={timeline}
+            period={period}
+            onPeriodChange={setPeriod}
+          />
 
-                {/* Overall Score Badge */}
-                <div className="flex items-baseline gap-1 rounded-xl bg-amber-50 px-3 py-1 text-amber-800 border border-amber-200/80">
-                  <span className="font-mono text-base font-extrabold">
-                    {summary.overall_critique_score > 0
-                      ? summary.overall_critique_score.toFixed(1)
-                      : "—"}
-                  </span>
-                  <span className="text-[10px] text-amber-600 font-semibold">/ 5.0</span>
-                </div>
+          <section
+            aria-label="Rincian engagement"
+            className="flex min-w-0 flex-col rounded-[16px] border border-[color:var(--pf-border)] bg-[var(--pf-surface)] p-4 shadow-[var(--pf-shadow-surface)]"
+          >
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-[13.5px] font-semibold text-ink">
+                Engagement breakdown
+              </h2>
+              <span className="font-mono text-[11.5px] tabular-nums text-[color:var(--pf-text-muted)]">
+                {breakdownTotal}
+              </span>
+            </div>
+
+            <p className="mt-2 flex items-center gap-1.5 text-[12px]">
+              <span
+                className={`inline-flex items-center gap-0.5 rounded-[6px] px-1.5 py-[2px] font-mono text-[11px] font-medium tabular-nums ${
+                  engagementUp
+                    ? "bg-[var(--pf-success-soft)] text-[color:var(--pf-success)]"
+                    : "bg-[var(--pf-danger-soft)] text-[color:var(--pf-danger)]"
+                }`}
+              >
+                {engagementUp ? (
+                  <ArrowUpRight size={12} aria-hidden="true" />
+                ) : (
+                  <ArrowDownRight size={12} aria-hidden="true" />
+                )}
+                {engagementUp ? "+" : "−"}
+                {Math.abs(engagementDelta).toFixed(1)}%
+              </span>
+              <span className="text-[color:var(--pf-text-soft)]">
+                paruh kedua periode
+              </span>
+            </p>
+
+            <ul className="mt-4 flex flex-1 flex-col justify-between gap-3.5">
+              {engagementBreakdown.map((m, i) => (
+                <li key={m.key}>
+                  <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
+                    <span className="truncate text-[color:var(--pf-text-medium)]">
+                      {m.label}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-ink">
+                      {m.value}
+                      <span className="ml-1.5 inline-block w-[3.2ch] text-right text-[color:var(--pf-text-soft)]">
+                        {breakdownTotal
+                          ? Math.round((m.value / breakdownTotal) * 100)
+                          : 0}
+                        %
+                      </span>
+                    </span>
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--pf-surface-active)]"
+                  >
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(m.value / breakdownMax) * 100}%`,
+                        background: m.color,
+                        opacity: 1 - i * 0.12,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
+        {/* Pillars + top shots */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <section
+            aria-label="Empat pilar kritik"
+            className="flex flex-col rounded-[16px] border border-[color:var(--pf-border)] bg-[var(--pf-surface)] shadow-[var(--pf-shadow-surface)]"
+          >
+            <div className="flex items-start justify-between gap-3 px-4 pt-4">
+              <div className="min-w-0">
+                <h2 className="text-[13.5px] font-semibold text-ink">
+                  4-Pillar Quality Index
+                </h2>
+                <p className="mt-1 text-[12px] text-[color:var(--pf-text-muted)]">
+                  {pillars.total_reviews || 0} penilaian dari komunitas
+                </p>
               </div>
-
-              {/* Pillars Progress Bars */}
-              <div className="mt-5 space-y-4">
-                {PILLAR_LABELS.map((p) => {
-                  const score = pillars[p.key] || 0;
-                  const pct = Math.min(100, Math.round((score / 5.0) * 100));
-
-                  return (
-                    <div key={p.key} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-stone-800">{p.label}</span>
-                        <span className="font-mono font-bold text-stone-900">
-                          {score > 0 ? `${score.toFixed(1)} / 5.0` : "No ratings"}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full transition-all duration-700 ease-out"
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor:
-                              p.key === "composition"
-                                ? "#2563EB"
-                                : p.key === "lighting"
-                                  ? "#D97706"
-                                  : p.key === "color"
-                                    ? "#059669"
-                                    : "#7C3AED",
-                          }}
-                        />
-                      </div>
-                      <p className="text-[10px] text-stone-400">{p.desc}</p>
-                    </div>
-                  );
-                })}
+              <div className="flex shrink-0 items-baseline gap-1 rounded-[10px] border border-[color:var(--pf-border-strong)] bg-[var(--pf-surface-active)] px-2.5 py-1">
+                <Star
+                  size={11}
+                  className="self-center text-[#D97706]"
+                  fill="#D97706"
+                  aria-hidden="true"
+                />
+                <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+                  {summary.overall_critique_score > 0
+                    ? summary.overall_critique_score.toFixed(1)
+                    : "—"}
+                </span>
+                <span className="text-[10px] text-[color:var(--pf-text-soft)]">
+                  /5
+                </span>
               </div>
             </div>
 
-            {/* Critique Reviews Snippet */}
-            {recentCritiques.length > 0 && (
-              <div className="mt-6 border-t border-gray-100 pt-4">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                  Recent Constructive Feedback
-                </span>
-                <div className="mt-2.5 space-y-2">
-                  {recentCritiques.map((c) => (
+            <div className="mt-4 space-y-3.5 px-4">
+              {PILLAR_LABELS.map((p) => {
+                const score = pillars[p.key] || 0;
+                return (
+                  <div key={p.key}>
+                    <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
+                      <span className="truncate text-[color:var(--pf-text-medium)]">
+                        {p.label}
+                      </span>
+                      <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-ink">
+                        {score > 0 ? score.toFixed(1) : "—"}
+                      </span>
+                    </div>
                     <div
-                      key={c.id_critique}
-                      className="rounded-xl border border-gray-100 bg-[#FAF8F5] p-3 text-xs"
+                      aria-hidden="true"
+                      className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--pf-surface-active)]"
                     >
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-stone-800">
+                      <div
+                        className="h-full rounded-full transition-[width] duration-700 ease-out"
+                        style={{
+                          width: `${Math.min(100, (score / 5) * 100)}%`,
+                          background: p.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {recentCritiques.length > 0 && (
+              <div className="mt-4 border-t border-[color:var(--pf-border)] px-4 py-3.5">
+                <h3 className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-[color:var(--pf-text-soft)]">
+                  Feedback terbaru
+                </h3>
+                <ul className="mt-2 space-y-2">
+                  {recentCritiques.map((c) => (
+                    <li
+                      key={c.id_critique}
+                      className="rounded-[11px] border border-[color:var(--pf-border)] bg-[var(--pf-panel)] p-2.5"
+                    >
+                      <div className="flex items-baseline justify-between gap-2 text-[11.5px]">
+                        <span className="truncate font-medium text-ink">
                           @{c.reviewer?.username || "Photographer"}
                         </span>
-                        <span className="font-mono font-bold text-blue-600">
-                          Score: {c.overall_score} / 5.0
+                        <span className="shrink-0 font-mono tabular-nums text-[color:var(--pf-text-muted)]">
+                          {c.overall_score} / 5.0
                         </span>
                       </div>
                       {c.strengths && (
-                        <p className="mt-1 line-clamp-1 text-stone-600">
-                          <strong className="text-emerald-700 font-semibold">Strength:</strong> {c.strengths}
+                        <p className="mt-1 line-clamp-1 text-[11.5px] text-[color:var(--pf-text-muted)]">
+                          <span className="font-medium text-[color:var(--pf-success)]">
+                            Strength:
+                          </span>{" "}
+                          {c.strengths}
                         </p>
                       )}
                       {c.improvements && (
-                        <p className="mt-0.5 line-clamp-1 text-stone-500">
-                          <strong className="text-amber-700 font-semibold">Area:</strong> {c.improvements}
+                        <p className="mt-0.5 line-clamp-1 text-[11.5px] text-[color:var(--pf-text-soft)]">
+                          <span className="font-medium text-[#B45309]">Area:</span>{" "}
+                          {c.improvements}
                         </p>
                       )}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
           </section>
 
-          {/* Section: Top Performing Photographs */}
-          <section className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                    <Heart size={13} className="fill-red-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-stone-900">
-                      Top Performing Works
-                    </h3>
-                    <p className="text-[11px] text-stone-500">
-                      Your photographs with the highest engagement and community acclaim
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <section
+            aria-label="Karya terbaik"
+            className="flex flex-col rounded-[16px] border border-[color:var(--pf-border)] bg-[var(--pf-surface)] shadow-[var(--pf-shadow-surface)]"
+          >
+            <div className="px-4 pt-4">
+              <h2 className="text-[13.5px] font-semibold text-ink">
+                Top performing works
+              </h2>
+              <p className="mt-1 text-[12px] text-[color:var(--pf-text-muted)]">
+                Foto dengan engagement tertinggi
+              </p>
+            </div>
 
-              {topPhotos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center text-stone-400">
-                  <ImageOff size={28} className="mb-2 text-stone-300" />
-                  <p className="text-xs font-semibold text-stone-600">
-                    No photographs published yet
-                  </p>
-                  <Link
-                    href="/addphoto"
-                    className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700"
-                  >
-                    Upload First Work
-                  </Link>
-                </div>
-              ) : (
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2">
-                  {topPhotos.map((photo, idx) => {
-                    const src = fileUrl(photo.image_url);
-                    return (
+            {topPhotos.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center px-4 py-14 text-center">
+                <ImageOff size={26} className="mb-2 text-[color:var(--pf-text-soft)]" />
+                <p className="text-[12.5px] font-medium text-ink">
+                  Belum ada foto terbit
+                </p>
+                <Link
+                  href="/addphoto"
+                  className="mt-3 inline-flex h-8 items-center rounded-full bg-ink px-3.5 text-[12px] font-medium text-[#FFFDF6] transition-opacity hover:opacity-90"
+                >
+                  Upload karya pertama
+                </Link>
+              </div>
+            ) : (
+              <ul className="mt-3 grid flex-1 grid-cols-2 gap-2.5 p-4 pt-0">
+                {topPhotos.map((photo, idx) => {
+                  const src = fileUrl(photo.image_url);
+                  return (
+                    <li key={photo.id_photo}>
                       <Link
-                        key={photo.id_photo}
                         href={`/photos/${photo.id_photo}`}
-                        className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-[#FAF8F5] transition-all hover:border-blue-400 hover:shadow-sm"
+                        className="group flex h-full flex-col overflow-hidden rounded-[12px] border border-[color:var(--pf-border)] bg-[var(--pf-panel)] transition-colors hover:border-[color:var(--pf-border-strong)]"
                       >
-                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--pf-surface-active)]">
                           {src && (
                             <Image
                               src={src}
-                              loader={isCloudinaryUrl(src) ? cloudinaryLoader : undefined}
+                              loader={
+                                isCloudinaryUrl(src) ? cloudinaryLoader : undefined
+                              }
                               alt={photo.title || "Photo"}
                               fill
                               sizes="(max-width: 640px) 50vw, 25vw"
                               className="object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           )}
-                          <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-bold text-white backdrop-blur-xs">
-                            #{idx + 1}
-                          </div>
+                          <span className="absolute left-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-black/60 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
+                            {idx + 1}
+                          </span>
                         </div>
-
                         <div className="p-2.5">
-                          <p className="truncate text-xs font-bold text-stone-900 group-hover:text-blue-600">
+                          <p className="truncate text-[12px] font-medium text-ink">
                             {photo.title || "Untitled"}
                           </p>
-                          <div className="mt-1 flex items-center justify-between text-[10px] text-stone-500 font-mono">
-                            <span className="flex items-center gap-1 text-red-600 font-semibold">
-                              <Heart size={10} className="fill-red-500" />
+                          <div className="mt-1 flex items-center justify-between font-mono text-[10.5px] text-[color:var(--pf-text-muted)]">
+                            <span className="flex items-center gap-1">
+                              <Heart
+                                size={10}
+                                className="text-[#D62B2B]"
+                                fill="#D62B2B"
+                                aria-hidden="true"
+                              />
                               {photo.likes_count}
                             </span>
-                            <span className="flex items-center gap-1 text-stone-600">
-                              <MessageSquare size={10} />
+                            <span className="flex items-center gap-1">
+                              <MessageSquare size={10} aria-hidden="true" />
                               {photo.comments_count}
                             </span>
                           </div>
                         </div>
                       </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
-            {/* Bottom Vault Shortcut */}
-            <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
-              <span className="text-stone-400 text-[11px]">
-                Showing top {topPhotos.length} of {summary.total_posts} portfolio shots
+            <div className="flex items-center justify-between border-t border-[color:var(--pf-border)] px-4 py-2.5 text-[11.5px] text-[color:var(--pf-text-soft)]">
+              <span className="inline-flex items-center gap-1.5">
+                <Camera size={12} aria-hidden="true" />
+                {topPhotos.length} dari {summary.total_posts} karya
               </span>
               <Link
                 href="/account"
-                className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center gap-1 font-medium text-[color:var(--pf-accent-ink)] hover:underline"
               >
-                <span>View Full Vault</span>
-                <ExternalLink size={12} />
+                <span>Vault lengkap</span>
+                <ExternalLink size={11} aria-hidden="true" />
               </Link>
             </div>
           </section>

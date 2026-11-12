@@ -710,7 +710,7 @@ export default function LandingPage({ children }) {
       {/* ========================================================================= */}
       {/* 3. BENTO GRID FITUR (3 Kartu Sesuai Referensi Visual)                      */}
       {/* ========================================================================= */}
-      <section id="fitur" className="py-20 sm:py-28">
+      <section id="fitur" className="py-14 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           {/* Header Seksi Fitur */}
           <motion.div
@@ -720,53 +720,53 @@ export default function LandingPage({ children }) {
             transition={{ duration: 0.6 }}
             className="mx-auto max-w-2xl text-center"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-stone-600">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD0BE] bg-[#F5EFE6] px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-600 sm:text-[11px]">
               ✦ CRAFTED TECHNOLOGY
             </span>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-stone-900 sm:mt-4 sm:text-4xl">
               Advanced tools for every stage of your photographic craft
             </h2>
-            <p className="mt-3 text-sm text-stone-600 sm:text-base">
+            <p className="mt-2 text-[13px] leading-relaxed text-stone-600 sm:mt-3 sm:text-base">
               A synthesis of automatic metadata analysis, high-precision color calibration, and
               seamless community engagement.
             </p>
           </motion.div>
 
           {/* Grid Bento: 1 Kartu Lebar Atas, 2 Kartu Berdampingan Bawah */}
-          <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-14 sm:gap-6 lg:grid-cols-2">
             {/* --- KARTU BENTO 1: Dynamic Dashboard (EXIF & Gamut Analyzer) --- */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-4 sm:p-10 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8"
+              className="lg:col-span-2 rounded-2xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-4 sm:p-6 md:p-10 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 sm:gap-8"
             >
               {/* Kolom Teks Kiri */}
               <div className="max-w-md">
                 <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[#10B981]">
                   Feature 01 · EXIF Inspector
                 </span>
-                <h3 className="mt-2 text-2xl font-extrabold text-stone-900">
+                <h3 className="mt-2 text-xl font-extrabold text-stone-900 sm:text-2xl">
                   Dynamic EXIF Analytics Dashboard
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-stone-600">
+                <p className="mt-2 text-[13px] leading-relaxed text-stone-600 sm:mt-3 sm:text-sm">
                   Instantly parse Shutter Speed, Aperture, ISO, Focal Length, and sRGB gamut
                   spectrum curves on every upload. No tedious manual entry.
                 </p>
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <Link
                     href="/register"
-                    className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-stone-800"
+                    className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-stone-800 sm:px-5 sm:py-2.5"
                   >
                     Explore Dashboard
-                    <ArrowRight size={14} />
+                    <ArrowRight size={13} />
                   </Link>
                 </div>
               </div>
 
               {/* Mockup Visual Kanan (Meniru Bar Chart Grafis di Referensi) */}
-              <div className="w-full max-w-md rounded-xl sm:rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 sm:p-5 shadow-sm">
+              <div className="w-full max-w-md rounded-xl border border-[#DCD0BE] bg-[#FFFDF6] p-3 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold text-stone-900">
@@ -787,7 +787,7 @@ export default function LandingPage({ children }) {
                 </div>
 
                 {/* Bar Chart Visual Histogram */}
-                <div className="mt-6 flex h-36 items-end justify-between gap-2 px-2">
+                <div className="mt-4 flex h-28 items-end justify-between gap-1 px-1 sm:mt-6 sm:h-36 sm:gap-2 sm:px-2">
                   {[
                     { label: "f/1.4", h: "45%", count: "142" },
                     { label: "f/2.0", h: "60%", count: "210" },
@@ -802,7 +802,7 @@ export default function LandingPage({ children }) {
                       onClick={() => setActiveHistogram(i)}
                       className="group flex flex-1 cursor-pointer flex-col items-center gap-1.5"
                     >
-                      <span className="text-[10px] font-mono text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[9px] font-mono text-stone-400 transition-opacity sm:text-[10px] sm:opacity-0 sm:group-hover:opacity-100">
                         {bar.count}
                       </span>
                       <div
@@ -814,7 +814,7 @@ export default function LandingPage({ children }) {
                         style={{ height: bar.h }}
                       />
                       <span
-                        className={`font-mono text-[10px] ${
+                        className={`font-mono text-[9px] sm:text-[10px] ${
                           activeHistogram === i
                             ? "font-bold text-[#10B981]"
                             : "text-stone-500"
@@ -826,10 +826,10 @@ export default function LandingPage({ children }) {
                   ))}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-[#F5EFE6] px-3 py-2 text-[11px] text-stone-600">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-[#F5EFE6] px-2.5 py-2 text-[10px] text-stone-600 sm:mt-4 sm:px-3 sm:text-[11px]">
                   <span>Selected Gamut:</span>
                   <span className="font-mono font-bold text-stone-900">
-                    99.8% sRGB Color Space
+                    99.8% sRGB
                   </span>
                 </div>
               </div>
@@ -841,24 +841,24 @@ export default function LandingPage({ children }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-6 sm:p-8 shadow-xs flex flex-col justify-between"
+              className="rounded-2xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-4 sm:rounded-3xl sm:p-8 shadow-xs flex flex-col justify-between"
             >
               <div>
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-blue-600">
+                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-blue-600 sm:text-xs">
                   Feature 02 · Constructive Critique
                 </span>
-                <h3 className="mt-2 text-xl font-extrabold text-stone-900">
+                <h3 className="mt-2 text-lg font-extrabold text-stone-900 sm:text-xl">
                   4-Pillar Constructive Critique
                 </h3>
-                <p className="mt-2 text-sm text-stone-600 leading-relaxed">
+                <p className="mt-2 text-[13px] text-stone-600 leading-relaxed sm:text-sm">
                   Structured technical evaluation across Composition, Lighting, Color, and Concept —
                   free from generic spam.
                 </p>
               </div>
 
               {/* Mockup Toggle List (Meniru UI Notification Toggles di Referensi) */}
-              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-2 text-xs font-bold text-stone-800">
+              <div className="mt-4 rounded-xl border border-[#DCD0BE] bg-[#FFFDF6] p-3 shadow-sm space-y-2.5 sm:mt-6 sm:rounded-2xl sm:p-4 sm:space-y-3">
+                <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-2 text-[11px] font-bold text-stone-800 sm:text-xs">
                   <span>Evaluation Metrics</span>
                   <span className="text-stone-400 font-mono text-[10px]">STATUS</span>
                 </div>
@@ -893,11 +893,11 @@ export default function LandingPage({ children }) {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-3 text-xs"
+                      className="flex items-center justify-between gap-2 text-[11px] sm:gap-3 sm:text-xs"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${item.color}`} />
-                        <span className="font-medium text-stone-800">{item.name}</span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${item.color}`} />
+                        <span className="truncate font-medium text-stone-800">{item.name}</span>
                       </div>
                       <button
                         type="button"
@@ -926,59 +926,63 @@ export default function LandingPage({ children }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="rounded-3xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-6 sm:p-8 shadow-xs flex flex-col justify-between"
+              className="rounded-2xl border border-[#DCD0BE] bg-[#F5EFE6]/40 p-4 sm:rounded-3xl sm:p-8 shadow-xs flex flex-col justify-between"
             >
               <div>
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-red-600">
+                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-red-600 sm:text-xs">
                   Feature 03 · Latency &lt;250ms
                 </span>
-                <h3 className="mt-2 text-xl font-extrabold text-stone-900">
+                <h3 className="mt-2 text-lg font-extrabold text-stone-900 sm:text-xl">
                   Zero-Lag Real-Time Sync
                 </h3>
-                <p className="mt-2 text-sm text-stone-600 leading-relaxed">
+                <p className="mt-2 text-[13px] text-stone-600 leading-relaxed sm:text-sm">
                   Gear discussions, inspirational bookmarks, and live community feedback delivered
                   via cloud synchronization.
                 </p>
               </div>
 
               {/* Mockup Feed Aktivitas (Meniru UI Task Management di Referensi) */}
-              <div className="mt-6 rounded-2xl border border-[#DCD0BE] bg-[#FFFDF6] p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-[#E8DEC9] pb-2 text-xs font-bold text-stone-800">
+              <div className="mt-4 rounded-xl border border-[#DCD0BE] bg-[#FFFDF6] p-3 shadow-sm space-y-2.5 sm:mt-6 sm:rounded-2xl sm:p-4 sm:space-y-3">
+                <div className="flex items-center justify-between gap-2 border-b border-[#E8DEC9] pb-2 text-[11px] font-bold text-stone-800 sm:text-xs">
                   <span>Recent Activity</span>
-                  <span className="text-emerald-700 font-mono text-[10px] bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 font-mono text-[9px] text-emerald-700 sm:text-[10px]">
                     LIVE SYNC
                   </span>
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-start gap-2.5 text-xs">
-                    <div className="h-6 w-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px] shrink-0">
+                  <div className="flex items-start gap-2 text-[11px] sm:gap-2.5 sm:text-xs">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
                       AS
                     </div>
-                    <div className="flex-1">
-                      <p className="text-stone-800 font-medium leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-tight text-stone-800">
                         <strong>Ari Sanders</strong> critiqued <em>&apos;Bromo Fog&apos;</em>
                       </p>
-                      <p className="text-[11px] text-stone-500 mt-0.5 font-mono">
+                      <p className="mt-0.5 font-mono text-[10px] text-stone-500 sm:text-[11px]">
                         &quot;Dynamic range at f/8 is exceptionally clean!&quot;
                       </p>
                     </div>
-                    <span className="text-[10px] font-mono text-stone-400">1m ago</span>
+                    <span className="shrink-0 font-mono text-[9px] text-stone-400 sm:text-[10px]">
+                      1m
+                    </span>
                   </div>
 
-                  <div className="flex items-start gap-2.5 text-xs">
-                    <div className="h-6 w-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px] shrink-0">
+                  <div className="flex items-start gap-2 text-[11px] sm:gap-2.5 sm:text-xs">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
                       JC
                     </div>
-                    <div className="flex-1">
-                      <p className="text-stone-800 font-medium leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-tight text-stone-800">
                         <strong>Jane Cooper</strong> liked <em>&apos;Pasar Baru Street&apos;</em>
                       </p>
-                      <p className="text-[11px] text-stone-500 mt-0.5 font-mono">
+                      <p className="mt-0.5 truncate font-mono text-[10px] text-stone-500 sm:text-[11px]">
                         Leica M11 · 35mm Summicron
                       </p>
                     </div>
-                    <span className="text-[10px] font-mono text-stone-400">4m ago</span>
+                    <span className="shrink-0 font-mono text-[9px] text-stone-400 sm:text-[10px]">
+                      4m
+                    </span>
                   </div>
                 </div>
               </div>
